@@ -52,18 +52,20 @@ pub async fn get_invoice(db: &PgPool, id: Uuid) -> Result<Invoice, sqlx::Error> 
         .await
 }
 
-pub async fn set_invoice_paid(db: &PgPool, id: Uuid, buyer: &str, paid_at: NaiveDateTime) -> Result<Invoice, sqlx::Error> {
+pub async fn set_invoice_paid(db: &PgPool, id: Uuid, seller: &str, amount: BigDecimal, buyer: &str, paid_at: NaiveDateTime) -> Result<Invoice, sqlx::Error> {
     sqlx::query_as!(
         Invoice,
         r#"
         UPDATE invoice
         SET buyer = $1, paid_at = $2
-        WHERE id = $3
+        WHERE id = $3 AND seller = $4 AND amount = $5
         RETURNING *
         "#,
         buyer,
         paid_at,
-        id
+        id,
+        seller,
+        amount,
     )
         .fetch_one(db)
         .await

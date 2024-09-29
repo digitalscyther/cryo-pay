@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        UPDATE invoice\n        SET buyer = $1, paid_at = $2\n        WHERE id = $3\n        RETURNING *\n        ",
+  "query": "\n        UPDATE invoice\n        SET buyer = $1, paid_at = $2\n        WHERE id = $3 AND seller = $4 AND amount = $5\n        RETURNING *\n        ",
   "describe": {
     "columns": [
       {
@@ -38,7 +38,9 @@
       "Left": [
         "Varchar",
         "Timestamp",
-        "Uuid"
+        "Uuid",
+        "Text",
+        "Numeric"
       ]
     },
     "nullable": [
@@ -50,5 +52,5 @@
       true
     ]
   },
-  "hash": "1e3aaaf392d598bd62f2261fdd04fa1438f00bed2b8262014386a92d97fb062f"
+  "hash": "7a5311a942157d2a7527390c8810c2c84ec0fa2ed4982208fc695e61b34ccf7c"
 }

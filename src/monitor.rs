@@ -14,14 +14,14 @@ where
     Fut: Future<Output = Result<(), String>>,
 {
     let provider_network_link = "https://optimism-sepolia.infura.io/v3/bf3b7185e9c647cca8a376ccd332ee80";
-    let address_str = "0x7295f73D6CDd5D216D1a7B70E29F855Fe5F1e42e";
-    let event_signature = "NewTransaction(uint256)";
-    let delay_between_checks = 5 * 60;
+    let address_str = utils::get_env_var("CONTRACT_ADDRESS")?;
+    let event_signature = utils::get_env_var("EVENT_SIGNATURE")?;
+    let delay_between_checks = 30;
 
     start_monitor(
         provider_network_link,
-        address_str,
-        event_signature,
+        &address_str,
+        &event_signature,
         delay_between_checks,
         process_log
     ).await
@@ -66,7 +66,9 @@ where
         ).await?;
 
         for log in logs {
-            process_log(log).await?;
+            if let Err(err) = process_log(log).await {
+                println!("Failed process_log: {:?}", err);
+            }
         }
 
         last_block_number = new_block_number;

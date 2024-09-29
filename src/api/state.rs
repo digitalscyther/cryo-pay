@@ -9,8 +9,7 @@ use crate::utils;
 use crate::utils::get_env_var;
 
 pub async fn setup_app_state() -> Result<AppState, String> {
-    let db_url = get_env_var("POSTGRES_URL")?;
-    let db = DB::new(&db_url).await?;
+    let db = DB::new().await?;
     Ok(AppState { db })
 }
 
@@ -25,7 +24,9 @@ pub struct AppState {
 }
 
 impl DB {
-    pub async fn new(db_url: &str) -> Result<Self, String> {
+    pub async fn new() -> Result<Self, String> {
+        let db_url = get_env_var("POSTGRES_URL")?;
+
         let pg_pool = db::get_db_connection(&db_url).await.map_err(|_| "Failed to connect to database".to_string())?;
 
         Ok(Self { pg_pool })
@@ -55,8 +56,8 @@ impl DB {
             .map_err(|err| utils::make_err(Box::new(err), "create invoice"))
     }
 
-    pub async fn set_invoice_paid(&self, id: Uuid, buyer: &str, paid_at: NaiveDateTime) -> Result<Invoice, String> {
-        db::set_invoice_paid(&self.pg_pool, id, buyer, paid_at)
+    pub async fn set_invoice_paid(&self, id: Uuid, seller: &str, amount: BigDecimal, buyer: &str, paid_at: NaiveDateTime) -> Result<Invoice, String> {
+        db::set_invoice_paid(&self.pg_pool, id, seller, amount, buyer, paid_at)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "set invoice paid"))
     }

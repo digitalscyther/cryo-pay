@@ -1,5 +1,5 @@
 mod ping_pong;
-mod state;
+pub mod state;
 mod db;
 mod payments;
 
