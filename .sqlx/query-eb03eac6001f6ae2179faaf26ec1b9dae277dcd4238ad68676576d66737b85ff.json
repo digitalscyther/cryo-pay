@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM invoice ORDER BY created_at DESC",
+  "query": "\n        INSERT INTO invoice (amount, seller)\n        VALUES ($1, $2)\n        RETURNING *\n        ",
   "describe": {
     "columns": [
       {
@@ -35,7 +35,10 @@
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Numeric",
+        "Varchar"
+      ]
     },
     "nullable": [
       false,
@@ -46,5 +49,5 @@
       true
     ]
   },
-  "hash": "734d1ecfc1f0f29a675a830d45102152fdfb24475fb87895a7b499f532a9b710"
+  "hash": "eb03eac6001f6ae2179faaf26ec1b9dae277dcd4238ad68676576d66737b85ff"
 }

@@ -19,7 +19,7 @@ pub async fn run_api() -> Result<(), String> {
         .init();
 
     let app_state = state::setup_app_state().await.expect("Failed to build AppState");
-    app_state.run_migrations()
+    app_state.db.run_migrations()
         .await
         .map_err(|err| utils::make_err(Box::new(err), "run migrations"))?;
     let app_state = Arc::new(app_state);
@@ -27,8 +27,6 @@ pub async fn run_api() -> Result<(), String> {
     let router = Router::new()
         .route("/ping", get(ping_pong))
         .nest("/payment", payments::router::get_router(app_state.clone()).await)
-        // .nest("/landing-page", landing_page::router::get_router(app_state.clone()).await)
-        // .nest("/contact", message::router::get_router(app_state.clone()).await)
         .layer(TraceLayer::new_for_http());
 
     let host = utils::get_env_var("HOST")?;

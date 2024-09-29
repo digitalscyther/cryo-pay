@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM invoice ORDER BY created_at DESC",
+  "query": "\n        SELECT * FROM invoice\n        WHERE id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -35,7 +35,9 @@
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Uuid"
+      ]
     },
     "nullable": [
       false,
@@ -46,5 +48,5 @@
       true
     ]
   },
-  "hash": "734d1ecfc1f0f29a675a830d45102152fdfb24475fb87895a7b499f532a9b710"
+  "hash": "480d5551efe9a3e676c6837e450d538cb8835da36822f3b7ed6f323b0c87e6cc"
 }
