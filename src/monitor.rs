@@ -1,17 +1,19 @@
 use tokio::time::sleep;
 use std::time::Duration;
-use ethers::prelude::{Filter, Log, Provider, ProviderError, U64};
+use ethers::prelude::{Filter, Log, Provider, ProviderError, U128, U64};
 use std::future::Future;
 use ethers::addressbook::Address;
+use ethers::contract::EthEvent;
 use ethers::middleware::Middleware;
 use ethers::providers::Http;
+use tracing::error;
 
 use crate::utils;
 
-pub async fn run_monitor<F, Fut>(process_log: F) -> Result<(), String>
-where
-    F: Fn(Log) -> Fut,
-    Fut: Future<Output = Result<(), String>>,
+pub async fn run_monitor<F, Fut>(process_event: F) -> Result<(), String>
+    where
+        F: Fn(PayInvoiceEvent) -> Fut,
+        Fut: Future<Output=Result<(), String>>,
 {
     let provider_network_link = "https://optimism-sepolia.infura.io/v3/bf3b7185e9c647cca8a376ccd332ee80";
     let address_str = utils::get_env_var("CONTRACT_ADDRESS")?;
@@ -23,7 +25,7 @@ where
         &address_str,
         &event_signature,
         delay_between_checks,
-        process_log
+        process_event,
     ).await
 }
 
@@ -32,11 +34,11 @@ async fn start_monitor<F, Fut>(
     address_str: &str,
     event_signature: &str,
     delay_between_checks: u64,
-    process_log: F
+    process_event: F,
 ) -> Result<(), String>
-where
-    F: Fn(Log) -> Fut,
-    Fut: Future<Output = Result<(), String>>,
+    where
+        F: Fn(PayInvoiceEvent) -> Fut,
+        Fut: Future<Output=Result<(), String>>,
 {
     let provider = Provider::<Http>::try_from(provider_src)
         .map_err(|err| utils::make_err(Box::new(err), "create provider"))?;
@@ -66,8 +68,16 @@ where
         ).await?;
 
         for log in logs {
-            if let Err(err) = process_log(log).await {
-                println!("Failed process_log: {:?}", err);
+            let result = <PayInvoiceEvent as EthEvent>::decode_log(&log.into())
+                .map_err(|err| utils::make_err(Box::new(err), "decode log"));
+
+            match result {
+                Ok(event) => {
+                    if let Err(err) = process_event(event).await {
+                        error!("{}", err);
+                    }
+                }
+                Err(err) => error!("{}", err),
             }
         }
 
@@ -91,4 +101,15 @@ async fn get_logs(provider: &Provider<Http>, base_filter: Filter, block_from: U6
 
     provider.get_logs(&filter).await
         .map_err(|err| utils::make_err(Box::new(err), "get logs"))
+}
+
+#[derive(Debug, Clone, EthEvent)]
+pub struct PayInvoiceEvent {
+    pub invoice_id: String,
+    #[ethevent(indexed)]
+    pub seller: Address,
+    #[ethevent(indexed)]
+    pub payer: Address,
+    pub paid_at: U128,
+    pub amount: U128,
 }
