@@ -9,15 +9,15 @@ mod events;
 async fn main() -> Result<(), String> {
     let postgres_db = Arc::new(api::state::DB::new().await?);
 
-    let monitor_handle = tokio::spawn(async move {
-        let _ = monitor::run_monitor(move |event| {
-            let postgres_db = Arc::clone(&postgres_db);
-            events::set_invoice_paid(postgres_db, event)
-        }).await;
-    });
     // let monitor_handle = tokio::spawn(async move {
-    //     let _ = monitor::run_monitor(events::just_print_log).await;
+    //     let _ = monitor::run_monitor(move |event| {
+    //         let postgres_db = Arc::clone(&postgres_db);
+    //         events::set_invoice_paid(postgres_db, event)
+    //     }).await;
     // });
+    let monitor_handle = tokio::spawn(async move {
+        let _ = monitor::run_monitor(events::just_print_log).await;
+    });
 
     let api_handle = tokio::spawn(async move {
         api::run_api().await
