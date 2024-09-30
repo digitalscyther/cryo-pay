@@ -6,6 +6,7 @@ mod payments;
 use std::sync::Arc;
 use axum::Router;
 use axum::routing::get;
+use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::{info, Level};
 
@@ -24,9 +25,15 @@ pub async fn run_api() -> Result<(), String> {
         .map_err(|err| utils::make_err(Box::new(err), "run migrations"))?;
     let app_state = Arc::new(app_state);
 
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
+
     let router = Router::new()
         .route("/ping", get(ping_pong))
         .nest("/payment", payments::router::get_router(app_state.clone()).await)
+        .layer(cors)
         .layer(TraceLayer::new_for_http());
 
     let host = utils::get_env_var("HOST")?;
