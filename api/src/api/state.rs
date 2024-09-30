@@ -2,6 +2,7 @@ use bigdecimal::BigDecimal;
 use chrono::NaiveDateTime;
 use sqlx::migrate::MigrateError;
 use sqlx::PgPool;
+use tracing::info;
 use uuid::Uuid;
 use crate::api::db;
 use crate::api::db::Invoice;
@@ -57,8 +58,12 @@ impl DB {
     }
 
     pub async fn set_invoice_paid(&self, id: Uuid, seller: &str, amount: BigDecimal, buyer: &str, paid_at: NaiveDateTime) -> Result<Invoice, String> {
-        db::set_invoice_paid(&self.pg_pool, id, seller, amount, buyer, paid_at)
+        let invoice = db::set_invoice_paid(&self.pg_pool, id, seller, amount, buyer, paid_at)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "set invoice paid"))
+            .map_err(|err| utils::make_err(Box::new(err), "set invoice paid"))?;
+
+        info!("Invoice {} set paid", id);
+
+        return Ok(invoice);
     }
 }

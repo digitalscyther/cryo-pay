@@ -4,6 +4,7 @@ import { Container, Navbar, Nav } from 'react-bootstrap';
 import Home from './components/Home';
 import About from './components/About';
 import Contact from './components/Contact';
+import PayInvoice from './components/PayInvoice';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
       <Container className="mt-3">
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/:invoice_id/pay" element={<PayInvoice />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
         </Routes>

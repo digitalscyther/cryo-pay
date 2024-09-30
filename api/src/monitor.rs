@@ -6,7 +6,7 @@ use ethers::addressbook::Address;
 use ethers::contract::EthEvent;
 use ethers::middleware::Middleware;
 use ethers::providers::Http;
-use tracing::error;
+use tracing::{error, info};
 
 use crate::utils;
 
@@ -18,7 +18,7 @@ pub async fn run_monitor<F, Fut>(process_event: F) -> Result<(), String>
     let provider_network_link = "https://optimism-sepolia.infura.io/v3/bf3b7185e9c647cca8a376ccd332ee80";
     let address_str = utils::get_env_var("CONTRACT_ADDRESS")?;
     let event_signature = utils::get_env_var("EVENT_SIGNATURE")?;
-    let delay_between_checks = 5 * 60;
+    let delay_between_checks = 30;
 
     start_monitor(
         provider_network_link,
@@ -90,7 +90,7 @@ async fn get_block_number(provider: &Provider<Http>) -> Result<U64, ProviderErro
 }
 
 async fn sleep_duration(to_sleep: u64) {
-    println!("Sleeping for {} seconds", to_sleep);
+    info!("Sleeping for {} seconds between logs check", to_sleep);
     sleep(Duration::from_secs(to_sleep)).await;
 }
 

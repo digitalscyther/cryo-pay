@@ -7,7 +7,7 @@ mod events;
 
 #[tokio::main]
 async fn main() -> Result<(), String> {
-    let test = true;
+    let test = false;
 
     let postgres_db = Arc::new(api::state::DB::new().await?);
 

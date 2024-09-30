@@ -33,7 +33,7 @@ pub async fn create_invoice(pg_pool: &PgPool, amount: BigDecimal, seller: &str) 
         RETURNING *
         "#,
         amount,
-        seller
+        seller.to_lowercase()
     )
     .fetch_one(pg_pool)
     .await
@@ -61,10 +61,10 @@ pub async fn set_invoice_paid(db: &PgPool, id: Uuid, seller: &str, amount: BigDe
         WHERE id = $3 AND seller = $4 AND amount = $5
         RETURNING *
         "#,
-        buyer,
+        buyer.to_lowercase(),
         paid_at,
         id,
-        seller,
+        seller.to_lowercase(),
         amount,
     )
         .fetch_one(db)
