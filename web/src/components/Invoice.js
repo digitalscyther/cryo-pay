@@ -57,7 +57,7 @@ const ERC20_ABI = [
     }
 ];
 
-function PayInvoice() {
+function Invoice() {
     const {invoice_id} = useParams(); // Get invoice_id from the route
     const [invoice, setInvoice] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -100,7 +100,7 @@ function PayInvoice() {
             // 1. Approve the contract to spend the user's tokens
             const erc20Contract = new web3.eth.Contract(ERC20_ABI, ERC20_ADDRESS);
             const invoiceContract = new web3.eth.Contract(INVOICE_ABI, INVOICE_CONTRACT_ADDRESS);
-            const amount = invoice.amount * (10**6); // Convert the amount
+            const amount = invoice.amount * (10 ** 6); // Convert the amount
 
             // Approve tokens for the InvoicePayment contract
             await erc20Contract.methods.approve(INVOICE_CONTRACT_ADDRESS, amount).send({from: account});
@@ -136,33 +136,31 @@ function PayInvoice() {
         );
     }
 
-    if (invoice.paid_at) {
-        return (
-            <Container className="mt-5">
-                <Alert variant="success">This invoice has already been paid.</Alert>
-            </Container>
-        );
-    }
-
     return (
-        <Container className="mt-5">
-            <h2>Pay Invoice</h2>
-            <p><strong>Invoice ID:</strong> {invoice.id}</p>
-            <p><strong>Amount:</strong> {parseFloat(invoice.amount).toFixed(2)} MTK</p>
-            <p><strong>Seller:</strong> {invoice.seller}</p>
-            <p><strong>Created At:</strong> {new Date(invoice.created_at).toLocaleString()}</p>
+        <>
+            <Container className="mt-5">
+                <h2>Pay Invoice</h2>
+                <p><strong>Invoice ID:</strong> {invoice.id}</p>
+                <p><strong>Amount:</strong> {parseFloat(invoice.amount).toFixed(2)} MTK</p>
+                <p><strong>Seller:</strong> {invoice.seller}</p>
+                <p><strong>Created At:</strong> {new Date(invoice.created_at).toLocaleString()}</p>
 
-            {processing ? (
-                <Button variant="primary" disabled>
-                    Processing Payment...
-                </Button>
-            ) : (
-                <Button variant="primary" onClick={handlePayment}>
-                    Pay with MetaMask
-                </Button>
-            )}
-        </Container>
+                {!invoice.paid_at ? (
+                    <>
+                        {processing ? (
+                            <Button variant="primary" disabled>
+                                Processing Payment...
+                            </Button>
+                        ) : (
+                            <Button variant="primary" onClick={handlePayment}>
+                                Pay with MetaMask
+                            </Button>
+                        )}
+                    </>
+                ) : <Alert variant="success">This invoice has already been paid.</Alert> }
+            </Container>
+        </>
     );
 }
 
-export default PayInvoice;
+export default Invoice;
