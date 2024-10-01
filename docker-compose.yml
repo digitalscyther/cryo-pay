@@ -1,26 +1,39 @@
 services:
-#  web:
-#    build:
-#      context: .
-#      target: final
-#    env_file:
-#      - .env
-#    networks:
-#      - nginx_network
-#      - postgres_network
-#      - redis_network
-#
-#  nginx:
-#    image: nginx
+  api:
+    build:
+      context: api
+      target: final
 #    restart: always
-#    volumes:
-#      - ./files/nginx/conf.d:/etc/nginx/conf.d
-#    ports:
-#      - "8080:80"
-#    depends_on:
-#      - web
-#    networks:
-#      - nginx_network
+    env_file:
+      - api/.env
+    networks:
+      - nginx_network
+      - postgres_network
+#      - redis_network
+
+  web:
+    build:
+      context: web
+      target: final
+      args:
+        - BASE_API_URL=/api
+#    restart: always
+    environment:
+      NODE_ENV: production
+    networks:
+      - nginx_network
+
+  nginx:
+    image: nginx
+    restart: always
+    volumes:
+      - ./files/nginx/nginx:/etc/nginx/conf.d
+    ports:
+      - "8080:80"
+    depends_on:
+      - web
+    networks:
+      - nginx_network
 
   postgres:
     image: postgres
@@ -45,8 +58,8 @@ services:
 #      - redis_network
 
 networks:
-#  nginx_network:
-#    driver: bridge
+  nginx_network:
+    driver: bridge
   postgres_network:
     driver: bridge
 #  redis_network:

@@ -5,6 +5,7 @@ import Web3 from 'web3';
 import {Container, Button, Spinner, Alert} from 'react-bootstrap';
 import invoice_abi from '../data/invoice_abi.json';
 import erc20_abi from '../data/erc20_abi.json';
+import {api_url} from "../utils";
 
 const ERC20_ADDRESS = "0x9A211fD6C60BdC4Cc1dB22cBe2f882ae527B1D87";
 const INVOICE_CONTRACT_ADDRESS = "0xb9BB9B797a90bf2aA212C92E4d100F39cD8E325c";
@@ -22,7 +23,7 @@ function Invoice() {
 
     useEffect(() => {
         axios
-            .get(`http://localhost:3000/payment/invoice/${invoice_id}`)
+            .get(api_url(`/payment/invoice/${invoice_id}`))
             .then((response) => {
                 setInvoice(response.data);
                 setLoading(false);

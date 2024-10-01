@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import axios from 'axios';
 import {Table, Container, Alert, Spinner, Button, Modal, Form} from 'react-bootstrap';
+import {api_url} from "../utils";
 
 function Home() {
     const [invoices, setInvoices] = useState([]);
@@ -13,7 +14,7 @@ function Home() {
     useEffect(() => {
         // Fetch invoices from backend
         axios
-            .get('http://localhost:3000/payment/invoice')
+            .get(api_url('/payment/invoice'))
             .then((response) => {
                 setInvoices(response.data);
                 setLoading(false);
@@ -28,7 +29,7 @@ function Home() {
         setCreating(true);
         // Make POST request to create a new invoice
         axios
-            .post('http://localhost:3000/payment/invoice', {
+            .post(api_url('/payment/invoice'), {
                 amount: newInvoice.amount,
                 seller: newInvoice.seller,
             })

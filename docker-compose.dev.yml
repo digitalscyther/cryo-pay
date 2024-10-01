@@ -1,7 +1,7 @@
 services:
-#  nginx:
-#    ports:
-#      - ${NGINX_PORT}:80
+  nginx:
+    ports:
+      - ${NGINX_PORT}:80
 
   postgres:
     ports:
