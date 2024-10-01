@@ -32,7 +32,7 @@ pub async fn run_api() -> Result<(), String> {
 
     let router = Router::new()
         .route("/ping", get(ping_pong))
-        .nest("/payment", payments::router::get_router(app_state.clone()).await)
+        .nest("/payment", payments::router::get_router(app_state.clone()))
         .layer(cors)
         .layer(TraceLayer::new_for_http());
 

@@ -6,19 +6,17 @@ use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use bigdecimal::BigDecimal;
 use serde::Deserialize;
-use tower_http::trace::TraceLayer;
 use uuid::Uuid;
 use crate::api::db::Invoice;
 use crate::api::ping_pong::ping_pong;
 use crate::api::state::AppState;
 
-pub async fn get_router(app_state: Arc<AppState>) -> Router {
+pub fn get_router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route("/ping", get(ping_pong))
         .route("/invoice", get(get_invoices_handler))
         .route("/invoice", post(create_invoice_handler))
         .route("/invoice/:invoice_id", get(get_invoice_handler))
-        .layer(TraceLayer::new_for_http())
         .with_state(app_state)
 }
 

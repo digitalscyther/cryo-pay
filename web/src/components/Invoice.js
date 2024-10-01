@@ -3,62 +3,16 @@ import {useParams} from 'react-router-dom';
 import axios from 'axios';
 import Web3 from 'web3';
 import {Container, Button, Spinner, Alert} from 'react-bootstrap';
+import invoice_abi from '../data/invoice_abi.json';
+import erc20_abi from '../data/erc20_abi.json';
 
-const ERC20_ADDRESS = "0x9A211fD6C60BdC4Cc1dB22cBe2f882ae527B1D87";  // Hardcoded ERC20 token address
-const INVOICE_CONTRACT_ADDRESS = "0xb9BB9B797a90bf2aA212C92E4d100F39cD8E325c";  // Hardcoded smart contract address
-const INVOICE_ABI = [
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "seller",
-                "type": "address"
-            },
-            {
-                "internalType": "string",
-                "name": "invoice_id",
-                "type": "string"
-            },
-            {
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            }
-        ],
-        "name": "payInvoice",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    }
-];
-const ERC20_ABI = [
-    {
-        "constant": false,
-        "inputs": [
-            {
-                "name": "_spender",
-                "type": "address"
-            },
-            {
-                "name": "_value",
-                "type": "uint256"
-            }
-        ],
-        "name": "approve",
-        "outputs": [
-            {
-                "name": "",
-                "type": "bool"
-            }
-        ],
-        "payable": false,
-        "stateMutability": "nonpayable",
-        "type": "function"
-    }
-];
+const ERC20_ADDRESS = "0x9A211fD6C60BdC4Cc1dB22cBe2f882ae527B1D87";
+const INVOICE_CONTRACT_ADDRESS = "0xb9BB9B797a90bf2aA212C92E4d100F39cD8E325c";
+const INVOICE_ABI = invoice_abi;
+const ERC20_ABI = erc20_abi;
 
 function Invoice() {
-    const {invoice_id} = useParams(); // Get invoice_id from the route
+    const {invoice_id} = useParams();
     const [invoice, setInvoice] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -67,7 +21,6 @@ function Invoice() {
     const [account, setAccount] = useState(null);
 
     useEffect(() => {
-        // Fetch the invoice details
         axios
             .get(`http://localhost:3000/payment/invoice/${invoice_id}`)
             .then((response) => {
@@ -79,7 +32,6 @@ function Invoice() {
                 setLoading(false);
             });
 
-        // Initialize Web3 and MetaMask
         if (window.ethereum) {
             const web3Instance = new Web3(window.ethereum);
             setWeb3(web3Instance);
@@ -97,20 +49,16 @@ function Invoice() {
         try {
             setProcessing(true);
 
-            // 1. Approve the contract to spend the user's tokens
             const erc20Contract = new web3.eth.Contract(ERC20_ABI, ERC20_ADDRESS);
             const invoiceContract = new web3.eth.Contract(INVOICE_ABI, INVOICE_CONTRACT_ADDRESS);
-            const amount = invoice.amount * (10 ** 6); // Convert the amount
+            const amount = invoice.amount * (10 ** 6);
 
-            // Approve tokens for the InvoicePayment contract
             await erc20Contract.methods.approve(INVOICE_CONTRACT_ADDRESS, amount).send({from: account});
             console.log('Approval successful');
 
-            // 2. Make the transaction to pay the invoice
             await invoiceContract.methods.payInvoice(invoice.seller, invoice_id, amount).send({from: account});
             console.log('Payment successful');
 
-            // 3. Show success message
             alert('Payment is under processing. It will be marked as paid once everything is fine.');
         } catch (error) {
             console.error('Payment failed', error);
@@ -145,7 +93,12 @@ function Invoice() {
                 <p><strong>Seller:</strong> {invoice.seller}</p>
                 <p><strong>Created At:</strong> {new Date(invoice.created_at).toLocaleString()}</p>
 
-                {!invoice.paid_at ? (
+                {invoice.paid_at ? (
+                    <>
+                        <p><strong>Paid At:</strong> {new Date(invoice.paid_at).toLocaleString()}</p>
+                        <Alert variant="success">This invoice has already been paid.</Alert>
+                    </>
+                ) : (
                     <>
                         {processing ? (
                             <Button variant="primary" disabled>
@@ -157,7 +110,7 @@ function Invoice() {
                             </Button>
                         )}
                     </>
-                ) : <Alert variant="success">This invoice has already been paid.</Alert> }
+                )}
             </Container>
         </>
     );

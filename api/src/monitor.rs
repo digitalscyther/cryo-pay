@@ -74,10 +74,10 @@ async fn start_monitor<F, Fut>(
             match result {
                 Ok(event) => {
                     if let Err(err) = process_event(event).await {
-                        error!("{}", err);
+                        error!("Failed process event: {}", err);
                     }
                 }
-                Err(err) => error!("{}", err),
+                Err(err) => error!("Failed decode log: {}", err),
             }
         }
 
