@@ -1,63 +1,68 @@
-import React, {useEffect, useState} from 'react';
-import {useParams} from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import Web3 from 'web3';
-import {Container, Button, Spinner, Alert} from 'react-bootstrap';
-import invoice_abi from '../data/invoice_abi.json';
-import erc20_abi from '../data/erc20_abi.json';
-import {api_url} from "../utils";
-
-const ERC20_ADDRESS = "0x9A211fD6C60BdC4Cc1dB22cBe2f882ae527B1D87";
-const INVOICE_CONTRACT_ADDRESS = "0xb9BB9B797a90bf2aA212C92E4d100F39cD8E325c";
-const INVOICE_ABI = invoice_abi;
-const ERC20_ABI = erc20_abi;
+import { Container, Button, Spinner, Alert } from 'react-bootstrap';
+import { api_url } from "../utils";
 
 function Invoice() {
-    const {invoice_id} = useParams();
+    const { invoice_id } = useParams();
     const [invoice, setInvoice] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [processing, setProcessing] = useState(false);
     const [web3, setWeb3] = useState(null);
     const [account, setAccount] = useState(null);
+    const [erc20Contract, setErc20Contract] = useState(null);
+    const [invoiceContract, setInvoiceContract] = useState(null);
 
     useEffect(() => {
-        axios
-            .get(api_url(`/payment/invoice/${invoice_id}`))
-            .then((response) => {
+        const fetchInvoice = async () => {
+            try {
+                const response = await axios.get(api_url(`/payment/invoice/${invoice_id}`));
                 setInvoice(response.data);
-                setLoading(false);
-            })
-            .catch((err) => {
+            } catch (err) {
                 setError('Failed to fetch invoice data');
+            } finally {
                 setLoading(false);
-            });
+            }
+        };
 
-        if (window.ethereum) {
-            const web3Instance = new Web3(window.ethereum);
-            setWeb3(web3Instance);
-            window.ethereum.request({method: 'eth_requestAccounts'})
-                .then((accounts) => setAccount(accounts[0]))
-                .catch((err) => setError('MetaMask connection failed'));
-        } else {
-            setError('Please install MetaMask!');
-        }
+        const fetchBlockchainInfo = async () => {
+            try {
+                const response = await axios.get(api_url('/blockchain/info'));
+                const { erc20, invoice } = response.data;
+
+                const web3Instance = new Web3(window.ethereum);
+                const erc20ContractInstance = new web3Instance.eth.Contract(erc20.abi, erc20.address);
+                const invoiceContractInstance = new web3Instance.eth.Contract(invoice.abi, invoice.address);
+
+                setErc20Contract(erc20ContractInstance);
+                setInvoiceContract(invoiceContractInstance);
+                setWeb3(web3Instance);
+
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                setAccount(accounts[0]);
+            } catch (err) {
+                setError('Failed to fetch blockchain info or connect to MetaMask');
+            }
+        };
+
+        fetchInvoice();
+        fetchBlockchainInfo();
     }, [invoice_id]);
 
     const handlePayment = async () => {
-        if (!web3 || !account || !invoice) return;
+        if (!web3 || !account || !invoice || !erc20Contract || !invoiceContract) return;
 
         try {
             setProcessing(true);
-
-            const erc20Contract = new web3.eth.Contract(ERC20_ABI, ERC20_ADDRESS);
-            const invoiceContract = new web3.eth.Contract(INVOICE_ABI, INVOICE_CONTRACT_ADDRESS);
             const amount = invoice.amount * (10 ** 6);
 
-            await erc20Contract.methods.approve(INVOICE_CONTRACT_ADDRESS, amount).send({from: account});
+            await erc20Contract.methods.approve(invoiceContract._address, amount).send({ from: account });
             console.log('Approval successful');
 
-            await invoiceContract.methods.payInvoice(invoice.seller, invoice_id, amount).send({from: account});
+            await invoiceContract.methods.payInvoice(invoice.seller, invoice_id, amount).send({ from: account });
             console.log('Payment successful');
 
             alert('Payment is under processing. It will be marked as paid once everything is fine.');
@@ -72,7 +77,7 @@ function Invoice() {
     if (loading) {
         return (
             <Container className="mt-5 text-center">
-                <Spinner animation="border" variant="primary"/>
+                <Spinner animation="border" variant="primary" />
             </Container>
         );
     }
@@ -86,34 +91,32 @@ function Invoice() {
     }
 
     return (
-        <>
-            <Container className="mt-5">
-                <h2>Pay Invoice</h2>
-                <p><strong>Invoice ID:</strong> {invoice.id}</p>
-                <p><strong>Amount:</strong> {parseFloat(invoice.amount).toFixed(2)} MTK</p>
-                <p><strong>Seller:</strong> {invoice.seller}</p>
-                <p><strong>Created At:</strong> {new Date(invoice.created_at).toLocaleString()}</p>
+        <Container className="mt-5">
+            <h2>Pay Invoice</h2>
+            <p><strong>Invoice ID:</strong> {invoice.id}</p>
+            <p><strong>Amount:</strong> {parseFloat(invoice.amount).toFixed(2)} MTK</p>
+            <p><strong>Seller:</strong> {invoice.seller}</p>
+            <p><strong>Created At:</strong> {new Date(invoice.created_at).toLocaleString()}</p>
 
-                {invoice.paid_at ? (
-                    <>
-                        <p><strong>Paid At:</strong> {new Date(invoice.paid_at).toLocaleString()}</p>
-                        <Alert variant="success">This invoice has already been paid.</Alert>
-                    </>
-                ) : (
-                    <>
-                        {processing ? (
-                            <Button variant="primary" disabled>
-                                Processing Payment...
-                            </Button>
-                        ) : (
-                            <Button variant="primary" onClick={handlePayment}>
-                                Pay with MetaMask
-                            </Button>
-                        )}
-                    </>
-                )}
-            </Container>
-        </>
+            {invoice.paid_at ? (
+                <>
+                    <p><strong>Paid At:</strong> {new Date(invoice.paid_at).toLocaleString()}</p>
+                    <Alert variant="success">This invoice has already been paid.</Alert>
+                </>
+            ) : (
+                <>
+                    {processing ? (
+                        <Button variant="primary" disabled>
+                            Processing Payment...
+                        </Button>
+                    ) : (
+                        <Button variant="primary" onClick={handlePayment}>
+                            Pay with MetaMask
+                        </Button>
+                    )}
+                </>
+            )}
+        </Container>
     );
 }
 

@@ -2,6 +2,7 @@ mod ping_pong;
 pub mod state;
 mod db;
 mod payments;
+mod blockchain;
 
 use std::sync::Arc;
 use axum::Router;
@@ -25,16 +26,20 @@ pub async fn run_api() -> Result<(), String> {
         .map_err(|err| utils::make_err(Box::new(err), "run migrations"))?;
     let app_state = Arc::new(app_state);
 
-    let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
-
-    let router = Router::new()
+    let mut router = Router::new()
         .route("/ping", get(ping_pong))
         .nest("/payment", payments::router::get_router(app_state.clone()))
-        .layer(cors)
+        .nest("/blockchain", blockchain::get_router(app_state.clone()))
         .layer(TraceLayer::new_for_http());
+
+    if Some("1") == utils::get_env_or("DEBUG", "0".to_string()).ok().as_deref() {
+        info!("will be allowed any cors");
+        let cors = CorsLayer::new()
+            .allow_origin(Any)
+            .allow_methods(Any)
+            .allow_headers(Any);
+        router = router.layer(cors);
+    }
 
     let host = utils::get_env_var("HOST")?;
     let port = utils::get_env_var("PORT")?;

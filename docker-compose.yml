@@ -6,6 +6,8 @@ services:
     restart: always
     env_file:
       - api/.env
+    volumes:
+      - ./api/data:/opt/data
     networks:
       - nginx_network
       - postgres_network
@@ -24,10 +26,10 @@ services:
       - nginx_network
 
   nginx:
-    image: nginx
+    image: nginx:1.27.2
     restart: always
     volumes:
-      - ./files/nginx/nginx:/etc/nginx/conf.d
+      - ./files/nginx/conf.d:/etc/nginx/conf.d
     ports:
       - "8080:80"
     depends_on:
@@ -36,7 +38,7 @@ services:
       - nginx_network
 
   postgres:
-    image: postgres
+    image: postgres:17.0
     restart: always
     command: postgres -c 'max_connections=2000'
     volumes:
