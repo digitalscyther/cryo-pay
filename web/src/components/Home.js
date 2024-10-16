@@ -6,6 +6,7 @@ import {api_url, SEPOLIA_OPTIMISM_NETWORK_ID} from "../utils";
 
 const OPTIMISM_NETWORK_ID = 10n;
 const DEFAULT_NETWORK_ID = SEPOLIA_OPTIMISM_NETWORK_ID;
+const PAGE_SIZE = 10;
 
 function Home() {
     const [invoices, setInvoices] = useState([]);
@@ -14,19 +15,24 @@ function Home() {
     const [showModal, setShowModal] = useState(false);
     const [newInvoice, setNewInvoice] = useState({amount: '', seller: '', networkId: DEFAULT_NETWORK_ID});
     const [creating, setCreating] = useState(false);
+    const [offset, setOffset] = useState(0);
+    const [hasMore, setHasMore] = useState(false);
+    const limit = PAGE_SIZE;
 
     useEffect(() => {
+        setLoading(true);
         axios
-            .get(api_url('/payment/invoice'))
+            .get(api_url(`/payment/invoice?limit=${limit}&offset=${offset}`))
             .then((response) => {
                 setInvoices(response.data);
+                setHasMore(response.data.length === limit);
                 setLoading(false);
             })
             .catch((err) => {
                 setError('Failed to fetch invoices');
                 setLoading(false);
             });
-    }, []);
+    }, [limit, offset]);
 
     const handleCreateInvoice = () => {
         setCreating(true);
@@ -38,6 +44,7 @@ function Home() {
             })
             .then((response) => {
                 setInvoices([response.data, ...invoices]);
+                setOffset(0);
                 setCreating(false);
                 setShowModal(false);
                 setNewInvoice({amount: '', seller: '', networkId: DEFAULT_NETWORK_ID});
@@ -94,6 +101,25 @@ function Home() {
             <Button variant="primary" onClick={() => setShowModal(true)} className="mb-3">
                 Create Invoice
             </Button>
+
+            <div className="d-flex justify-content-end mt-3 mb-1 me-3">
+                <Button
+                    variant="primary"
+                    disabled={offset === 0}
+                    onClick={() => setOffset(offset - limit)}
+                    className="me-2"
+                >
+                    &laquo; {/* Unicode for left double angle quotation mark */}
+                </Button>
+
+                <Button
+                    variant="primary"
+                    disabled={!hasMore}
+                    onClick={() => setOffset(offset + limit)}
+                >
+                    &raquo; {/* Unicode for right double angle quotation mark */}
+                </Button>
+            </div>
 
             {invoices.length === 0 ? (
                 <Alert variant="info">No invoices found</Alert>

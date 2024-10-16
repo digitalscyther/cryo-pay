@@ -16,7 +16,7 @@ pub async fn setup_app_state() -> Result<AppState, String> {
 
 #[derive(Clone)]
 pub struct DB {
-    pg_pool: PgPool
+    pg_pool: PgPool,
 }
 
 #[derive(Clone)]
@@ -39,8 +39,8 @@ impl DB {
             .await
     }
 
-    pub async fn list_invoices(&self) -> Result<Vec<Invoice>, String> {
-        db::list_invoices(&self.pg_pool)
+    pub async fn list_invoices(&self, limit: i64, offset: i64) -> Result<Vec<Invoice>, String> {
+        db::list_invoices(&self.pg_pool, limit, offset)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "get invoices"))
     }

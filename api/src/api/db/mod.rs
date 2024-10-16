@@ -16,9 +16,12 @@ pub struct Invoice {
     pub paid_at: Option<NaiveDateTime>,
 }
 
-pub async fn list_invoices(pg_pool: &PgPool) -> Result<Vec<Invoice>, sqlx::Error> {
+pub async fn list_invoices(pg_pool: &PgPool, limit: i64, offset: i64) -> Result<Vec<Invoice>, sqlx::Error> {
     sqlx::query_as!(
-        Invoice, "SELECT * FROM invoice ORDER BY created_at DESC"
+        Invoice,
+        "SELECT * FROM invoice ORDER BY created_at DESC LIMIT $1 OFFSET $2",
+        limit,
+        offset
     )
     .fetch_all(pg_pool)
     .await

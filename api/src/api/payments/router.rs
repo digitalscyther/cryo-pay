@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::{Json, Router};
 use axum::response::IntoResponse;
@@ -20,10 +20,30 @@ pub fn get_router(app_state: Arc<AppState>) -> Router {
         .with_state(app_state)
 }
 
+#[derive(Deserialize)]
+struct Pagination {
+    #[serde(default = "default_limit")]
+    limit: i64,
+    #[serde(default = "default_offset")]
+    offset: i64,
+}
+
+fn default_limit() -> i64 {
+    10
+}
+
+fn default_offset() -> i64 {
+    0
+}
+
 async fn get_invoices_handler(
     State(state): State<Arc<AppState>>,
+    Query(pagination): Query<Pagination>,
 ) -> Result<Json<Vec<Invoice>>, StatusCode> {
-    let invoices = state.db.list_invoices()
+    let limit = pagination.limit;
+    let offset = pagination.offset;
+
+    let invoices = state.db.list_invoices(limit, offset)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
