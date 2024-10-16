@@ -1,18 +1,21 @@
 import React, {useEffect, useState} from 'react';
 import axios from 'axios';
 import {Table, Container, Alert, Spinner, Button, Modal, Form} from 'react-bootstrap';
-import {api_url} from "../utils";
+import {api_url, SEPOLIA_OPTIMISM_NETWORK_ID} from "../utils";
+
+
+const OPTIMISM_NETWORK_ID = 10n;
+const DEFAULT_NETWORK_ID = SEPOLIA_OPTIMISM_NETWORK_ID;
 
 function Home() {
     const [invoices, setInvoices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showModal, setShowModal] = useState(false);
-    const [newInvoice, setNewInvoice] = useState({amount: '', seller: ''});
+    const [newInvoice, setNewInvoice] = useState({amount: '', seller: '', networkId: DEFAULT_NETWORK_ID});
     const [creating, setCreating] = useState(false);
 
     useEffect(() => {
-        // Fetch invoices from backend
         axios
             .get(api_url('/payment/invoice'))
             .then((response) => {
@@ -27,20 +30,20 @@ function Home() {
 
     const handleCreateInvoice = () => {
         setCreating(true);
-        // Make POST request to create a new invoice
         axios
             .post(api_url('/payment/invoice'), {
                 amount: newInvoice.amount,
                 seller: newInvoice.seller,
+                networkId: newInvoice.networkId.toString(),
             })
             .then((response) => {
-                // Prepend the newly created invoice to the list
                 setInvoices([response.data, ...invoices]);
                 setCreating(false);
                 setShowModal(false);
-                setNewInvoice({amount: '', seller: ''});
+                setNewInvoice({amount: '', seller: '', networkId: DEFAULT_NETWORK_ID});
             })
             .catch((err) => {
+                console.log("Failed to create invoice", err);
                 setError('Failed to create invoice');
                 setCreating(false);
             });
@@ -48,18 +51,17 @@ function Home() {
 
     const handleSellerChange = (e) => {
         const textarea = e.target;
-        textarea.style.height = 'auto'; // Reset height first to calculate the correct scroll height
-        textarea.style.height = textarea.scrollHeight + 'px'; // Set height based on scroll height
+        textarea.style.height = 'auto';
+        textarea.style.height = textarea.scrollHeight + 'px';
         setNewInvoice({...newInvoice, seller: textarea.value});
     };
 
     const handleUseMetaMaskAddress = async () => {
         if (window.ethereum) {
             try {
-                // Request account access if needed
                 const accounts = await window.ethereum.request({method: 'eth_requestAccounts'});
                 const address = accounts[0];
-                setNewInvoice({...newInvoice, seller: address}); // Set seller field with the address
+                setNewInvoice({...newInvoice, seller: address});
             } catch (error) {
                 console.error('Error fetching MetaMask address:', error);
             }
@@ -154,8 +156,8 @@ function Home() {
                                     rows={1}
                                     placeholder="Enter seller address"
                                     value={newInvoice.seller}
-                                    onChange={handleSellerChange} // Use the dynamic height function
-                                    style={{resize: 'none', overflow: 'hidden'}} // Prevent manual resizing
+                                    onChange={handleSellerChange}
+                                    style={{resize: 'none', overflow: 'hidden'}}
                                 />
                                 <div><Button
                                     variant="outline-primary"
@@ -166,6 +168,17 @@ function Home() {
                                 </Button></div>
                             </div>
                         </Form.Group>
+
+                        <Form.Group controlId="formNetworkId" className="mt-3">
+                            <Form.Label>Select Network</Form.Label>
+                            <Form.Select
+                                value={newInvoice.networkId}
+                                onChange={(e) => setNewInvoice({...newInvoice, networkId: e.target.value})}
+                            >
+                                <option value={SEPOLIA_OPTIMISM_NETWORK_ID}>Sepolia-Optimism (test)</option>
+                                <option value={OPTIMISM_NETWORK_ID} disabled>Optimism</option>
+                            </Form.Select>
+                        </Form.Group>
                     </Form>
                 </Modal.Body>
                 <Modal.Footer>
@@ -175,7 +188,7 @@ function Home() {
                     <Button
                         variant="primary"
                         onClick={handleCreateInvoice}
-                        disabled={creating || !newInvoice.amount || !newInvoice.seller}
+                        disabled={creating || !newInvoice.amount || !newInvoice.seller || !newInvoice.networkId}
                     >
                         {creating ? 'Creating...' : 'Create Invoice'}
                     </Button>

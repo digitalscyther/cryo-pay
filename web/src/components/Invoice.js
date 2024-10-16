@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, {useEffect, useState} from 'react';
+import {useParams} from 'react-router-dom';
 import axios from 'axios';
 import Web3 from 'web3';
-import { Container, Button, Spinner, Alert } from 'react-bootstrap';
-import { api_url } from "../utils";
+import {Container, Button, Spinner, Alert} from 'react-bootstrap';
+import {api_url, SEPOLIA_OPTIMISM_NETWORK_ID} from "../utils";
 
 function Invoice() {
-    const { invoice_id } = useParams();
+    const {invoice_id} = useParams();
     const [invoice, setInvoice] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -31,7 +31,7 @@ function Invoice() {
         const fetchBlockchainInfo = async () => {
             try {
                 const response = await axios.get(api_url('/blockchain/info'));
-                const { erc20, invoice } = response.data;
+                const {erc20, invoice} = response.data;
 
                 const web3Instance = new Web3(window.ethereum);
                 const erc20ContractInstance = new web3Instance.eth.Contract(erc20.abi, erc20.address);
@@ -41,7 +41,7 @@ function Invoice() {
                 setInvoiceContract(invoiceContractInstance);
                 setWeb3(web3Instance);
 
-                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                const accounts = await window.ethereum.request({method: 'eth_requestAccounts'});
                 setAccount(accounts[0]);
             } catch (err) {
                 setError('Failed to fetch blockchain info or connect to MetaMask');
@@ -53,18 +53,31 @@ function Invoice() {
     }, [invoice_id]);
 
     const handlePayment = async () => {
-        if (!web3 || !account || !invoice || !erc20Contract || !invoiceContract) return;
+        const isValidState = () => web3 && account && invoice && erc20Contract && invoiceContract;
+        const getNetworkId = () => web3.eth.net.getId();
+        const handleApproval = (amount) => () => erc20Contract.methods.approve(invoiceContract._address, amount).send({from: account});
+        const handlePaymentTransaction = (amount) => () => invoiceContract.methods.payInvoice(invoice.seller, invoice_id, amount).send({from: account});
+
+        setError(null);
+        if (!isValidState()) return;
+
+        const processPayment = async (amount) =>
+            handleApproval(amount)()
+                .then(() => console.log('Approval successful'))
+                .then(handlePaymentTransaction(amount))
+                .then(() => console.log('Payment successful'));
 
         try {
+            const networkId = await getNetworkId();
+
+            if (networkId !== SEPOLIA_OPTIMISM_NETWORK_ID) {
+                return setError('Please switch to the correct network');
+            }
+
             setProcessing(true);
             const amount = invoice.amount * (10 ** 6);
 
-            await erc20Contract.methods.approve(invoiceContract._address, amount).send({ from: account });
-            console.log('Approval successful');
-
-            await invoiceContract.methods.payInvoice(invoice.seller, invoice_id, amount).send({ from: account });
-            console.log('Payment successful');
-
+            await processPayment(amount);
             alert('Payment is under processing. It will be marked as paid once everything is fine.');
         } catch (error) {
             console.error('Payment failed', error);
@@ -77,15 +90,7 @@ function Invoice() {
     if (loading) {
         return (
             <Container className="mt-5 text-center">
-                <Spinner animation="border" variant="primary" />
-            </Container>
-        );
-    }
-
-    if (error) {
-        return (
-            <Container className="mt-5">
-                <Alert variant="danger">{error}</Alert>
+                <Spinner animation="border" variant="primary"/>
             </Container>
         );
     }
@@ -95,6 +100,7 @@ function Invoice() {
             <h2>Pay Invoice</h2>
             <p><strong>Invoice ID:</strong> {invoice.id}</p>
             <p><strong>Amount:</strong> {parseFloat(invoice.amount).toFixed(2)} MTK</p>
+            <p><strong>Network:</strong> Sepolia-Optimism (test)</p>
             <p><strong>Seller:</strong> {invoice.seller}</p>
             <p><strong>Created At:</strong> {new Date(invoice.created_at).toLocaleString()}</p>
 
@@ -116,6 +122,9 @@ function Invoice() {
                     )}
                 </>
             )}
+
+            {error && <Alert className="my-3" variant="danger">{error}</Alert>}
+
         </Container>
     );
 }
