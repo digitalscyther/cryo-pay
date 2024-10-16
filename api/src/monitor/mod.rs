@@ -97,7 +97,7 @@ trait BlockGetter {
 impl BlockGetter for Monitor {
     async fn get_block_number(&self) -> Result<U64, String> {
         self.provider.get_block_number().await
-            .map_err(|err| utils::make_err(Box::new(err), "get start block number"))
+            .map_err(|err| utils::make_err(Box::new(err), "get block number"))
     }
 }
 
