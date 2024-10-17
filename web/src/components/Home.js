@@ -1,11 +1,9 @@
 import React, {useEffect, useState} from 'react';
 import axios from 'axios';
 import {Table, Container, Alert, Spinner, Button, Modal, Form} from 'react-bootstrap';
-import {api_url, SEPOLIA_OPTIMISM_NETWORK_ID} from "../utils";
+import {apiUrl, getBlockchainInfo, NETWORKS} from "../utils";
 
 
-const OPTIMISM_NETWORK_ID = 10n;
-const DEFAULT_NETWORK_ID = SEPOLIA_OPTIMISM_NETWORK_ID;
 const PAGE_SIZE = 10;
 
 function Home() {
@@ -13,22 +11,39 @@ function Home() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showModal, setShowModal] = useState(false);
-    const [newInvoice, setNewInvoice] = useState({amount: '', seller: '', networkId: DEFAULT_NETWORK_ID});
+    const [newInvoice, setNewInvoice] = useState({amount: '', seller: '', networks: []});
     const [creating, setCreating] = useState(false);
     const [offset, setOffset] = useState(0);
     const [hasMore, setHasMore] = useState(false);
     const limit = PAGE_SIZE;
+    const [networks, setNetworks] = useState([]);
 
     useEffect(() => {
         setLoading(true);
+
+        const fetchBlockchainInfo = async () => {
+            try {
+                const response = await getBlockchainInfo();
+                const {networks} = response.data;
+                const toSetNetworks = networks.map((item) => item.id);
+
+                setNetworks(toSetNetworks);
+            } catch (err) {
+                setError('Failed to fetch blockchain info');
+            }
+        };
+
+        fetchBlockchainInfo();
+
         axios
-            .get(api_url(`/payment/invoice?limit=${limit}&offset=${offset}`))
+            .get(apiUrl(`/payment/invoice?limit=${limit}&offset=${offset}`))
             .then((response) => {
                 setInvoices(response.data);
                 setHasMore(response.data.length === limit);
                 setLoading(false);
             })
             .catch((err) => {
+                console.log(`Failed get invoices: ${err}`);
                 setError('Failed to fetch invoices');
                 setLoading(false);
             });
@@ -37,17 +52,17 @@ function Home() {
     const handleCreateInvoice = () => {
         setCreating(true);
         axios
-            .post(api_url('/payment/invoice'), {
+            .post(apiUrl('/payment/invoice'), {
                 amount: newInvoice.amount,
                 seller: newInvoice.seller,
-                networkId: newInvoice.networkId.toString(),
+                networks: newInvoice.networks,
             })
             .then((response) => {
                 setInvoices([response.data, ...invoices]);
                 setOffset(0);
                 setCreating(false);
                 setShowModal(false);
-                setNewInvoice({amount: '', seller: '', networkId: DEFAULT_NETWORK_ID});
+                setNewInvoice({amount: '', seller: '', networks: []});
             })
             .catch((err) => {
                 console.log("Failed to create invoice", err);
@@ -196,14 +211,34 @@ function Home() {
                         </Form.Group>
 
                         <Form.Group controlId="formNetworkId" className="mt-3">
-                            <Form.Label>Select Network</Form.Label>
-                            <Form.Select
-                                value={newInvoice.networkId}
-                                onChange={(e) => setNewInvoice({...newInvoice, networkId: e.target.value})}
-                            >
-                                <option value={SEPOLIA_OPTIMISM_NETWORK_ID}>Sepolia-Optimism (test)</option>
-                                <option value={OPTIMISM_NETWORK_ID} disabled>Optimism</option>
-                            </Form.Select>
+                            <Form.Label>Select Network(s)</Form.Label>
+                            <div>
+                                {Object.values(NETWORKS)
+                                    .sort((a, b) => a.order - b.order)
+                                    .map((network) => (
+                                        <Form.Check
+                                            key={network.id}
+                                            type="checkbox"
+                                            label={network.name}
+                                            id={`invoice-network-${network.id}`}
+                                            value={network.id}
+                                            checked={newInvoice.networks.includes(network.id)}
+                                            disabled={!networks.includes(network.id)}
+                                            onChange={(e) => {
+                                                const selectedId = parseInt(e.target.value);
+                                                setNewInvoice((prev) => {
+                                                    const isSelected = prev.networks.includes(selectedId);
+                                                    return {
+                                                        ...prev,
+                                                        networks: isSelected
+                                                            ? prev.networks.filter(id => id !== selectedId) // Deselect
+                                                            : [...prev.networks, selectedId] // Select
+                                                    };
+                                                });
+                                            }}
+                                        />
+                                    ))}
+                            </div>
                         </Form.Group>
                     </Form>
                 </Modal.Body>
@@ -214,7 +249,7 @@ function Home() {
                     <Button
                         variant="primary"
                         onClick={handleCreateInvoice}
-                        disabled={creating || !newInvoice.amount || !newInvoice.seller || !newInvoice.networkId}
+                        disabled={creating || !newInvoice.amount || !newInvoice.seller || newInvoice.networks.length === 0}
                     >
                         {creating ? 'Creating...' : 'Create Invoice'}
                     </Button>

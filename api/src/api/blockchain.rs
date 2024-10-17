@@ -20,15 +20,27 @@ pub fn get_router(app_state: Arc<AppState>) -> Router {
 }
 
 #[derive(Serialize)]
-struct ContractInfo {
-    address: String,
-    abi: serde_json::Value,
+struct Addresses {
+    erc20: String,
+    contract: String,
 }
 
 #[derive(Serialize)]
-struct BlockchainInfo {
-    erc20: ContractInfo,
-    invoice: ContractInfo,
+struct Network {
+    id: i64,
+    addresses: Addresses,
+}
+
+#[derive(Serialize)]
+struct Abi {
+    erc20: serde_json::Value,
+    contract: serde_json::Value,
+}
+
+#[derive(Serialize)]
+struct Info {
+    networks: Vec<Network>,
+    abi: Abi,
 }
 
 async fn get_info() -> Result<impl IntoResponse, StatusCode> {
@@ -36,24 +48,37 @@ async fn get_info() -> Result<impl IntoResponse, StatusCode> {
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?)
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let invoice_abi = load_json_from_file(utils::get_env_var("INVOICE_ABI_PATH")
+    let contract_abi = load_json_from_file(utils::get_env_var("CONTRACT_ABI_PATH")
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?)
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let response = BlockchainInfo {
-        erc20: ContractInfo {
-            address: utils::get_env_var("ERC20_ADDRESS")
-                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?,
-            abi: erc20_abi,
-        },
-        invoice: ContractInfo {
-            address: utils::get_env_var("INVOICE_ADDRESS")
-                .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?,
-            abi: invoice_abi,
+    let response = Info {
+        networks: vec![
+            Network {
+                id: 11155420,
+                addresses: Addresses {
+                    erc20: utils::get_env_var("ERC20_ADDRESS")
+                        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?,
+                    contract: utils::get_env_var("CONTRACT_ADDRESS")
+                        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?,
+                },
+            },
+            Network {   // TODO real optimism
+                id: 10,
+                addresses: Addresses {
+                    erc20: utils::get_env_var("ERC20_ADDRESS")
+                        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?,
+                    contract: utils::get_env_var("CONTRACT_ADDRESS")
+                        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?,
+                },
+            },
+        ],
+        abi: Abi {
+            erc20: erc20_abi,
+            contract: contract_abi,
         },
     };
 
-    // Return the response as JSON
     Ok(Json(response).into_response())
 }
 

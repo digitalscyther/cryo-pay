@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO invoice (amount, seller)\n        VALUES ($1, $2)\n        RETURNING *\n        ",
+  "query": "\n        INSERT INTO invoice (amount, seller, networks)\n        VALUES ($1, $2, $3)\n        RETURNING *\n        ",
   "describe": {
     "columns": [
       {
@@ -32,12 +32,18 @@
         "ordinal": 5,
         "name": "paid_at",
         "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 6,
+        "name": "networks",
+        "type_info": "Int4Array"
       }
     ],
     "parameters": {
       "Left": [
         "Numeric",
-        "Varchar"
+        "Varchar",
+        "Int4Array"
       ]
     },
     "nullable": [
@@ -46,8 +52,9 @@
       false,
       false,
       true,
-      true
+      true,
+      false
     ]
   },
-  "hash": "eb03eac6001f6ae2179faaf26ec1b9dae277dcd4238ad68676576d66737b85ff"
+  "hash": "69347211d5e80624a0bb5de2c92760ad82abb0cca2d213dd9476428593148224"
 }

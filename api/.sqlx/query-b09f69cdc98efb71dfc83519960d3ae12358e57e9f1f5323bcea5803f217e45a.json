@@ -32,6 +32,11 @@
         "ordinal": 5,
         "name": "paid_at",
         "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 6,
+        "name": "networks",
+        "type_info": "Int4Array"
       }
     ],
     "parameters": {
@@ -46,7 +51,8 @@
       false,
       false,
       true,
-      true
+      true,
+      false
     ]
   },
   "hash": "b09f69cdc98efb71dfc83519960d3ae12358e57e9f1f5323bcea5803f217e45a"

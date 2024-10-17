@@ -16,7 +16,7 @@ pub async fn run_monitor<F, Fut>(process_event: F) -> Result<(), String>
         Fut: Future<Output=Result<(), String>>,
 {
     let provider_network_link = "https://optimism-sepolia.infura.io/v3/bf3b7185e9c647cca8a376ccd332ee80";
-    let address_str = utils::get_env_var("INVOICE_ADDRESS")?;
+    let address_str = utils::get_env_var("CONTRACT_ADDRESS")?;
     let event_signature = utils::get_env_var("EVENT_SIGNATURE")?;
     let delay_between_checks = utils::get_env_var("DELAY_BETWEEN_CHECKS")?
         .parse()

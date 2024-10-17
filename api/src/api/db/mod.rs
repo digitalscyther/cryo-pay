@@ -14,6 +14,7 @@ pub struct Invoice {
     pub seller: String,
     pub buyer: Option<String>,
     pub paid_at: Option<NaiveDateTime>,
+    pub networks: Vec<i32>,
 }
 
 pub async fn list_invoices(pg_pool: &PgPool, limit: i64, offset: i64) -> Result<Vec<Invoice>, sqlx::Error> {
@@ -27,16 +28,17 @@ pub async fn list_invoices(pg_pool: &PgPool, limit: i64, offset: i64) -> Result<
     .await
 }
 
-pub async fn create_invoice(pg_pool: &PgPool, amount: BigDecimal, seller: &str) -> Result<Invoice, sqlx::Error> {
+pub async fn create_invoice(pg_pool: &PgPool, amount: BigDecimal, seller: &str, networks: &Vec<i32>) -> Result<Invoice, sqlx::Error> {
     sqlx::query_as!(
         Invoice,
         r#"
-        INSERT INTO invoice (amount, seller)
-        VALUES ($1, $2)
+        INSERT INTO invoice (amount, seller, networks)
+        VALUES ($1, $2, $3)
         RETURNING *
         "#,
         amount,
-        seller.to_lowercase()
+        seller.to_lowercase(),
+        networks,
     )
     .fetch_one(pg_pool)
     .await

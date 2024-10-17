@@ -45,8 +45,8 @@ impl DB {
             .map_err(|err| utils::make_err(Box::new(err), "get invoices"))
     }
 
-    pub async fn create_invoice(&self, amount: BigDecimal, seller: &str) -> Result<Invoice, String> {
-        db::create_invoice(&self.pg_pool, amount, seller)
+    pub async fn create_invoice(&self, amount: BigDecimal, seller: &str, networks: &Vec<i32>) -> Result<Invoice, String> {
+        db::create_invoice(&self.pg_pool, amount, seller, networks)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "create invoice"))
     }

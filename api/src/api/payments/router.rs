@@ -54,13 +54,14 @@ async fn get_invoices_handler(
 struct CreateInvoiceRequest {
     amount: BigDecimal,
     seller: String,
+    networks: Vec<i32>
 }
 
 async fn create_invoice_handler(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<CreateInvoiceRequest>,
 ) -> Result<Json<Invoice>, StatusCode> {
-    let invoice = state.db.create_invoice(payload.amount, &payload.seller)
+    let invoice = state.db.create_invoice(payload.amount, &payload.seller, &payload.networks)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
