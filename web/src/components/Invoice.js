@@ -48,6 +48,8 @@ function Invoice() {
     }, [invoice_id]);
 
     const handlePayment = async () => {
+        const web3 = new Web3(window.ethereum);
+
         const getNetworkId = () => web3.eth.net.getId();
 
         const networkId = Number(await getNetworkId());
@@ -60,7 +62,6 @@ function Invoice() {
         const handleApproval = (amount) => () => erc20Contract.methods.approve(invoiceContract._address, amount).send({from: account});
         const handlePaymentTransaction = (amount) => () => invoiceContract.methods.payInvoice(invoice.seller, invoice_id, amount).send({from: account});
 
-        const web3 = new Web3(window.ethereum);
         const erc20Contract = new web3.eth.Contract(erc20Abi, network.addresses.erc20);
         const invoiceContract = new web3.eth.Contract(contractAbi, network.addresses.contract);
         const accounts = await window.ethereum.request({method: 'eth_requestAccounts'});
