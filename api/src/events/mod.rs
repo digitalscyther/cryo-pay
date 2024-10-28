@@ -6,7 +6,7 @@ use ethers::prelude::*;
 use tracing::info;
 use uuid::Uuid;
 use crate::api::state::DB;
-use crate::monitor::PayInvoiceEvent;
+use crate::monitor::infura::PayInvoiceEvent;
 use crate::utils;
 
 
