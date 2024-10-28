@@ -2,11 +2,10 @@ use std::fmt::Debug;
 use std::sync::Arc;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
-use ethers::prelude::*;
+use ethers::{abi::RawLog, prelude::*};
 use tracing::info;
 use uuid::Uuid;
 use crate::api::state::DB;
-use crate::monitor::PayInvoiceEvent;
 use crate::utils;
 
 
@@ -16,9 +15,20 @@ struct NewTransaction {
     block_timestamp: U256,
 }
 
-pub async fn just_print_log(event: PayInvoiceEvent) -> Result<(), String> {
-    info!("New transaction event: {:?}", event);
-    Ok(())
+#[derive(Debug, Clone, EthEvent)]
+pub struct PayInvoiceEvent {
+    pub invoice_id: String,
+    #[ethevent(indexed)]
+    pub seller: Address,
+    #[ethevent(indexed)]
+    pub payer: Address,
+    pub paid_at: U128,
+    pub amount: U128,
+}
+
+pub async fn just_print_log(log: Log) -> Result<(), String> {
+    parse_event(log)
+        .map(|event| info!("New transaction event: {:?}", event))
 }
 
 
@@ -39,4 +49,15 @@ pub async fn set_invoice_paid(postgres_db: Arc<DB>, event: PayInvoiceEvent) -> R
     ).await?;
 
     Ok(())
+}
+
+pub fn parse_event(log: Log) -> Result<PayInvoiceEvent, String> {
+    let log: RawLog = log.into();
+    <PayInvoiceEvent as EthEvent>::decode_log(&log)
+        .map_err(|err| utils::make_err(Box::new(err), "decode log"))
+}
+
+pub async fn process_log(db: Arc<DB>, log: Log) -> Result<(), String> {
+    let event = parse_event(log)?;
+    set_invoice_paid(db, event).await
 }

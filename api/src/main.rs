@@ -13,9 +13,9 @@ async fn main() -> Result<(), String> {
 
     let monitor_handle = match test {
         false => tokio::spawn(async move {
-            let _ = monitor::run_monitor(move |event| {
+            let _ = monitor::run_monitor(move |log| {
                 let postgres_db = Arc::clone(&postgres_db);
-                events::set_invoice_paid(postgres_db, event)
+                events::process_log(postgres_db, log)
             }).await;
         }),
         true => tokio::spawn(async move {
