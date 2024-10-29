@@ -1,30 +1,31 @@
 use std::sync::Arc;
+use tracing::Level;
 
 mod monitor;
 mod utils;
 mod api;
 mod events;
+mod network;
 
 #[tokio::main]
 async fn main() -> Result<(), String> {
+    tracing_subscriber::fmt().json()
+        .with_max_level(Level::ERROR)
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .init();
+
     let test = false;
 
-    let postgres_db = Arc::new(api::state::DB::new().await?);
+    let networks = network::Network::vec_from_env("NETWORKS")?;
+    let db = api::state::DB::new().await?;
 
-    let monitor_handle = match test {
-        false => tokio::spawn(async move {
-            let _ = monitor::run_monitor(move |log| {
-                let postgres_db = Arc::clone(&postgres_db);
-                events::process_log(postgres_db, log)
-            }).await;
-        }),
-        true => tokio::spawn(async move {
-            let _ = monitor::run_monitor(events::just_print_log).await;
-        })
-    };
+    let monitor_networks = networks.clone();
+    let monitor_handle = tokio::spawn(async move {
+        monitor::run_monitor(test, monitor_networks, Arc::new(db)).await
+    });
 
     let api_handle = tokio::spawn(async move {
-        api::run_api().await
+        api::run_api(networks).await
     });
 
     let _ = tokio::join!(api_handle, monitor_handle);

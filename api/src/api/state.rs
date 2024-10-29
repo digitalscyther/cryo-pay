@@ -6,12 +6,13 @@ use tracing::info;
 use uuid::Uuid;
 use crate::api::db;
 use crate::api::db::Invoice;
+use crate::network::Network;
 use crate::utils;
 use crate::utils::get_env_var;
 
-pub async fn setup_app_state() -> Result<AppState, String> {
+pub async fn setup_app_state(networks: Vec<Network>) -> Result<AppState, String> {
     let db = DB::new().await?;
-    Ok(AppState { db })
+    Ok(AppState { db, networks })
 }
 
 #[derive(Clone)]
@@ -22,6 +23,7 @@ pub struct DB {
 #[derive(Clone)]
 pub struct AppState {
     pub db: DB,
+    pub networks: Vec<Network>
 }
 
 impl DB {

@@ -6,10 +6,12 @@ use std::sync::Arc;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Json, Router};
+use axum::extract::State;
 use axum::routing::{get};
 use serde::Serialize;
 use crate::api::ping_pong::ping_pong;
 use crate::api::state::AppState;
+use crate::network::{Addresses, Network};
 use crate::utils;
 
 pub fn get_router(app_state: Arc<AppState>) -> Router {
@@ -20,18 +22,6 @@ pub fn get_router(app_state: Arc<AppState>) -> Router {
 }
 
 #[derive(Serialize)]
-struct Addresses {
-    erc20: String,
-    contract: String,
-}
-
-#[derive(Serialize)]
-struct Network {
-    id: i64,
-    addresses: Addresses,
-}
-
-#[derive(Serialize)]
 struct Abi {
     erc20: serde_json::Value,
     contract: serde_json::Value,
@@ -39,11 +29,13 @@ struct Abi {
 
 #[derive(Serialize)]
 struct Info {
-    networks: Vec<Network>,
+    networks: Vec<BlockChainNetwork>,
     abi: Abi,
 }
 
-async fn get_info() -> Result<impl IntoResponse, StatusCode> {
+async fn get_info(
+    State(state): State<Arc<AppState>>
+) -> Result<impl IntoResponse, StatusCode> {
     let erc20_abi = load_json_from_file(utils::get_env_var("ERC20_ABI_PATH")
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?)
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
@@ -53,26 +45,11 @@ async fn get_info() -> Result<impl IntoResponse, StatusCode> {
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let response = Info {
-        networks: vec![
-            Network {
-                id: 11155420,
-                addresses: Addresses {
-                    erc20: utils::get_env_var("ERC20_ADDRESS")
-                        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?,
-                    contract: utils::get_env_var("CONTRACT_ADDRESS")
-                        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?,
-                },
-            },
-            Network {   // TODO real optimism
-                id: 10,
-                addresses: Addresses {
-                    erc20: utils::get_env_var("ERC20_ADDRESS")
-                        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?,
-                    contract: utils::get_env_var("CONTRACT_ADDRESS")
-                        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?,
-                },
-            },
-        ],
+        networks: state.networks
+            .clone()
+            .into_iter()
+            .map(BlockChainNetwork::from)
+            .collect(),
         abi: Abi {
             erc20: erc20_abi,
             contract: contract_abi,
@@ -80,6 +57,23 @@ async fn get_info() -> Result<impl IntoResponse, StatusCode> {
     };
 
     Ok(Json(response).into_response())
+}
+
+#[derive(Serialize)]
+struct BlockChainNetwork {
+    pub name: String,
+    pub id: i64,
+    pub addresses: Addresses
+}
+
+impl From<Network> for BlockChainNetwork {
+    fn from(n: Network) -> Self {
+        Self {
+            name: n.name,
+            id: n.id,
+            addresses: n.addresses,
+        }
+    }
 }
 
 fn load_json_from_file<P: AsRef<Path>>(path: P) -> Result<serde_json::Value, io::Error> {

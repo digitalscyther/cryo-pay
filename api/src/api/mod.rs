@@ -9,18 +9,14 @@ use axum::Router;
 use axum::routing::get;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::TraceLayer;
-use tracing::{info, Level};
+use tracing::info;
 
 use ping_pong::ping_pong;
+use crate::network::Network;
 use crate::utils;
 
-pub async fn run_api() -> Result<(), String> {
-    tracing_subscriber::fmt().json()
-        .with_max_level(Level::ERROR)
-        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
-        .init();
-
-    let app_state = state::setup_app_state().await.expect("Failed to build AppState");
+pub async fn run_api(networks: Vec<Network>) -> Result<(), String> {
+    let app_state = state::setup_app_state(networks).await?;
     app_state.db.run_migrations()
         .await
         .map_err(|err| utils::make_err(Box::new(err), "run migrations"))?;
@@ -47,9 +43,10 @@ pub async fn run_api() -> Result<(), String> {
     info!("Listening on {}", bind_address);
     let listener = tokio::net::TcpListener::bind(bind_address)
         .await
-        .expect("Failed init listener");
+        .map_err(|err| utils::make_err(Box::new(err), "init listener"))?;
 
-    axum::serve(listener, router.into_make_service()).await.expect("Failed start serving");
+    axum::serve(listener, router.into_make_service()).await
+        .map_err(|err| utils::make_err(Box::new(err), "start serving"))?;
 
     Ok(())
 }

@@ -59,8 +59,22 @@ function Invoice() {
         }
 
         const isValidState = () => web3 && account && invoice && erc20Contract && invoiceContract;
-        const handleApproval = (amount) => () => erc20Contract.methods.approve(invoiceContract._address, amount).send({from: account});
-        const handlePaymentTransaction = (amount) => () => invoiceContract.methods.payInvoice(invoice.seller, invoice_id, amount).send({from: account});
+        const handleApproval = async (amount) => {
+            const gasEstimate = await erc20Contract.methods.approve(invoiceContract._address, amount).estimateGas({from: account});
+
+            await erc20Contract.methods.approve(invoiceContract._address, amount).send({
+                from: account,
+                gas: gasEstimate
+            });
+        };
+        const handlePaymentTransaction = async (amount) => {
+            const gasEstimate = await invoiceContract.methods.payInvoice(invoice.seller, invoice_id, amount).estimateGas({from: account});
+
+            await invoiceContract.methods.payInvoice(invoice.seller, invoice_id, amount).send({
+                from: account,
+                gas: gasEstimate
+            });
+        };
 
         const erc20Contract = new web3.eth.Contract(erc20Abi, network.addresses.erc20);
         const invoiceContract = new web3.eth.Contract(contractAbi, network.addresses.contract);
@@ -70,11 +84,17 @@ function Invoice() {
         setError(null);
         if (!isValidState()) return;
 
-        const processPayment = async (amount) =>
-            handleApproval(amount)()
-                .then(() => console.log('Approval successful'))
-                .then(handlePaymentTransaction(amount))
-                .then(() => console.log('Payment successful'));
+        const processPayment = async (amount) => {
+            try {
+                await handleApproval(amount);
+                console.log('Approval successful');
+
+                await handlePaymentTransaction(amount);
+                console.log('Payment successful');
+            } catch (error) {
+                console.error('Error in processing payment:', error);
+            }
+        };
 
         try {
             setProcessing(true);

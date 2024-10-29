@@ -88,6 +88,7 @@ dependencies = [
  "bigdecimal",
  "chrono",
  "ethers",
+ "futures",
  "serde",
  "serde_json",
  "sqlx",
