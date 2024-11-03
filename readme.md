@@ -19,3 +19,25 @@ CONTRACT_ABI_PATH=/opt/data/invoice_abi.json
 EVENT_SIGNATURE=PayInvoiceEvent(string,address,address,uint128,uint128)
 NETWORKS=[{"name":"optimism-sepolia","id":11155420,"link":"https://optimism-sepolia.infura.io/v3/foo","addresses":{"erc20":"0x9A211fD6C60BdC4Cc1dB22cBe2f882ae527B1D87","contract":"..."}},{"name":"optimism","id":10,"link":"https://optimism-mainnet.infura.io/v3/foo","addresses":{"erc20":"0x94b008aa00579c1307b0ef2c499ad98a8ce58e58","contract":"..."}}]
 ```
+
+## TODO
+
+### Must-Have
+- Improve the smart contract to retain a commission of 0.3-1%, remaining on the contract
+- Add logic to recheck missed blocks due to network failures
+- Implement OAuth2 authorization for sellers
+- Set up notifications about payment statuses for sellers via email and Telegram
+- Add support for Arbitrum and Base networks
+
+### Nice-to-Have
+- Add basic statistics for sellers (number of transactions, total amounts for a period)
+- Automate QR code generation for invoices
+- Set up storage for sellers' contact information for sending notifications
+- Create a landing page with a service description and usage instructions
+
+### Optional
+- Add the ability to create invoices in bulk (e.g., for sellers with a large number of small orders)
+- Integrate a simple widget for embedding on sellers' websites (e.g., HTML code for a payment button)
+- Implement export of reports (CSV, PDF) for sellers
+- Add the ability to customize notification frequency (e.g., immediately upon payment or once a day)
+- Include a privacy policy and terms of use
