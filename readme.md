@@ -23,21 +23,21 @@ NETWORKS=[{"name":"optimism-sepolia","id":11155420,"link":"https://optimism-sepo
 ## TODO
 
 ### Must-Have
-- Improve the smart contract to retain a commission of 0.3-1%, remaining on the contract
-- Add logic to recheck missed blocks due to network failures
-- Implement OAuth2 authorization for sellers
-- Set up notifications about payment statuses for sellers via email and Telegram
-- Add support for Arbitrum and Base networks
+- [x] Improve the smart contract to retain a commission of 0.3-1%, remaining on the contract
+- [ ] Add logic to recheck missed blocks due to network failures
+- [ ] Implement OAuth2 authorization for sellers
+- [ ] Set up notifications about payment statuses for sellers via email and Telegram
+- [ ] Add support for Arbitrum and Base networks
 
 ### Nice-to-Have
-- Add basic statistics for sellers (number of transactions, total amounts for a period)
-- Automate QR code generation for invoices
-- Set up storage for sellers' contact information for sending notifications
-- Create a landing page with a service description and usage instructions
+- [ ] Add basic statistics for sellers (number of transactions, total amounts for a period)
+- [ ] Automate QR code generation for invoices
+- [ ] Set up storage for sellers' contact information for sending notifications
+- [ ] Create a landing page with a service description and usage instructions
 
 ### Optional
-- Add the ability to create invoices in bulk (e.g., for sellers with a large number of small orders)
-- Integrate a simple widget for embedding on sellers' websites (e.g., HTML code for a payment button)
-- Implement export of reports (CSV, PDF) for sellers
-- Add the ability to customize notification frequency (e.g., immediately upon payment or once a day)
-- Include a privacy policy and terms of use
+- [ ] Add the ability to create invoices in bulk (e.g., for sellers with a large number of small orders)
+- [ ] Integrate a simple widget for embedding on sellers' websites (e.g., HTML code for a payment button)
+- [ ] Implement export of reports (CSV, PDF) for sellers
+- [ ] Add the ability to customize notification frequency (e.g., immediately upon payment or once a day)
+- [ ] Include a privacy policy and terms of use
