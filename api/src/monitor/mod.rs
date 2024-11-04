@@ -13,7 +13,19 @@ use crate::{events, utils};
 use crate::api::state::DB;
 use crate::network::Network;
 
-async fn get_last_block(provider: &Provider<Http>, sender: &Sender<GetFromInfuraParams>) -> Result<U64, String> {
+async fn get_last_block(db: &Arc<DB>, network: &str, provider: &Provider<Http>, sender: &Sender<GetFromInfuraParams>) -> Result<U64, String> {
+    Ok(match db.get_block_number(&network).await {
+        Ok(Some(block_number)) => U64([block_number as u64]),
+        need_get_new => {
+            need_get_new?;
+            let block = get_last_block_from_network(provider, sender).await?;
+            db.set_block_number(&network, block.0[0] as i64).await?;
+            block
+        },
+    })
+}
+
+async fn get_last_block_from_network(provider: &Provider<Http>, sender: &Sender<GetFromInfuraParams>) -> Result<U64, String> {
     let (resp_tx, resp_rx) = bounded(1);
     sender
         .send(GetFromInfuraParams::new(GetObject::GetLastBlock, provider.clone(), resp_tx))
@@ -57,10 +69,10 @@ impl Env {
         let provider = Provider::<Http>::try_from(network.link)
             .map_err(|err| utils::make_err(Box::new(err), "create provider"))?;
 
-        let mut last_block_number = get_last_block(&provider, &sender).await?;
+        let mut last_block_number = get_last_block(&db, &network.name, &provider, &sender).await?;
 
         loop {
-            let new_block_number = get_last_block(&provider, &sender).await?;
+            let new_block_number = get_last_block_from_network(&provider, &sender).await?;
             if new_block_number <= last_block_number {
                 continue;
             }
@@ -87,6 +99,7 @@ impl Env {
             }
 
             last_block_number = new_block_number;
+            db.set_block_number(&network.name, last_block_number.0[0] as i64).await?;
         }
     }
 }

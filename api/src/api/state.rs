@@ -2,7 +2,6 @@ use bigdecimal::BigDecimal;
 use chrono::NaiveDateTime;
 use sqlx::migrate::MigrateError;
 use sqlx::PgPool;
-use tracing::info;
 use uuid::Uuid;
 use crate::api::db;
 use crate::api::db::Invoice;
@@ -64,8 +63,18 @@ impl DB {
             .await
             .map_err(|err| utils::make_err(Box::new(err), "set invoice paid"))?;
 
-        info!("Invoice {} set paid", id);
-
         return Ok(invoice);
+    }
+
+    pub async fn get_block_number(&self, network: &str) -> Result<Option<i64>, String> {
+        db::get_block_number(&self.pg_pool, network)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "get block number"))
+    }
+
+    pub async fn set_block_number(&self, network: &str, block_number: i64) -> Result<(), String> {
+        db::create_or_update_block_number(&self.pg_pool, network, block_number)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "get block number"))
     }
 }

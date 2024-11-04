@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO network_monitor (network, block_number)\n        VALUES ($1, $2)\n        ON CONFLICT (network) DO UPDATE\n        SET block_number = EXCLUDED.block_number\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "da985669d1bc59601ba8e495324cc254617be1bf2d203f07814a93a723af8164"
+}
