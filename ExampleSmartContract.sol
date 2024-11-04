@@ -2,6 +2,7 @@
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 pragma solidity >=0.8.2 <0.9.0;
 
@@ -17,7 +18,7 @@ contract MyToken is ERC20 {
 }
 
 
-contract InvoicePayment {
+contract InvoicePayment is Ownable {
     address public tokenAddress;
 
     event PayInvoiceEvent(
@@ -28,7 +29,7 @@ contract InvoicePayment {
         uint128 amount
     );
 
-    constructor(address _tokenAddress) {
+    constructor(address _tokenAddress) Ownable(msg.sender) {
         tokenAddress = _tokenAddress;
     }
 
@@ -38,9 +39,24 @@ contract InvoicePayment {
         uint256 allowedAmount = token.allowance(msg.sender, address(this));
         require(allowedAmount >= amount, "Not enough allowance for transfer");
 
-        bool success = token.transferFrom(msg.sender, seller, amount);
-        require(success, "Transfer failed");
+        uint256 fee = (amount * 5) / 1000; // 0.5% fee
+        uint256 amountAfterFee = amount - fee;
 
-        emit PayInvoiceEvent(invoice_id, seller, msg.sender, uint128(block.timestamp), uint128(amount));
+        bool success = token.transferFrom(msg.sender, seller, amountAfterFee);
+        require(success, "Transfer to seller failed");
+
+        success = token.transferFrom(msg.sender, address(this), fee);
+        require(success, "Transfer of fee failed");
+
+        emit PayInvoiceEvent(invoice_id, seller, msg.sender, uint128(block.timestamp), uint128(amountAfterFee));
+    }
+
+    function extractFees() external onlyOwner {
+        IERC20 token = IERC20(tokenAddress);
+        uint256 balance = token.balanceOf(address(this));
+        require(balance > 0, "No fees to extract");
+
+        bool success = token.transfer(owner(), balance);
+        require(success, "Fee extraction failed");
     }
 }
