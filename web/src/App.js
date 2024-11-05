@@ -1,14 +1,22 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { Route, Routes, useNavigate } from 'react-router-dom';
 import { Container, Navbar, Nav } from 'react-bootstrap';
 import Home from './components/Home';
 import About from './components/About';
 import Contact from './components/Contact';
 import Invoice from './components/Invoice';
+import Auth from './components/Auth';
 
 function App() {
+  const navigate = useNavigate();
+
+  const handleLogin = (token) => {
+        console.log('authToken', token);
+        navigate('/');
+  };
+
   return (
-    <Router>
+    <>
       <Navbar bg="dark" variant="dark" expand="lg">
         <Container>
           <Navbar.Brand href="/">MyApp</Navbar.Brand>
@@ -18,6 +26,7 @@ function App() {
               <Nav.Link href="/">Home</Nav.Link>
               <Nav.Link href="/about">About</Nav.Link>
               <Nav.Link href="/contact">Contact</Nav.Link>
+              <Nav.Link href="/login">Login</Nav.Link>
             </Nav>
           </Navbar.Collapse>
         </Container>
@@ -29,9 +38,10 @@ function App() {
           <Route path="/invoices/:invoice_id" element={<Invoice />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/login" element={<Auth onLogin={handleLogin} />} />
         </Routes>
       </Container>
-    </Router>
+    </>
   );
 }
 
