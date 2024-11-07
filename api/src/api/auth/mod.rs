@@ -8,7 +8,7 @@ use axum_extra::extract::cookie::{Cookie, CookieJar, SameSite};
 use serde::Deserialize;
 use time::Duration;
 use tracing::{debug, warn};
-use crate::api::middleware::{extract_jwt, log_jwt, User};
+use crate::api::middleware::{extract_jwt, log_jwt, MaybeUser};
 use crate::api::ping_pong::ping_pong;
 use crate::api::state::{AppState, VerifyError};
 
@@ -59,7 +59,7 @@ async fn login(
 
 async fn logout(
     jar: CookieJar,
-    Extension(user): Extension<Option<User>>,
+    Extension(user): Extension<MaybeUser>,
 ) -> impl IntoResponse {
     if user.is_none() {
         return Err(StatusCode::OK);
