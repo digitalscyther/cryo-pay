@@ -8,7 +8,7 @@ use axum_extra::extract::cookie::{Cookie, CookieJar, SameSite};
 use serde::Deserialize;
 use time::Duration;
 use tracing::{debug, warn};
-use crate::api::middleware::{extract_jwt, User};
+use crate::api::middleware::{extract_jwt, log_jwt, User};
 use crate::api::ping_pong::ping_pong;
 use crate::api::state::{AppState, VerifyError};
 
@@ -16,8 +16,9 @@ pub fn get_router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route("/ping", get(ping_pong))
         .route("/login", post(login))
-        .route("/logout", post(logout))
-        .layer(middleware::from_fn_with_state(app_state.clone(), extract_jwt))
+        .route("/logout", post(logout)
+            .layer(middleware::from_fn(log_jwt))
+            .layer(middleware::from_fn_with_state(app_state.clone(), extract_jwt)))
         .with_state(app_state)
 }
 
@@ -58,10 +59,10 @@ async fn login(
 
 async fn logout(
     jar: CookieJar,
-    Extension(user): Extension<Option<User>>
+    Extension(user): Extension<Option<User>>,
 ) -> impl IntoResponse {
     if user.is_none() {
-        return Err(StatusCode::OK)
+        return Err(StatusCode::OK);
     }
 
     let mut cookie = Cookie::new("jwt", "");

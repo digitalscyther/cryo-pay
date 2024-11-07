@@ -1,11 +1,13 @@
 use std::sync::Arc;
+use axum::Extension;
 use axum::extract::{Request, State};
 use axum::middleware::Next;
 use axum::response::IntoResponse;
 use axum_extra::extract::cookie::Cookie;
+use tracing::info;
 use crate::api::state::AppState;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct User {
     id: String
 }
@@ -23,5 +25,14 @@ pub async fn extract_jwt(
         .map(|claims| User { id: claims.sub });
 
     req.extensions_mut().insert(user);
+    next.run(req).await
+}
+
+pub async fn log_jwt(
+    Extension(user): Extension<Option<User>>,
+    req: Request,
+    next: Next,
+) -> impl IntoResponse {
+    info!("user_id: {:?}", user.and_then(|u| Some(u.id)));
     next.run(req).await
 }
