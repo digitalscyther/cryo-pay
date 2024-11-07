@@ -1,6 +1,8 @@
 use bigdecimal::BigDecimal;
 use chrono::NaiveDateTime;
+use jsonwebtoken::{Algorithm, decode, DecodingKey, encode, EncodingKey, Header, Validation};
 use rs_firebase_admin_sdk::{credentials_provider, App, GcpCredentials, auth::token::{error::TokenVerificationError, jwt::JWToken, TokenVerifier}};
+use serde::{Deserialize, Serialize};
 use sqlx::migrate::MigrateError;
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -13,7 +15,8 @@ use crate::utils::get_env_var;
 pub async fn setup_app_state(networks: Vec<Network>) -> Result<AppState, String> {
     let db = DB::new().await?;
     let gc = GC::new().await?;
-    Ok(AppState { db, networks, gc, jwt_secret: "your_secret_key".to_string() })
+    let jwt = JWT::new()?;
+    Ok(AppState { db, networks, gc, jwt })
 }
 
 #[derive(Clone)]
@@ -27,11 +30,57 @@ pub struct GC {
 }
 
 #[derive(Clone)]
+pub struct JWT {
+    secret: String
+}
+
+#[derive(Clone)]
 pub struct AppState {
     pub db: DB,
     pub networks: Vec<Network>,
     pub gc: GC,
-    pub jwt_secret: String,
+    pub jwt: JWT,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Claims {
+    pub sub: String,
+    exp: usize,
+}
+
+impl Claims {
+    fn from_jwt(token: &str, secret: &str) -> Result<Self, String> {
+        let decoding_key = DecodingKey::from_secret(secret.as_ref());
+        let token_data = decode::<Claims>(token, &decoding_key, &Validation::new(Algorithm::HS256))
+            .map_err(|err| utils::make_err(Box::new(err), "decode jwt"))?;
+        Ok(token_data.claims)
+    }
+}
+
+impl JWT {
+    fn new() -> Result<Self, String> {
+        let secret = get_env_var("APP_SECRET")?;
+
+        Ok(JWT{ secret })
+    }
+
+    pub fn generate(&self, user_id: String) -> Result<String, jsonwebtoken::errors::Error> {
+        let expiration = chrono::Utc::now()
+            .checked_add_signed(chrono::Duration::hours(24))
+            .expect("valid timestamp")
+            .timestamp() as usize;
+
+        let claims = Claims {
+            sub: user_id,
+            exp: expiration,
+        };
+
+        encode(&Header::default(), &claims, &EncodingKey::from_secret(self.secret.as_bytes()))
+    }
+
+    pub fn claims_from_jwt(&self, jwt: &str) -> Result<Claims, String> {
+        Claims::from_jwt(jwt, &self.secret)
+    }
 }
 
 impl DB {

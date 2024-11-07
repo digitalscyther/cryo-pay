@@ -4,6 +4,7 @@ mod db;
 mod payments;
 mod blockchain;
 mod auth;
+mod middleware;
 
 use std::sync::Arc;
 use axum::Router;

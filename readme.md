@@ -38,7 +38,7 @@ INFRA_RPM=1
 - [ ] Implement ~~OAuth2~~ authorization for sellers
   - [x] Add Firebase
   - [x] Add self JWT
-  - [ ] Refactor
+  - [x] Refactor
   - [ ] Integrate user_id for invoices
   - [ ] Reset Firebase first token
 - [ ] Set up notifications about payment statuses for sellers via email and Telegram
