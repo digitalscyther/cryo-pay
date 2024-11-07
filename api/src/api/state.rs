@@ -1,5 +1,6 @@
 use bigdecimal::BigDecimal;
 use chrono::NaiveDateTime;
+use rs_firebase_admin_sdk::{credentials_provider, App, GcpCredentials, auth::token::{error::TokenVerificationError, jwt::JWToken, TokenVerifier}};
 use sqlx::migrate::MigrateError;
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -11,7 +12,8 @@ use crate::utils::get_env_var;
 
 pub async fn setup_app_state(networks: Vec<Network>) -> Result<AppState, String> {
     let db = DB::new().await?;
-    Ok(AppState { db, networks })
+    let gc = GC::new().await?;
+    Ok(AppState { db, networks, gc, jwt_secret: "your_secret_key".to_string() })
 }
 
 #[derive(Clone)]
@@ -20,9 +22,16 @@ pub struct DB {
 }
 
 #[derive(Clone)]
+pub struct GC {
+    credentials: GcpCredentials,
+}
+
+#[derive(Clone)]
 pub struct AppState {
     pub db: DB,
-    pub networks: Vec<Network>
+    pub networks: Vec<Network>,
+    pub gc: GC,
+    pub jwt_secret: String,
 }
 
 impl DB {
@@ -77,4 +86,38 @@ impl DB {
             .await
             .map_err(|err| utils::make_err(Box::new(err), "get block number"))
     }
+}
+
+impl GC {
+    async fn new() -> Result<Self, String> {
+        let credentials = credentials_provider()
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "get google cloud provider"))?;
+        return Ok(Self { credentials });
+    }
+    pub async fn get_verified_token(&self, token: &str) -> Result<JWToken, VerifyError> {
+        let live_app = App::live(self.credentials.to_owned())
+            .await
+            .map_err(|err| VerifyError::Unexpected(
+                utils::make_err(Box::new(err.current_context().clone()),
+                                "build live app")
+            ))?;
+        let verifier = live_app.id_token_verifier()
+            .await
+            .map_err(|err| VerifyError::Unexpected(
+                utils::make_err(Box::new(err.current_context().clone()),
+                                "get verifier")
+            ))?;
+
+        match verifier.verify_token(token).await {
+            Ok(token) => Ok(token),
+            Err(err) => Err(VerifyError::Verification(err.current_context().clone()))
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum VerifyError {
+    Verification(TokenVerificationError),
+    Unexpected(String),
 }

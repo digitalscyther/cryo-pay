@@ -1,47 +1,31 @@
 import React, { useState } from 'react';
 import { Form, Button, Container, Card, Alert } from 'react-bootstrap';
-import { auth, signInWithEmailAndPassword, createUserWithEmailAndPassword, googleProvider, appleProvider, signInWithPopup } from '../firebase';
-
-const APPLE_LOGIN = false;
+import { auth, signInWithEmailAndPassword, createUserWithEmailAndPassword, getFirebaseErrorMessage } from '../firebase';
 
 function Auth({ onLogin }) {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [formData, setFormData] = useState({ email: '', password: '', confirmPassword: '' });
     const [error, setError] = useState('');
     const [isSignUp, setIsSignUp] = useState(false);
 
+    const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+    const toggleMode = () => { setIsSignUp(!isSignUp); setError(''); };
+
     const handleEmailAuth = async () => {
-        try {
-            let userCredential;
-            if (isSignUp) {
-                userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            } else {
-                userCredential = await signInWithEmailAndPassword(auth, email, password);
-            }
-            const idToken = await userCredential.user.getIdToken();
-            onLogin(idToken);
-        } catch (error) {
-            setError(error.message);
-        }
-    };
+        const { email, password, confirmPassword } = formData;
+        setError('');
 
-    const handleGoogleSignIn = async () => {
-        try {
-            const result = await signInWithPopup(auth, googleProvider);
-            const idToken = await result.user.getIdToken();
-            onLogin(idToken);
-        } catch (error) {
-            setError(error.message);
-        }
-    };
+        if (!email.trim()) return setError('Please enter your email');
+        if (!password.trim()) return setError('Please enter your password');
+        if (isSignUp && (password.length < 6 || password !== confirmPassword))
+            return setError(password.length < 6 ? 'Password must be at least 6 characters' : 'Passwords do not match');
 
-    const handleAppleSignIn = async () => {
         try {
-            const result = await signInWithPopup(auth, appleProvider);
-            const idToken = await result.user.getIdToken();
-            onLogin(idToken);
+            const userCredential = isSignUp
+                ? await createUserWithEmailAndPassword(auth, email, password)
+                : await signInWithEmailAndPassword(auth, email, password);
+            onLogin(await userCredential.user.getIdToken());
         } catch (error) {
-            setError(error.message);
+            setError(getFirebaseErrorMessage(error));
         }
     };
 
@@ -50,7 +34,6 @@ function Auth({ onLogin }) {
             <Card style={{ width: '100%', maxWidth: '400px' }}>
                 <Card.Body>
                     <h2 className="text-center mb-4">{isSignUp ? 'Sign Up' : 'Login'}</h2>
-
                     {error && <Alert variant="danger">{error}</Alert>}
 
                     <Form>
@@ -59,8 +42,10 @@ function Auth({ onLogin }) {
                             <Form.Control
                                 type="email"
                                 placeholder="Enter email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                name="email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                isInvalid={isSignUp && !formData.email.trim()}
                             />
                         </Form.Group>
 
@@ -69,32 +54,41 @@ function Auth({ onLogin }) {
                             <Form.Control
                                 type="password"
                                 placeholder="Password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
+                                name="password"
+                                value={formData.password}
+                                onChange={handleChange}
+                                isInvalid={isSignUp && formData.password.length > 0 && formData.password.length < 6}
                             />
                         </Form.Group>
 
-                        <Button variant="primary" className="w-100 mt-4" onClick={handleEmailAuth}>
+                        {isSignUp && (
+                            <Form.Group controlId="formConfirmPassword" className="mt-3">
+                                <Form.Label>Confirm Password</Form.Label>
+                                <Form.Control
+                                    type="password"
+                                    placeholder="Confirm Password"
+                                    name="confirmPassword"
+                                    value={formData.confirmPassword}
+                                    onChange={handleChange}
+                                    isInvalid={formData.password !== formData.confirmPassword}
+                                />
+                            </Form.Group>
+                        )}
+
+                        <Button
+                            variant="primary"
+                            className="w-100 mt-4"
+                            onClick={handleEmailAuth}
+                            disabled={isSignUp && formData.password !== formData.confirmPassword}
+                        >
                             {isSignUp ? 'Sign Up' : 'Login'}
                         </Button>
-
-                        <hr className="my-4" />
-
-                        <Button variant="outline-primary" className="w-100 mb-2" onClick={handleGoogleSignIn}>
-                            Sign in with Google
-                        </Button>
-
-                        {APPLE_LOGIN && (
-                            <Button variant="outline-secondary" className="w-100 mb-2" onClick={handleAppleSignIn}>
-                                Sign in with Apple
-                            </Button>
-                        )}
                     </Form>
 
                     <div className="text-center mt-3">
                         <small>
                             {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
-                            <Button variant="link" onClick={() => setIsSignUp(!isSignUp)}>
+                            <Button variant="link" onClick={toggleMode}>
                                 {isSignUp ? 'Login' : 'Sign Up'}
                             </Button>
                         </small>

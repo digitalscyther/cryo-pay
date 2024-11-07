@@ -1,6 +1,7 @@
 ### run
 
 #### docker compose
+add config (with private key) to api/firebaseConfig.json
 add config to web/src/firebaseConfig.json
 
 ```text
@@ -34,7 +35,12 @@ INFRA_RPM=1
 ### Must-Have
 - [x] Improve the smart contract to retain a commission of 0.3-1%, remaining on the contract
 - [x] Add logic to recheck missed blocks due to network failures
-- [ ] Implement OAuth2 authorization for sellers
+- [ ] Implement ~~OAuth2~~ authorization for sellers
+  - [x] Add Firebase
+  - [x] Add self JWT
+  - [ ] Refactor
+  - [ ] Integrate user_id for invoices
+  - [ ] Reset Firebase first token
 - [ ] Set up notifications about payment statuses for sellers via email and Telegram
 - [ ] Add support for Arbitrum and Base networks
 
