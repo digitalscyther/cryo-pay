@@ -19,7 +19,7 @@ function Invoice() {
         const fetchInvoice = async () => {
             try {
                 const response = await axios.get(apiUrl(`/payment/invoice/${invoice_id}`));
-                setInvoice(response.data);
+                setInvoice(response.data.invoice);
             } catch (err) {
                 setError('Failed to fetch invoice data');
             } finally {

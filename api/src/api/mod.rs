@@ -9,7 +9,7 @@ mod middleware;
 use std::sync::Arc;
 use axum::Router;
 use axum::routing::get;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::{CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::info;
 
@@ -33,10 +33,7 @@ pub async fn run_api(networks: Vec<Network>) -> Result<(), String> {
 
     if Some("1") == utils::get_env_or("DEBUG", "0".to_string()).ok().as_deref() {
         info!("will be allowed any cors");
-        let cors = CorsLayer::new()
-            .allow_origin(Any)
-            .allow_methods(Any)
-            .allow_headers(Any);
+        let cors = CorsLayer::very_permissive();
         router = router.layer(cors);
     }
 

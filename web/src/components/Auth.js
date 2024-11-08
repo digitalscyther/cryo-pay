@@ -43,6 +43,7 @@ function Auth({ onLogin }) {
                                 type="email"
                                 placeholder="Enter email"
                                 name="email"
+                                autocomplete="off"
                                 value={formData.email}
                                 onChange={handleChange}
                                 isInvalid={isSignUp && !formData.email.trim()}
@@ -55,6 +56,7 @@ function Auth({ onLogin }) {
                                 type="password"
                                 placeholder="Password"
                                 name="password"
+                                autocomplete="new-password"
                                 value={formData.password}
                                 onChange={handleChange}
                                 isInvalid={isSignUp && formData.password.length > 0 && formData.password.length < 6}

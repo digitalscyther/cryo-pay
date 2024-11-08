@@ -6,8 +6,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::migrate::MigrateError;
 use sqlx::PgPool;
 use uuid::Uuid;
-use crate::api::db;
-use crate::api::db::Invoice;
+use crate::api::db::{self, Invoice};
 use crate::network::Network;
 use crate::utils;
 use crate::utils::get_env_var;
@@ -98,22 +97,35 @@ impl DB {
             .await
     }
 
-    pub async fn list_invoices(&self, limit: i64, offset: i64) -> Result<Vec<Invoice>, String> {
-        db::list_invoices(&self.pg_pool, limit, offset)
+    pub async fn list_invoices(&self, limit: i64, offset: i64, user_id: Option<String>) -> Result<Vec<Invoice>, String> {
+        db::list_invoices(&self.pg_pool, limit, offset, user_id)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "get invoices"))
     }
 
-    pub async fn create_invoice(&self, amount: BigDecimal, seller: &str, networks: &Vec<i32>) -> Result<Invoice, String> {
-        db::create_invoice(&self.pg_pool, amount, seller, networks)
+    pub async fn create_invoice(&self, amount: BigDecimal, seller: &str, networks: &Vec<i32>, user_id: Option<String>) -> Result<Invoice, String> {
+        db::create_invoice(&self.pg_pool, amount, seller, networks, user_id)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "create invoice"))
     }
 
-    pub async fn get_invoice(&self, id: Uuid) -> Result<Invoice, String> {
+    async fn get_invoice(&self, id: Uuid) -> Result<Invoice, String> {
         db::get_invoice(&self.pg_pool, id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "create invoice"))
+            .map_err(|err| utils::make_err(Box::new(err), "get invoice"))
+    }
+
+    pub async fn get_own_invoice(&self, id: Uuid, user_id: Option<String>) -> Result<(bool, Invoice), String> {
+        let invoice = self.get_invoice(id).await?;
+
+        let own = match user_id {
+            None => false,
+            Some(user_id) => db::get_is_owner(&self.pg_pool, id, user_id)
+                .await
+                .map_err(|err| utils::make_err(Box::new(err), "get invoice"))?
+        };
+
+        Ok((own, invoice))
     }
 
     pub async fn set_invoice_paid(&self, id: Uuid, seller: &str, amount: BigDecimal, buyer: &str, paid_at: NaiveDateTime) -> Result<Invoice, String> {

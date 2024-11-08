@@ -19,7 +19,7 @@ RUN --mount=type=bind,source=src,target=src \
     --mount=type=cache,target=/app/target/ \
     --mount=type=cache,target=/usr/local/cargo/git/db \
     --mount=type=cache,target=/usr/local/cargo/registry/ \
-cargo build --locked --release && \
+RUSTFLAGS='-C target-feature=-crt-static' cargo build --locked --release && \
 cp ./target/release/$APP_NAME /bin/server
 
 

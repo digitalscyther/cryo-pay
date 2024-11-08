@@ -37,6 +37,11 @@
         "ordinal": 6,
         "name": "networks",
         "type_info": "Int4Array"
+      },
+      {
+        "ordinal": 7,
+        "name": "user_id",
+        "type_info": "Varchar"
       }
     ],
     "parameters": {
@@ -55,7 +60,8 @@
       false,
       true,
       true,
-      false
+      false,
+      true
     ]
   },
   "hash": "7a5311a942157d2a7527390c8810c2c84ec0fa2ed4982208fc695e61b34ccf7c"

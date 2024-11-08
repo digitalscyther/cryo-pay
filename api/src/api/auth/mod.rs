@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use axum::{Extension, Json, middleware, Router};
+use axum::{Json, Router};
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -8,7 +8,6 @@ use axum_extra::extract::cookie::{Cookie, CookieJar, SameSite};
 use serde::Deserialize;
 use time::Duration;
 use tracing::{debug, warn};
-use crate::api::middleware::{extract_jwt, log_jwt, MaybeUser};
 use crate::api::ping_pong::ping_pong;
 use crate::api::state::{AppState, VerifyError};
 
@@ -16,9 +15,7 @@ pub fn get_router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route("/ping", get(ping_pong))
         .route("/login", post(login))
-        .route("/logout", post(logout)
-            .layer(middleware::from_fn(log_jwt))
-            .layer(middleware::from_fn_with_state(app_state.clone(), extract_jwt)))
+        .route("/logout", post(logout))
         .with_state(app_state)
 }
 
@@ -52,6 +49,7 @@ async fn login(
         })?;
 
     let mut cookie = Cookie::new("jwt", jwt);
+    cookie.set_path("/");
     cookie.set_same_site(SameSite::Strict);
 
     Ok((StatusCode::OK, jar.add(cookie)))
@@ -59,13 +57,12 @@ async fn login(
 
 async fn logout(
     jar: CookieJar,
-    Extension(user): Extension<MaybeUser>,
-) -> impl IntoResponse {
-    if user.is_none() {
-        return Err(StatusCode::OK);
-    }
+) -> Result<impl IntoResponse, StatusCode> {
 
     let mut cookie = Cookie::new("jwt", "");
     cookie.set_max_age(Duration::seconds(0));
+    cookie.set_path("/");
+    cookie.set_same_site(SameSite::Strict);
+
     Ok((StatusCode::OK, jar.remove(cookie)))
 }

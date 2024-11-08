@@ -6,7 +6,7 @@ import {apiUrl, getBlockchainInfo, NETWORKS} from "../utils";
 
 const PAGE_SIZE = 10;
 
-function Home() {
+function Home({isLoggedIn}) {
     const [invoices, setInvoices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -17,6 +17,7 @@ function Home() {
     const [hasMore, setHasMore] = useState(false);
     const limit = PAGE_SIZE;
     const [networks, setNetworks] = useState([]);
+    const [userIdChecked, setUserIdChecked] = useState(false);
 
     useEffect(() => {
         setLoading(true);
@@ -35,8 +36,12 @@ function Home() {
 
         fetchBlockchainInfo();
 
+        let user_id = userIdChecked ? "user_id=my&" : "";
         axios
-            .get(apiUrl(`/payment/invoice?limit=${limit}&offset=${offset}`))
+            .get(
+                apiUrl(`/payment/invoice?${user_id}limit=${limit}&offset=${offset}`),
+                {withCredentials: true}
+            )
             .then((response) => {
                 setInvoices(response.data);
                 setHasMore(response.data.length === limit);
@@ -47,7 +52,7 @@ function Home() {
                 setError('Failed to fetch invoices');
                 setLoading(false);
             });
-    }, [limit, offset]);
+    }, [limit, offset, userIdChecked]);
 
     const handleCreateInvoice = () => {
         setCreating(true);
@@ -56,7 +61,7 @@ function Home() {
                 amount: newInvoice.amount,
                 seller: newInvoice.seller,
                 networks: newInvoice.networks,
-            })
+            }, {withCredentials: true})
             .then((response) => {
                 setInvoices([response.data, ...invoices]);
                 setOffset(0);
@@ -118,6 +123,17 @@ function Home() {
             </Button>
 
             <div className="d-flex justify-content-end mt-3 mb-1 me-3">
+                {isLoggedIn && (
+                    <Form className="me-auto">
+                        <Form.Check
+                            className="text-primary"
+                            type="switch"
+                            label="Only My"
+                            checked={userIdChecked}
+                            onChange={(e) => setUserIdChecked(e.target.checked)}
+                        />
+                    </Form>
+                )}
                 <Button
                     variant="primary"
                     disabled={offset === 0}
@@ -156,7 +172,7 @@ function Home() {
                             <td>
                                 <Button
                                     variant="link"
-                                    onClick={() => window.open(`/invoices/${invoice.id}`, '_blank')}
+                                    onClick={() => window.location.href = `/invoices/${invoice.id}`}
                                 >
                                     {invoice.id}
                                 </Button>
