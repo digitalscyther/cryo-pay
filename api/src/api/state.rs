@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::migrate::MigrateError;
 use sqlx::PgPool;
 use uuid::Uuid;
-use crate::api::db::{self, Invoice};
+use crate::api::db::{self, Invoice, User};
 use crate::network::Network;
 use crate::utils;
 use crate::utils::get_env_var;
@@ -30,7 +30,7 @@ pub struct GC {
 
 #[derive(Clone)]
 pub struct JWT {
-    secret: String
+    secret: String,
 }
 
 #[derive(Clone)]
@@ -60,7 +60,7 @@ impl JWT {
     fn new() -> Result<Self, String> {
         let secret = get_env_var("APP_SECRET")?;
 
-        Ok(JWT{ secret })
+        Ok(JWT { secret })
     }
 
     pub fn generate(&self, user_id: String) -> Result<String, jsonwebtoken::errors::Error> {
@@ -97,13 +97,13 @@ impl DB {
             .await
     }
 
-    pub async fn list_invoices(&self, limit: i64, offset: i64, user_id: Option<String>) -> Result<Vec<Invoice>, String> {
+    pub async fn list_invoices(&self, limit: i64, offset: i64, user_id: Option<Uuid>) -> Result<Vec<Invoice>, String> {
         db::list_invoices(&self.pg_pool, limit, offset, user_id)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "get invoices"))
     }
 
-    pub async fn create_invoice(&self, amount: BigDecimal, seller: &str, networks: &Vec<i32>, user_id: Option<String>) -> Result<Invoice, String> {
+    pub async fn create_invoice(&self, amount: BigDecimal, seller: &str, networks: &Vec<i32>, user_id: Option<Uuid>) -> Result<Invoice, String> {
         db::create_invoice(&self.pg_pool, amount, seller, networks, user_id)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "create invoice"))
@@ -115,7 +115,7 @@ impl DB {
             .map_err(|err| utils::make_err(Box::new(err), "get invoice"))
     }
 
-    pub async fn get_own_invoice(&self, id: Uuid, user_id: Option<String>) -> Result<(bool, Invoice), String> {
+    pub async fn get_own_invoice(&self, id: Uuid, user_id: Option<Uuid>) -> Result<(bool, Invoice), String> {
         let invoice = self.get_invoice(id).await?;
 
         let own = match user_id {
@@ -129,11 +129,9 @@ impl DB {
     }
 
     pub async fn set_invoice_paid(&self, id: Uuid, seller: &str, amount: BigDecimal, buyer: &str, paid_at: NaiveDateTime) -> Result<Invoice, String> {
-        let invoice = db::set_invoice_paid(&self.pg_pool, id, seller, amount, buyer, paid_at)
+        db::set_invoice_paid(&self.pg_pool, id, seller, amount, buyer, paid_at)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "set invoice paid"))?;
-
-        return Ok(invoice);
+            .map_err(|err| utils::make_err(Box::new(err), "set invoice paid"))
     }
 
     pub async fn get_block_number(&self, network: &str) -> Result<Option<i64>, String> {
@@ -146,6 +144,19 @@ impl DB {
         db::create_or_update_block_number(&self.pg_pool, network, block_number)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "get block number"))
+    }
+
+    pub async fn get_or_create_user(&self, firebase_user_id: &str) -> Result<User, String> {
+        db::get_or_create_user(&self.pg_pool, firebase_user_id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "get or create user"))
+    }
+
+    pub async fn get_email_to_notify(&self, _: &Uuid) -> Option<String> {
+        None
+    }
+    pub async fn get_telegram_chat_id_to_notify(&self, _: &Uuid) -> Option<String> {
+        None
     }
 }
 

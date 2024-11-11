@@ -6,10 +6,12 @@ use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum_extra::extract::cookie::{Cookie, CookieJar, SameSite};
 use serde::Deserialize;
-use time::Duration;
+use time::{Duration, OffsetDateTime};
 use tracing::{debug, warn};
 use crate::api::ping_pong::ping_pong;
 use crate::api::state::{AppState, VerifyError};
+
+const JWT_EXPIRE_DAYS: i64 = 7;
 
 pub fn get_router(app_state: Arc<AppState>) -> Router {
     Router::new()
@@ -49,8 +51,9 @@ async fn login(
         })?;
 
     let mut cookie = Cookie::new("jwt", jwt);
+    cookie.set_expires(OffsetDateTime::now_utc() + Duration::days(JWT_EXPIRE_DAYS));
     cookie.set_path("/");
-    cookie.set_same_site(SameSite::Strict);
+    cookie.set_same_site(SameSite::None);   // TODO check is it good for prod
 
     Ok((StatusCode::OK, jar.add(cookie)))
 }
@@ -62,7 +65,7 @@ async fn logout(
     let mut cookie = Cookie::new("jwt", "");
     cookie.set_max_age(Duration::seconds(0));
     cookie.set_path("/");
-    cookie.set_same_site(SameSite::Strict);
+    cookie.set_same_site(SameSite::None);
 
     Ok((StatusCode::OK, jar.remove(cookie)))
 }

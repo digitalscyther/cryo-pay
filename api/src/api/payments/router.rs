@@ -76,7 +76,7 @@ pub enum UserIdFilter {
 }
 
 impl UserIdFilter {
-    fn to_user_id(&self, maybe_user: MaybeUser) -> Option<String> {
+    fn to_user_id(&self, maybe_user: MaybeUser) -> Option<Uuid> {
         match self {
             UserIdFilter::All => None,
             UserIdFilter::My => maybe_user.user_id()

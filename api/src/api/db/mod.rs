@@ -6,6 +6,14 @@ pub async fn get_db_connection(db_url: &str) -> Result<PgPool, sqlx::Error> {
     PgPool::connect(db_url).await
 }
 
+#[derive(Clone, Debug, Serialize, sqlx::FromRow)]
+pub struct User {
+    pub id: Uuid,
+    pub firebase_user_id: String,
+    pub email: Option<String>,
+    pub created_at: NaiveDateTime,
+}
+
 #[derive(Serialize, sqlx::FromRow)]
 pub struct Invoice {
     pub id: Uuid,
@@ -15,38 +23,37 @@ pub struct Invoice {
     pub buyer: Option<String>,
     pub paid_at: Option<NaiveDateTime>,
     pub networks: Vec<i32>,
-    pub user_id: Option<String>
+    pub user_id: Option<Uuid>,
 }
-
 
 pub async fn list_invoices(
     pg_pool: &PgPool,
     limit: i64,
     offset: i64,
-    user_id: Option<String>,
+    user_id: Option<Uuid>,
 ) -> Result<Vec<Invoice>, sqlx::Error> {
-    let mut query = "SELECT * FROM invoice {filter}ORDER BY created_at DESC LIMIT $1 OFFSET $2".to_string();
-
-    let sql_query = match user_id {
-        None => {
-            query = query.replace("{filter}", "");
-            sqlx::query_as::<_, Invoice>(&query)
-                .bind(limit)
-                .bind(offset)
-        },
-        Some(uid) => {
-            query = query.replace("{filter}", "WHERE user_id = $3 ");
-            sqlx::query_as::<_, Invoice>(&query)
-                .bind(limit)
-                .bind(offset)
-                .bind(uid)
-        }
-    };
-
-    sql_query.fetch_all(pg_pool).await
+    match user_id {
+        None => sqlx::query_as!(
+                Invoice,
+            "SELECT * FROM invoice ORDER BY created_at DESC LIMIT $1 OFFSET $2",
+            limit,
+            offset
+        )
+            .fetch_all(pg_pool)
+            .await,
+        Some(uid) => sqlx::query_as!(
+            Invoice,
+            "SELECT * FROM invoice WHERE user_id = $3 ORDER BY created_at DESC LIMIT $1 OFFSET $2",
+            limit,
+            offset,
+            uid
+        )
+            .fetch_all(pg_pool)
+            .await,
+    }
 }
 
-pub async fn create_invoice(pg_pool: &PgPool, amount: BigDecimal, seller: &str, networks: &Vec<i32>, user_id: Option<String>) -> Result<Invoice, sqlx::Error> {
+pub async fn create_invoice(pg_pool: &PgPool, amount: BigDecimal, seller: &str, networks: &Vec<i32>, user_id: Option<Uuid>) -> Result<Invoice, sqlx::Error> {
     sqlx::query_as!(
         Invoice,
         r#"
@@ -59,8 +66,8 @@ pub async fn create_invoice(pg_pool: &PgPool, amount: BigDecimal, seller: &str, 
         networks,
         user_id
     )
-    .fetch_one(pg_pool)
-    .await
+        .fetch_one(pg_pool)
+        .await
 }
 
 pub async fn get_invoice(db: &PgPool, id: Uuid) -> Result<Invoice, sqlx::Error> {
@@ -76,7 +83,7 @@ pub async fn get_invoice(db: &PgPool, id: Uuid) -> Result<Invoice, sqlx::Error> 
         .await
 }
 
-pub async fn get_is_owner(db: &PgPool, id: Uuid, user_id: String) -> Result<bool, sqlx::Error> {
+pub async fn get_is_owner(db: &PgPool, id: Uuid, user_id: Uuid) -> Result<bool, sqlx::Error> {
     let result = sqlx::query!(
         r#"
         SELECT 1 AS some FROM invoice
@@ -85,8 +92,8 @@ pub async fn get_is_owner(db: &PgPool, id: Uuid, user_id: String) -> Result<bool
         id,
         user_id
     )
-    .fetch_optional(db)
-    .await;
+        .fetch_optional(db)
+        .await;
 
     match result {
         Ok(row) => Ok(row.is_some()),
@@ -119,8 +126,8 @@ pub async fn get_block_number(db: &PgPool, network: &str) -> Result<Option<i64>,
         "SELECT block_number FROM network_monitor WHERE network = $1",
         network
     )
-    .fetch_optional(db)
-    .await?;
+        .fetch_optional(db)
+        .await?;
 
     Ok(result.map(|record| record.block_number))
 }
@@ -136,8 +143,39 @@ pub async fn create_or_update_block_number(db: &PgPool, network: &str, block_num
         network.to_lowercase(),
         block_number
     )
-    .execute(db)
-    .await?;
+        .execute(db)
+        .await?;
 
     Ok(())
+}
+
+pub async fn get_or_create_user(db: &PgPool, firebase_user_id: &str) -> Result<User, sqlx::Error> {
+    let existing_user = sqlx::query_as!(
+        User,
+        r#"
+        SELECT * FROM "users"
+        WHERE firebase_user_id = $1
+        "#,
+        firebase_user_id
+    )
+        .fetch_optional(db)
+        .await?;
+
+    if let Some(user) = existing_user {
+        return Ok(user);
+    }
+
+    let new_user = sqlx::query_as!(
+        User,
+        r#"
+        INSERT INTO "users" (firebase_user_id)
+        VALUES ($1)
+        RETURNING *
+        "#,
+        firebase_user_id
+    )
+        .fetch_one(db)
+        .await?;
+
+    Ok(new_user)
 }

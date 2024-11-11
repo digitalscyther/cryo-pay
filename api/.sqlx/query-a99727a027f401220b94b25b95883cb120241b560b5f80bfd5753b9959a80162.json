@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO invoice (amount, seller, networks, user_id)\n        VALUES ($1, $2, $3, $4)\n        RETURNING *\n        ",
+  "query": "SELECT * FROM invoice WHERE user_id = $3 ORDER BY created_at DESC LIMIT $1 OFFSET $2",
   "describe": {
     "columns": [
       {
@@ -46,9 +46,8 @@
     ],
     "parameters": {
       "Left": [
-        "Numeric",
-        "Varchar",
-        "Int4Array",
+        "Int8",
+        "Int8",
         "Uuid"
       ]
     },
@@ -63,5 +62,5 @@
       true
     ]
   },
-  "hash": "bd9eaac00cf1b5c14d15452cd135e80494b1c5ed2f3589ab8d5b034f302e7086"
+  "hash": "a99727a027f401220b94b25b95883cb120241b560b5f80bfd5753b9959a80162"
 }

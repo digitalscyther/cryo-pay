@@ -1,11 +1,16 @@
+mod notifications;
+
 use std::fmt::Debug;
 use std::sync::Arc;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
 use ethers::{abi::RawLog, prelude::*};
+use futures::future::join_all;
 use tracing::info;
 use uuid::Uuid;
+use crate::api::db::Invoice;
 use crate::api::state::DB;
+use crate::events::notifications::Notifier;
 use crate::utils;
 
 
@@ -32,7 +37,7 @@ pub async fn just_print_log(log: Log) -> Result<(), String> {
 }
 
 
-pub async fn set_invoice_paid(postgres_db: Arc<DB>, event: PayInvoiceEvent) -> Result<(), String> {
+pub async fn set_invoice_paid(postgres_db: Arc<DB>, event: PayInvoiceEvent) -> Result<Invoice, String> {
     let invoice_id = Uuid::parse_str(&event.invoice_id)
         .map_err(|err| utils::make_err(Box::new(err), "parse invoice_id"))?;
 
@@ -40,15 +45,13 @@ pub async fn set_invoice_paid(postgres_db: Arc<DB>, event: PayInvoiceEvent) -> R
         .map(|dt| dt.naive_utc())
         .ok_or_else(|| "Invalid timestamp".to_string())?;
 
-    let _ = postgres_db.set_invoice_paid(
+    postgres_db.set_invoice_paid(
         invoice_id,
         &format!("{:#020x}", event.seller),
         BigDecimal::from(event.amount.as_u128()) / BigDecimal::from(1_000_000),
         &format!("{:#020x}", event.payer),
         paid_at,
-    ).await?;
-
-    Ok(())
+    ).await
 }
 
 pub fn parse_event(log: Log) -> Result<PayInvoiceEvent, String> {
@@ -59,5 +62,40 @@ pub fn parse_event(log: Log) -> Result<PayInvoiceEvent, String> {
 
 pub async fn process_log(db: Arc<DB>, log: Log) -> Result<(), String> {
     let event = parse_event(log)?;
-    set_invoice_paid(db, event).await
+    let invoice = set_invoice_paid(db.clone(), event).await?;
+
+    if let Some(user_id) = invoice.user_id {
+        let tasks = get_notifiers(db, user_id)
+            .await?
+            .into_iter()
+            .map(|n| {
+                tokio::spawn(async move {
+                    n.notify().await
+                })
+            }
+            )
+            .collect::<Vec<_>>();
+
+        let results = join_all(tasks).await;
+
+        for result in results {
+            result.map_err(|e| format!("Notify failed: {:?}", e))??;
+        }
+    }
+
+    Ok(())
+}
+
+async fn get_notifiers(db: Arc<DB>, uid: Uuid) -> Result<Vec<Notifier>, String> {
+    let mut notifiers = vec![];
+
+    if let Some(email) = db.clone().get_email_to_notify(&uid).await {
+        notifiers.push(Notifier::from_email(email))
+    }
+
+    if let Some(chat_id) = db.clone().get_telegram_chat_id_to_notify(&uid).await {
+        notifiers.push(Notifier::from_telegram_data(chat_id))
+    }
+
+    Ok(notifiers)
 }

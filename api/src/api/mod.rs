@@ -1,6 +1,6 @@
 mod ping_pong;
 pub mod state;
-mod db;
+pub mod db;
 mod payments;
 mod blockchain;
 mod auth;
