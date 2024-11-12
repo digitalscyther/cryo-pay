@@ -9,6 +9,7 @@ import About from './components/About';
 import Contact from './components/Contact';
 import Invoice from './components/Invoice';
 import Auth from './components/Auth';
+import Account from './components/Account';
 import {apiUrl} from "./utils";
 
 function App() {
@@ -78,7 +79,10 @@ function App() {
                             {!isLoggedIn ? (
                                 <Nav.Link href="/login">Login</Nav.Link>
                             ) : (
-                                <Nav.Link className="ms-auto" onClick={handleLogout}>Logout</Nav.Link>
+                                <>
+                                    <Nav.Link href="/settings">Settings</Nav.Link>
+                                    <Nav.Link className="ms-auto" onClick={handleLogout}>Logout</Nav.Link>
+                                </>
                             )}
                         </Nav>
                     </Navbar.Collapse>
@@ -92,6 +96,7 @@ function App() {
                     <Route path="/about" element={<About/>}/>
                     <Route path="/contact" element={<Contact/>}/>
                     <Route path="/login" element={<Auth onLogin={handleLogin}/>}/>
+                    <Route path="/settings" element={<Account />} />
                 </Routes>
             </Container>
         </>

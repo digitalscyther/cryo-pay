@@ -45,10 +45,10 @@ NETWORKS=[{"name":"optimism-sepolia","id":11155420,"link":"https://optimism-sepo
 - [ ] Set up notifications about payment statuses for sellers via email and Telegram
   - [x] Add email
   - [x] Add telegram chat id
-  - [ ] Add flags where to notify
+  - [x] Add flags where to notify
     - [x] DB
     - [x] Endpoints to get and set account details
-    - [ ] Frontend Account page
+    - [x] Frontend Account page
   - [ ] Add email sending
     - [ ] Read Brevo doc
     - [ ] Integrate Brevo
