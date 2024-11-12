@@ -47,7 +47,7 @@ NETWORKS=[{"name":"optimism-sepolia","id":11155420,"link":"https://optimism-sepo
   - [x] Add telegram chat id
   - [ ] Add flags where to notify
     - [x] DB
-    - [ ] Endpoints to get and set account details
+    - [x] Endpoints to get and set account details
     - [ ] Frontend Account page
   - [ ] Add email sending
     - [ ] Read Brevo doc

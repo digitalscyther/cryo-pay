@@ -159,6 +159,17 @@ impl DB {
             .await
             .map_err(|err| utils::make_err(Box::new(err), "get or create user"))
     }
+
+    pub async fn update_user(
+        &self,
+        user_id: &Uuid,
+        email_notification: Option<bool>,
+        telegram_notification: Option<bool>
+    ) -> Result<User, String> {
+        db::update_user(&self.pg_pool, user_id, email_notification, telegram_notification)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "update user"))
+    }
 }
 
 impl GC {

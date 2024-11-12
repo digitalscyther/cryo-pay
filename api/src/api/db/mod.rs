@@ -199,3 +199,61 @@ pub async fn get_or_create_user(db: &PgPool, firebase_user_id: &str, email: Opti
 
     Ok(new_user)
 }
+
+pub async fn update_user(
+    db: &PgPool,
+    user_id: &Uuid,
+    email_notification: Option<bool>,
+    telegram_notification: Option<bool>
+) -> Result<User, sqlx::Error> {
+    if let Some(email_notification) = email_notification {
+        if let Some(telegram_notification) = telegram_notification {
+            return sqlx::query_as!(
+                User,
+                r#"
+                UPDATE "users"
+                SET email_notification = $1, telegram_notification = $2
+                WHERE id = $3
+                RETURNING *
+                "#,
+                email_notification,
+                telegram_notification,
+                user_id,
+            )
+                .fetch_one(db)
+                .await;
+        }
+
+        return sqlx::query_as!(
+            User,
+            r#"
+            UPDATE "users"
+            SET email_notification = $1
+            WHERE id = $2
+            RETURNING *
+            "#,
+            email_notification,
+            user_id,
+        )
+            .fetch_one(db)
+            .await;
+    }
+
+    if let Some(telegram_notification) = telegram_notification {
+        return sqlx::query_as!(
+            User,
+            r#"
+            UPDATE "users"
+            SET telegram_notification = $1
+            WHERE id = $2
+            RETURNING *
+            "#,
+            telegram_notification,
+            user_id,
+        )
+            .fetch_one(db)
+            .await;
+    }
+
+    get_user_by_id(db, user_id).await
+}
