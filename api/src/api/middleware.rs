@@ -56,7 +56,7 @@ pub async fn extract_jwt(
 
     let user = match claims {
         None => None,
-        Some(claims) => match state.db.get_or_create_user(&claims.sub).await {
+        Some(claims) => match state.db.get_or_create_user(&claims.sub, claims.email).await {
             Ok(user) => Some(user),
             Err(err) => {
                 error!(err);

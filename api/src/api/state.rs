@@ -44,6 +44,7 @@ pub struct AppState {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: String,
+    pub email: Option<String>,
     exp: usize,
 }
 
@@ -63,7 +64,7 @@ impl JWT {
         Ok(JWT { secret })
     }
 
-    pub fn generate(&self, user_id: String) -> Result<String, jsonwebtoken::errors::Error> {
+    pub fn generate(&self, user_id: String, email: Option<String>) -> Result<String, jsonwebtoken::errors::Error> {
         let expiration = chrono::Utc::now()
             .checked_add_signed(chrono::Duration::hours(24))
             .expect("valid timestamp")
@@ -71,6 +72,7 @@ impl JWT {
 
         let claims = Claims {
             sub: user_id,
+            email,
             exp: expiration,
         };
 
@@ -146,8 +148,8 @@ impl DB {
             .map_err(|err| utils::make_err(Box::new(err), "get block number"))
     }
 
-    pub async fn get_or_create_user(&self, firebase_user_id: &str) -> Result<User, String> {
-        db::get_or_create_user(&self.pg_pool, firebase_user_id)
+    pub async fn get_or_create_user(&self, firebase_user_id: &str, email: Option<String>) -> Result<User, String> {
+        db::get_or_create_user(&self.pg_pool, firebase_user_id, email)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "get or create user"))
     }

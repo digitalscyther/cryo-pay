@@ -43,8 +43,34 @@ NETWORKS=[{"name":"optimism-sepolia","id":11155420,"link":"https://optimism-sepo
   - [x] Integrate user_id for invoices
   - [x] Logout
 - [ ] Set up notifications about payment statuses for sellers via email and Telegram
+  - [x] Add email
+  - [ ] Add telegram chat id
+  - [ ] Add flags where to notify
+    - [ ] DB
+    - [ ] Frontend Account page
+  - [ ] Add email sending
+    - [ ] Read Brevo doc
+    - [ ] Integrate Brevo
+  - [ ] Add telegram message sending
+    - [ ] Telegram bot
+    - [ ] User writing to bot
+    - [ ] Send notification by chat_id
 - [ ] Add support for Arbitrum and Base networks
+  - [ ] Arbitrum
+    - [ ] Find network id
+    - [ ] Find USDT ERC20 smart contract address
+    - [ ] Add smartcontract
+      - [ ] Deploy
+      - [ ] Add into config
+  - [ ] Base
+    - [ ] Find network id
+    - [ ] Find USDT ERC20 smart contract address
+    - [ ] Add smartcontract
+      - [ ] Deploy
+      - [ ] Add into config
 - [ ] Delete own invoice
+  - [ ] Backend endpoint
+  - [ ] Frontend button
 
 ### Nice-to-Have
 - [ ] Add basic statistics for sellers (number of transactions, total amounts for a period)

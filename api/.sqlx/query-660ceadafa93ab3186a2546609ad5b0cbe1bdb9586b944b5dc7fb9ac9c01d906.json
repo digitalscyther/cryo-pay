@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO \"users\" (firebase_user_id)\n        VALUES ($1)\n        RETURNING *\n        ",
+  "query": "\n        SELECT * FROM \"users\"\n        WHERE firebase_user_id = $1 AND email = $2\n        ",
   "describe": {
     "columns": [
       {
@@ -26,6 +26,7 @@
     ],
     "parameters": {
       "Left": [
+        "Text",
         "Text"
       ]
     },
@@ -36,5 +37,5 @@
       false
     ]
   },
-  "hash": "f4f906bd9552a9a64e585834a6c3bfb4ac11cbfa2143bc0ef9fefc33ef8cd612"
+  "hash": "660ceadafa93ab3186a2546609ad5b0cbe1bdb9586b944b5dc7fb9ac9c01d906"
 }

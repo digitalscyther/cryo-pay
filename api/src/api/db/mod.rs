@@ -149,14 +149,15 @@ pub async fn create_or_update_block_number(db: &PgPool, network: &str, block_num
     Ok(())
 }
 
-pub async fn get_or_create_user(db: &PgPool, firebase_user_id: &str) -> Result<User, sqlx::Error> {
+pub async fn get_or_create_user(db: &PgPool, firebase_user_id: &str, email: Option<String>) -> Result<User, sqlx::Error> {
     let existing_user = sqlx::query_as!(
         User,
         r#"
         SELECT * FROM "users"
-        WHERE firebase_user_id = $1
+        WHERE firebase_user_id = $1 AND email = $2
         "#,
-        firebase_user_id
+        firebase_user_id,
+        email
     )
         .fetch_optional(db)
         .await?;
@@ -168,11 +169,14 @@ pub async fn get_or_create_user(db: &PgPool, firebase_user_id: &str) -> Result<U
     let new_user = sqlx::query_as!(
         User,
         r#"
-        INSERT INTO "users" (firebase_user_id)
-        VALUES ($1)
+        INSERT INTO "users" (firebase_user_id, email)
+        VALUES ($1, $2)
+        ON CONFLICT (firebase_user_id)
+        DO UPDATE SET email = EXCLUDED.email
         RETURNING *
         "#,
-        firebase_user_id
+        firebase_user_id,
+        email
     )
         .fetch_one(db)
         .await?;

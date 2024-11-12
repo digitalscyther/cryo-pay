@@ -44,7 +44,13 @@ async fn login(
             }
         })?;
 
-    let jwt = state.jwt.generate(token.critical_claims.sub)
+    let user_id = token.critical_claims.sub;
+    let email = token.all_claims
+        .get("email")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string());
+
+    let jwt = state.jwt.generate(user_id, email)
         .map_err(|err| {
             warn!("Failed generate jwt: {:?}", err);
             StatusCode::INTERNAL_SERVER_ERROR
