@@ -9,9 +9,12 @@ pub async fn get_db_connection(db_url: &str) -> Result<PgPool, sqlx::Error> {
 #[derive(Clone, Debug, Serialize, sqlx::FromRow)]
 pub struct User {
     pub id: Uuid,
+    pub created_at: NaiveDateTime,
     pub firebase_user_id: String,
     pub email: Option<String>,
-    pub created_at: NaiveDateTime,
+    pub telegram_chat_id: Option<String>,
+    pub email_notification: bool,
+    pub telegram_notification: bool,
 }
 
 #[derive(Serialize, sqlx::FromRow)]
@@ -147,6 +150,19 @@ pub async fn create_or_update_block_number(db: &PgPool, network: &str, block_num
         .await?;
 
     Ok(())
+}
+
+pub async fn get_user_by_id(db: &PgPool, id: &Uuid) -> Result<User, sqlx::Error> {
+    sqlx::query_as!(
+        User,
+        r#"
+        SELECT * FROM "users"
+        WHERE id = $1
+        "#,
+        id
+    )
+        .fetch_one(db)
+        .await
 }
 
 pub async fn get_or_create_user(db: &PgPool, firebase_user_id: &str, email: Option<String>) -> Result<User, sqlx::Error> {

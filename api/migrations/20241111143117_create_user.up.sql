@@ -1,9 +1,12 @@
 -- Step 1: Create the user table
 CREATE TABLE "users" (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    firebase_user_id TEXT NOT NULL UNIQUE,  -- Store Firebase user ID here
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    firebase_user_id TEXT NOT NULL UNIQUE,
     email VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+    telegram_chat_id VARCHAR(255),
+    email_notification BOOLEAN DEFAULT false NOT NULL,
+    telegram_notification BOOLEAN DEFAULT false NOT NULL
 );
 
 -- Step 2: Insert unique Firebase user IDs from the invoice table into the user table

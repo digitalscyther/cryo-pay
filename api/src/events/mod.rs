@@ -65,7 +65,7 @@ pub async fn process_log(db: Arc<DB>, log: Log) -> Result<(), String> {
     let invoice = set_invoice_paid(db.clone(), event).await?;
 
     if let Some(user_id) = invoice.user_id {
-        let tasks = get_notifiers(db, user_id)
+        let tasks = Notifier::get_notifiers(db, &user_id)
             .await?
             .into_iter()
             .map(|n| {
@@ -84,18 +84,4 @@ pub async fn process_log(db: Arc<DB>, log: Log) -> Result<(), String> {
     }
 
     Ok(())
-}
-
-async fn get_notifiers(db: Arc<DB>, uid: Uuid) -> Result<Vec<Notifier>, String> {
-    let mut notifiers = vec![];
-
-    if let Some(email) = db.clone().get_email_to_notify(&uid).await {
-        notifiers.push(Notifier::from_email(email))
-    }
-
-    if let Some(chat_id) = db.clone().get_telegram_chat_id_to_notify(&uid).await {
-        notifiers.push(Notifier::from_telegram_data(chat_id))
-    }
-
-    Ok(notifiers)
 }

@@ -10,18 +10,33 @@
       },
       {
         "ordinal": 1,
+        "name": "created_at",
+        "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 2,
         "name": "firebase_user_id",
         "type_info": "Text"
       },
       {
-        "ordinal": 2,
+        "ordinal": 3,
         "name": "email",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 3,
-        "name": "created_at",
-        "type_info": "Timestamp"
+        "ordinal": 4,
+        "name": "telegram_chat_id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "email_notification",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 6,
+        "name": "telegram_notification",
+        "type_info": "Bool"
       }
     ],
     "parameters": {
@@ -33,7 +48,10 @@
     "nullable": [
       false,
       false,
+      false,
       true,
+      true,
+      false,
       false
     ]
   },

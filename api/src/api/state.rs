@@ -148,17 +148,16 @@ impl DB {
             .map_err(|err| utils::make_err(Box::new(err), "get block number"))
     }
 
-    pub async fn get_or_create_user(&self, firebase_user_id: &str, email: Option<String>) -> Result<User, String> {
-        db::get_or_create_user(&self.pg_pool, firebase_user_id, email)
+    pub async fn get_user_by_id(&self, id: &Uuid) -> Result<User, String> {
+        db::get_user_by_id(&self.pg_pool, id)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "get or create user"))
     }
 
-    pub async fn get_email_to_notify(&self, _: &Uuid) -> Option<String> {
-        None
-    }
-    pub async fn get_telegram_chat_id_to_notify(&self, _: &Uuid) -> Option<String> {
-        None
+    pub async fn get_or_create_user(&self, firebase_user_id: &str, email: Option<String>) -> Result<User, String> {
+        db::get_or_create_user(&self.pg_pool, firebase_user_id, email)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "get or create user"))
     }
 }
 
