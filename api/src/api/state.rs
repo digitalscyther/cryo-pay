@@ -8,14 +8,14 @@ use sqlx::PgPool;
 use uuid::Uuid;
 use crate::api::db::{self, Invoice, User};
 use crate::network::Network;
+use crate::telegram::TelegramClient;
 use crate::utils;
 use crate::utils::get_env_var;
 
-pub async fn setup_app_state(networks: Vec<Network>) -> Result<AppState, String> {
-    let db = DB::new().await?;
+pub async fn setup_app_state(networks: Vec<Network>, db: DB, telegram_client: TelegramClient) -> Result<AppState, String> {
     let gc = GC::new().await?;
     let jwt = JWT::new()?;
-    Ok(AppState { db, networks, gc, jwt })
+    Ok(AppState { db,telegram_client, networks, gc, jwt })
 }
 
 #[derive(Clone)]
@@ -36,6 +36,7 @@ pub struct JWT {
 #[derive(Clone)]
 pub struct AppState {
     pub db: DB,
+    pub telegram_client: TelegramClient,
     pub networks: Vec<Network>,
     pub gc: GC,
     pub jwt: JWT,

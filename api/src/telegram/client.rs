@@ -1,5 +1,5 @@
 use tgbot::api::Client;
-use tgbot::types::{ChatId, Integer, SendMessage};
+use tgbot::types::{ChatId, GetBot, Integer, SendMessage};
 use crate::utils;
 
 pub async fn get_client() -> Result<Client, String> {
@@ -20,4 +20,12 @@ pub async fn send_message(client: &Client, chat_id: &str, text: &str) -> Result<
         .map_err(|err| utils::make_err(Box::new(err), "send telegram message"))?;
 
     Ok(())
+}
+
+pub async fn get_bot_name(client: &Client) -> Result<String, String> {
+    client
+        .execute(GetBot)
+        .await
+        .map_err(|err| utils::make_err(Box::new(err), "get telegram bot name"))
+        .map(|bot| bot.username)
 }

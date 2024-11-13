@@ -15,13 +15,15 @@ use tower_http::trace::TraceLayer;
 use tracing::info;
 
 use ping_pong::ping_pong;
+use crate::api::state::DB;
 use crate::network::Network;
+use crate::telegram::TelegramClient;
 use crate::utils;
 
 const USER_BASE_PATH: &str = "/user";
 
-pub async fn run_api(networks: Vec<Network>) -> Result<(), String> {
-    let app_state = state::setup_app_state(networks).await?;
+pub async fn run_api(networks: Vec<Network>, db: DB, telegram_client: TelegramClient) -> Result<(), String> {
+    let app_state = state::setup_app_state(networks, db, telegram_client).await?;
     app_state.db.run_migrations()
         .await
         .map_err(|err| utils::make_err(Box::new(err), "run migrations"))?;

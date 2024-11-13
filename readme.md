@@ -55,10 +55,10 @@ TGBOT_TOKEN=foobarbaz
     - [ ] Integrate Brevo
   - [ ] Add telegram message sending
     - [ ] Telegram bot
-    - [ ] User writing to bot
-      - [ ] Backend endpoint
+    - [x] User writing to bot
+      - [x] Backend endpoint
         - [x] Endpoint
-        - [ ] Get telegram chat name
+        - [x] Get telegram chat name
     - [x] Send notification by chat_id
 - [ ] Add support for Arbitrum and Base networks
   - [ ] Arbitrum

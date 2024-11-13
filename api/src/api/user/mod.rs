@@ -76,8 +76,11 @@ async fn update(
     Ok(Json(response))
 }
 
-async fn attach_telegram(Extension(user): Extension<User>) -> Result<impl IntoResponse, StatusCode> {
-    let telegram_bot_name = get_telegram_bot_name()
+async fn attach_telegram(
+    State(state): State<Arc<AppState>>,
+    Extension(user): Extension<User>
+) -> Result<impl IntoResponse, StatusCode> {
+    let telegram_bot_name = state.telegram_client.get_bot_name()
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
@@ -88,8 +91,4 @@ async fn attach_telegram(Extension(user): Extension<User>) -> Result<impl IntoRe
     );
 
     Ok(Redirect::temporary(&telegram_redirect_url))
-}
-
-async fn get_telegram_bot_name() -> Result<String, String> {
-    Ok("botFather".to_string())   // TODO
 }
