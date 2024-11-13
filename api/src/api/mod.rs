@@ -1,6 +1,5 @@
 mod ping_pong;
 pub mod state;
-pub mod db;
 mod payments;
 mod blockchain;
 mod auth;
@@ -33,7 +32,7 @@ pub async fn run_api(networks: Vec<Network>, db: DB, telegram_client: TelegramCl
         .route("/ping", get(ping_pong))
         .nest("/auth", auth::get_router(app_state.clone()))
         .nest(USER_BASE_PATH, user::get_router(app_state.clone()))
-        .nest("/payment", payments::router::get_router(app_state.clone()))
+        .nest("/payment", payments::get_router(app_state.clone()))
         .nest("/blockchain", blockchain::get_router(app_state.clone()))
         .layer(TraceLayer::new_for_http());
 

@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::migrate::MigrateError;
 use sqlx::PgPool;
 use uuid::Uuid;
-use crate::api::db::{self, Invoice, User};
+use crate::db::{self, Invoice, User};
 use crate::network::Network;
 use crate::telegram::TelegramClient;
 use crate::utils;

@@ -5,11 +5,11 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Redirect};
 use axum::routing::{get, patch};
 use serde::{Deserialize, Serialize};
-use crate::api::db::User;
 use crate::api::middleware::only_auth;
 use crate::api::ping_pong::ping_pong;
 use crate::api::state::AppState;
 use crate::api::USER_BASE_PATH;
+use crate::db::User;
 
 const ATTACH_TELEGRAM_PATH: &str = "/attach_telegram";
 

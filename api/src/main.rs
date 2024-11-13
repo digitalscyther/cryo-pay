@@ -3,6 +3,7 @@ use tracing::Level;
 mod monitor;
 mod utils;
 mod api;
+mod db;
 mod events;
 mod network;
 mod telegram;

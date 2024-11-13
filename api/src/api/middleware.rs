@@ -6,8 +6,8 @@ use axum::response::IntoResponse;
 use axum_extra::extract::cookie::Cookie;
 use tracing::error;
 use uuid::Uuid;
-use crate::api::db::User;
 use crate::api::state::AppState;
+use crate::db::User;
 
 #[derive(Clone, Debug)]
 pub enum MaybeUser {
