@@ -2,19 +2,27 @@ use std::sync::Arc;
 use axum::extract::State;
 use axum::{Extension, Json, middleware, Router};
 use axum::http::StatusCode;
-use axum::response::IntoResponse;
+use axum::response::{IntoResponse, Redirect};
 use axum::routing::{get, patch};
 use serde::{Deserialize, Serialize};
 use crate::api::db::User;
 use crate::api::middleware::only_auth;
 use crate::api::ping_pong::ping_pong;
 use crate::api::state::AppState;
+use crate::api::USER_BASE_PATH;
+
+const ATTACH_TELEGRAM_PATH: &str = "/attach_telegram";
+
+fn get_attach_telegram_full_path() -> String {
+    format!("{}{}", USER_BASE_PATH, ATTACH_TELEGRAM_PATH)
+}
 
 pub fn get_router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route("/ping", get(ping_pong))
         .route("/", get(read))
         .route("/", patch(update))
+        .route(ATTACH_TELEGRAM_PATH, get(attach_telegram))
         .layer(middleware::from_fn_with_state(app_state.clone(), only_auth))
         .with_state(app_state)
 }
@@ -27,15 +35,21 @@ pub struct UserRequest {
 
 #[derive(Serialize)]
 pub struct UserResponse {
-    pub with_chat_id: bool,
+    pub attach_telegram_path: Option<String>,
     pub email_notification: bool,
     pub telegram_notification: bool,
 }
 
 impl From<User> for UserResponse {
     fn from(value: User) -> Self {
+        let need_telegram = value.telegram_notification && value.telegram_chat_id.is_none();
+        let attach_telegram_path = match need_telegram {
+            true => Some(get_attach_telegram_full_path()),
+            false => None
+        };
+
         UserResponse {
-            with_chat_id: value.telegram_chat_id.is_some(),
+            attach_telegram_path,
             email_notification: value.email_notification,
             telegram_notification: value.telegram_notification
         }
@@ -60,4 +74,22 @@ async fn update(
         .into();
 
     Ok(Json(response))
+}
+
+async fn attach_telegram(Extension(user): Extension<User>) -> Result<impl IntoResponse, StatusCode> {
+    let telegram_bot_name = get_telegram_bot_name()
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let telegram_redirect_url = format!(
+        "https://t.me/{}?start={}",
+        telegram_bot_name,
+        user.id
+    );
+
+    Ok(Redirect::temporary(&telegram_redirect_url))
+}
+
+async fn get_telegram_bot_name() -> Result<String, String> {
+    Ok("botFather".to_string())   // TODO
 }

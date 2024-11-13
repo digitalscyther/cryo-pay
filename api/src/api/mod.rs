@@ -18,6 +18,8 @@ use ping_pong::ping_pong;
 use crate::network::Network;
 use crate::utils;
 
+const USER_BASE_PATH: &str = "/user";
+
 pub async fn run_api(networks: Vec<Network>) -> Result<(), String> {
     let app_state = state::setup_app_state(networks).await?;
     app_state.db.run_migrations()
@@ -28,7 +30,7 @@ pub async fn run_api(networks: Vec<Network>) -> Result<(), String> {
     let mut router = Router::new()
         .route("/ping", get(ping_pong))
         .nest("/auth", auth::get_router(app_state.clone()))
-        .nest("/user", user::get_router(app_state.clone()))
+        .nest(USER_BASE_PATH, user::get_router(app_state.clone()))
         .nest("/payment", payments::router::get_router(app_state.clone()))
         .nest("/blockchain", blockchain::get_router(app_state.clone()))
         .layer(TraceLayer::new_for_http());

@@ -11,6 +11,7 @@ use uuid::Uuid;
 use crate::api::db::Invoice;
 use crate::api::state::DB;
 use crate::events::notifications::Notifier;
+use crate::monitor::MonitorAppState;
 use crate::utils;
 
 
@@ -37,7 +38,7 @@ pub async fn just_print_log(log: Log) -> Result<(), String> {
 }
 
 
-pub async fn set_invoice_paid(postgres_db: Arc<DB>, event: PayInvoiceEvent) -> Result<Invoice, String> {
+pub async fn set_invoice_paid(postgres_db: &DB, event: PayInvoiceEvent) -> Result<Invoice, String> {
     let invoice_id = Uuid::parse_str(&event.invoice_id)
         .map_err(|err| utils::make_err(Box::new(err), "parse invoice_id"))?;
 
@@ -60,17 +61,18 @@ pub fn parse_event(log: Log) -> Result<PayInvoiceEvent, String> {
         .map_err(|err| utils::make_err(Box::new(err), "decode log"))
 }
 
-pub async fn process_log(db: Arc<DB>, log: Log) -> Result<(), String> {
+pub async fn process_log(app_state: Arc<MonitorAppState>, log: Log) -> Result<(), String> {
     let event = parse_event(log)?;
-    let invoice = set_invoice_paid(db.clone(), event).await?;
+    let invoice = set_invoice_paid(&app_state.db, event).await?;
 
     if let Some(user_id) = invoice.user_id {
-        let tasks = Notifier::get_notifiers(db, &user_id)
+        let tasks = Notifier::get_notifiers(&app_state.db, &user_id)
             .await?
             .into_iter()
             .map(|n| {
+                let app_state = app_state.clone();
                 tokio::spawn(async move {
-                    n.notify().await
+                    n.notify(app_state).await
                 })
             }
             )

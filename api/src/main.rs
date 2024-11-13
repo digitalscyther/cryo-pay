@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use tracing::Level;
 
 mod monitor;
@@ -6,6 +5,7 @@ mod utils;
 mod api;
 mod events;
 mod network;
+mod telegram;
 
 #[tokio::main]
 async fn main() -> Result<(), String> {
@@ -18,10 +18,11 @@ async fn main() -> Result<(), String> {
 
     let networks = network::Network::vec_from_env("NETWORKS")?;
     let db = api::state::DB::new().await?;
+    let telegram_client = telegram::TelegramClient::new().await?;
 
     let monitor_networks = networks.clone();
     let monitor_handle = tokio::spawn(async move {
-        monitor::run_monitor(test, monitor_networks, Arc::new(db)).await
+        monitor::run_monitor(test, monitor_networks, db, telegram_client).await
     });
 
     let api_handle = tokio::spawn(async move {

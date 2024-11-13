@@ -2,16 +2,20 @@ use std::sync::Arc;
 use tracing::info;
 use uuid::Uuid;
 use crate::api::state::DB;
+use crate::monitor::MonitorAppState;
 
+#[derive(Debug)]
 pub enum Notifier {
     Email(EmailNotifier),
     Telegram(TelegramNotifier)
 }
 
+#[derive(Debug)]
 pub struct EmailNotifier {
     email: String
 }
 
+#[derive(Debug)]
 pub struct TelegramNotifier {
     chat_id: String
 }
@@ -25,14 +29,14 @@ impl Notifier {
         Self::Telegram(TelegramNotifier::new(chat_id))
     }
 
-    pub async fn notify(&self) -> Result<(), String> {
+    pub async fn notify(&self, app_state: Arc<MonitorAppState>) -> Result<(), String> {
         match self {
-            Notifier::Email(email) => email.notify().await,
-            Notifier::Telegram(telegram) => telegram.notify().await,
+            Notifier::Email(email) => email.notify(app_state).await,
+            Notifier::Telegram(telegram) => telegram.notify(app_state).await,
         }
     }
 
-    pub async fn get_notifiers(db: Arc<DB>, user_id: &Uuid) -> Result<Vec<Notifier>, String> {
+    pub async fn get_notifiers(db: &DB, user_id: &Uuid) -> Result<Vec<Notifier>, String> {
         let mut notifiers = vec![];
 
         let user = db.get_user_by_id(user_id).await?;
@@ -54,7 +58,7 @@ impl Notifier {
 }
 
 trait Notify {
-    async fn notify(&self) -> Result<(), String>;
+    async fn notify(&self, app_state: Arc<MonitorAppState>) -> Result<(), String>;
 }
 
 impl EmailNotifier {
@@ -70,15 +74,14 @@ impl TelegramNotifier {
 }
 
 impl Notify for EmailNotifier {
-    async fn notify(&self) ->  Result<(), String>{
+    async fn notify(&self, _: Arc<MonitorAppState>) ->  Result<(), String>{
         info!("Notified by email: email={}", self.email);
         todo!()
     }
 }
 
 impl Notify for TelegramNotifier {
-    async fn notify(&self) ->  Result<(), String>{
-        info!("Notified by telegram: chat_id={}", self.chat_id);
-        todo!()
+    async fn notify(&self, app_state: Arc<MonitorAppState>) ->  Result<(), String>{
+        app_state.telegram_client.send_message(&self.chat_id, "Bill paid").await
     }
 }
