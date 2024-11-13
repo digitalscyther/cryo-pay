@@ -1,6 +1,8 @@
 use tgbot::api::Client;
+use bot::TelegramBot;
 
 mod client;
+mod bot;
 
 #[derive(Clone)]
 pub struct TelegramClient {
@@ -20,5 +22,11 @@ impl TelegramClient {
 
     pub async fn get_bot_name(&self) -> Result<String, String> {
         client::get_bot_name(&self.client).await
+    }
+
+    pub async fn run_as_bot(&self) -> Result<(), String> {
+        let telegram_bot = TelegramBot::new()?;
+
+        telegram_bot.run(&self.client).await
     }
 }

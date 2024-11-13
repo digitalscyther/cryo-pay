@@ -27,11 +27,17 @@ async fn main() -> Result<(), String> {
         monitor::run_monitor(test, monitor_networks, monitor_db, monitor_telegram_client).await
     });
 
+    let api_telegram_client = telegram_client.clone();
     let api_handle = tokio::spawn(async move {
-        api::run_api(networks, db, telegram_client).await
+        api::run_api(networks, db, api_telegram_client).await
     });
 
-    let _ = tokio::join!(api_handle, monitor_handle);
+    let bot_telegram_client = telegram_client.clone();
+    let bot_handle = tokio::spawn(async move {
+        bot_telegram_client.run_as_bot().await
+    });
+
+    let _ = tokio::join!(api_handle, monitor_handle, bot_handle);
 
     Ok(())
 }

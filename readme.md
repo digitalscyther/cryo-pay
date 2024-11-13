@@ -55,6 +55,8 @@ TGBOT_TOKEN=foobarbaz
     - [ ] Integrate Brevo
   - [ ] Add telegram message sending
     - [ ] Telegram bot
+      - [x] Webhook and LongPool
+      - [ ] Save telegram_chat_id into user
     - [x] User writing to bot
       - [x] Backend endpoint
         - [x] Endpoint
