@@ -12,17 +12,20 @@ use uuid::Uuid;
 use crate::{events, utils};
 use crate::api::state::DB;
 use crate::network::Network;
+use crate::mailer::Mailer;
 use crate::telegram::TelegramClient;
 
 #[derive(Clone)]
 pub struct MonitorAppState {
     pub db: DB,
-    pub telegram_client: TelegramClient
+    pub telegram_client: TelegramClient,
+    pub mailer: Mailer,
 }
 
 impl MonitorAppState {
-    fn new(db: DB, telegram_client: TelegramClient) -> Self {
-        Self{ db, telegram_client }
+    fn new(db: DB, telegram_client: TelegramClient) -> Result<Self, String> {
+        let mailer = Mailer::new()?;
+        Ok(Self { db, telegram_client, mailer })
     }
 }
 
@@ -123,7 +126,7 @@ pub async fn run_monitor(test: bool, networks: Vec<Network>, db: DB, telegram_cl
     let rpm = rpm.parse::<i32>()
         .map_err(|err| utils::make_err(Box::new(err), "parse infra rpm"))?;
 
-    let app_state = MonitorAppState::new(db, telegram_client);
+    let app_state = MonitorAppState::new(db, telegram_client)?;
     let env = Env::new(test);
 
     let (req_tx, req_rx) = unbounded();

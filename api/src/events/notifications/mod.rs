@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use tracing::info;
 use uuid::Uuid;
 use crate::api::state::DB;
 use crate::db::Invoice;
@@ -75,9 +74,8 @@ impl TelegramNotifier {
 }
 
 impl Notify for EmailNotifier {
-    async fn notify(&self, _: Arc<MonitorAppState>, _: Invoice) ->  Result<(), String>{
-        info!("Notified by email: email={}", self.email);
-        todo!()
+    async fn notify(&self, app_state: Arc<MonitorAppState>, invoice: Invoice) ->  Result<(), String>{
+        app_state.mailer.send_invoice_paid(&self.email, &invoice.web_url()?).await
     }
 }
 

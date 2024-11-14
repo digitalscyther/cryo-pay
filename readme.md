@@ -51,9 +51,9 @@ WEB_BASE_URL=https://example.com:3000
     - [x] DB
     - [x] Endpoints to get and set account details
     - [x] Frontend Account page
-  - [ ] Add email sending
-    - [ ] Read Brevo doc
-    - [ ] Integrate Brevo
+  - [x] Add email sending
+    - [x] Read Brevo doc
+    - [x] Integrate Brevo
   - [x] Add telegram message sending
     - [x] Telegram bot
       - [x] Webhook and LongPool
