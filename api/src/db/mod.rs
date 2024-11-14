@@ -1,6 +1,7 @@
 use bigdecimal::BigDecimal;
 use serde::Serialize;
 use sqlx::{PgPool, types::{chrono::NaiveDateTime, Uuid}};
+use crate::utils;
 
 pub async fn get_db_connection(db_url: &str) -> Result<PgPool, sqlx::Error> {
     PgPool::connect(db_url).await
@@ -17,7 +18,7 @@ pub struct User {
     pub telegram_notification: bool,
 }
 
-#[derive(Serialize, sqlx::FromRow)]
+#[derive(Clone, Serialize, sqlx::FromRow)]
 pub struct Invoice {
     pub id: Uuid,
     pub created_at: NaiveDateTime,
@@ -27,6 +28,12 @@ pub struct Invoice {
     pub paid_at: Option<NaiveDateTime>,
     pub networks: Vec<i32>,
     pub user_id: Option<Uuid>,
+}
+
+impl Invoice {
+    pub fn web_url(&self) -> Result<String, String> {
+        utils::get_invoice_url(self.id)
+    }
 }
 
 pub async fn list_invoices(
@@ -256,4 +263,21 @@ pub async fn update_user(
     }
 
     get_user_by_id(db, user_id).await
+}
+
+pub async fn set_user_telegram_chat_id(db: &PgPool, id: &Uuid, telegram_chat_id: Option<String>) -> Result<(), sqlx::Error> {
+    sqlx::query_as!(
+        User,
+        r#"
+        UPDATE "users"
+        SET telegram_chat_id = $1
+        WHERE id = $2
+        "#,
+        telegram_chat_id,
+        id,
+    )
+        .execute(db)
+        .await?;
+
+    Ok(())
 }

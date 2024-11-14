@@ -1,5 +1,5 @@
 use tgbot::api::Client;
-use tgbot::types::{ChatId, GetBot, Integer, SendMessage};
+use tgbot::types::{ChatId, GetBot, InlineKeyboardButton, InlineKeyboardMarkup, SendMessage};
 use crate::utils;
 
 pub async fn get_client() -> Result<Client, String> {
@@ -8,14 +8,25 @@ pub async fn get_client() -> Result<Client, String> {
         .map_err(|err| utils::make_err(Box::new(err), "create telegram client"))
 }
 
-pub async fn send_message(client: &Client, chat_id: &str, text: &str) -> Result<(), String> {
-    let chat_id: ChatId = chat_id
-        .parse::<Integer>()
-        .map_err(|err| utils::make_err(Box::new(err), "parse chat id"))?
-        .into();
+pub async fn send_invoice_paid(client: &Client, chat_id: ChatId, invoice_url: &str) -> Result<(), String> {
+    let mut reply_markup = InlineKeyboardMarkup::default();
+    reply_markup = reply_markup.add_row(
+        vec![InlineKeyboardButton::for_url("Check", invoice_url)]
+    );
 
     client
-        .execute(SendMessage::new(chat_id.clone(), text))
+        .execute(SendMessage::new(
+            chat_id, "Invoice paid")
+                .with_reply_markup(reply_markup))
+        .await
+        .map_err(|err| utils::make_err(Box::new(err), "send telegram message"))?;
+
+    Ok(())
+}
+
+pub async fn send_message(client: &Client, chat_id: ChatId, text: &str) -> Result<(), String> {
+    client
+        .execute(SendMessage::new(chat_id, text))
         .await
         .map_err(|err| utils::make_err(Box::new(err), "send telegram message"))?;
 

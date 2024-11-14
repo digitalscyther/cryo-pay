@@ -1,5 +1,8 @@
 use tgbot::api::Client;
+use tgbot::types::{ChatId, Integer};
 use bot::TelegramBot;
+use crate::api::state::DB;
+use crate::utils;
 
 mod client;
 mod bot;
@@ -16,17 +19,22 @@ impl TelegramClient {
         Ok(Self { client })
     }
 
-    pub async fn send_message(&self, chat_id: &str, text: &str) -> Result<(), String> {
-        client::send_message(&self.client, chat_id, text).await
+    pub async fn send_invoice_paid(&self, chat_id: &str, invoice_url: &str) -> Result<(), String> {
+        let chat_id: ChatId = chat_id
+            .parse::<Integer>()
+            .map_err(|err| utils::make_err(Box::new(err), "parse chat id"))?
+            .into();
+
+        client::send_invoice_paid(&self.client, chat_id, invoice_url).await
     }
 
     pub async fn get_bot_name(&self) -> Result<String, String> {
         client::get_bot_name(&self.client).await
     }
 
-    pub async fn run_as_bot(&self) -> Result<(), String> {
+    pub async fn run_as_bot(&self, db: DB) -> Result<(), String> {
         let telegram_bot = TelegramBot::new()?;
 
-        telegram_bot.run(&self.client).await
+        telegram_bot.run(&self.client, db).await
     }
 }

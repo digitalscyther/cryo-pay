@@ -2,6 +2,7 @@ use std::sync::Arc;
 use tracing::info;
 use uuid::Uuid;
 use crate::api::state::DB;
+use crate::db::Invoice;
 use crate::monitor::MonitorAppState;
 
 #[derive(Debug)]
@@ -29,10 +30,10 @@ impl Notifier {
         Self::Telegram(TelegramNotifier::new(chat_id))
     }
 
-    pub async fn notify(&self, app_state: Arc<MonitorAppState>) -> Result<(), String> {
+    pub async fn notify(&self, app_state: Arc<MonitorAppState>, invoice: Invoice) -> Result<(), String> {
         match self {
-            Notifier::Email(email) => email.notify(app_state).await,
-            Notifier::Telegram(telegram) => telegram.notify(app_state).await,
+            Notifier::Email(email) => email.notify(app_state, invoice).await,
+            Notifier::Telegram(telegram) => telegram.notify(app_state, invoice).await,
         }
     }
 
@@ -58,7 +59,7 @@ impl Notifier {
 }
 
 trait Notify {
-    async fn notify(&self, app_state: Arc<MonitorAppState>) -> Result<(), String>;
+    async fn notify(&self, app_state: Arc<MonitorAppState>, invoice: Invoice) -> Result<(), String>;
 }
 
 impl EmailNotifier {
@@ -74,14 +75,14 @@ impl TelegramNotifier {
 }
 
 impl Notify for EmailNotifier {
-    async fn notify(&self, _: Arc<MonitorAppState>) ->  Result<(), String>{
+    async fn notify(&self, _: Arc<MonitorAppState>, _: Invoice) ->  Result<(), String>{
         info!("Notified by email: email={}", self.email);
         todo!()
     }
 }
 
 impl Notify for TelegramNotifier {
-    async fn notify(&self, app_state: Arc<MonitorAppState>) ->  Result<(), String>{
-        app_state.telegram_client.send_message(&self.chat_id, "Bill paid").await
+    async fn notify(&self, app_state: Arc<MonitorAppState>, invoice: Invoice) ->  Result<(), String>{
+        app_state.telegram_client.send_invoice_paid(&self.chat_id, &invoice.web_url()?).await
     }
 }

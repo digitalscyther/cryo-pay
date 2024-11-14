@@ -171,6 +171,16 @@ impl DB {
             .await
             .map_err(|err| utils::make_err(Box::new(err), "update user"))
     }
+
+    pub async fn set_user_telegram_chat_id(
+        &self,
+        user_id: &Uuid,
+        telegram_chat_id: Option<String>,
+    ) -> Result<(), String> {
+        db::set_user_telegram_chat_id(&self.pg_pool, user_id, telegram_chat_id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "update user"))
+    }
 }
 
 impl GC {

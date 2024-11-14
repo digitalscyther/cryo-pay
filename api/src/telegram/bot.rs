@@ -2,8 +2,11 @@ use tgbot::api::Client;
 use tgbot::types::{SetWebhook, Update};
 use tgbot::handler::{LongPoll, UpdateHandler, WebhookServer};
 use std::net::SocketAddr;
-use tracing::info;
+use tracing::{error, info, warn};
 use std::str::FromStr;
+use uuid::Uuid;
+use crate::api::state::DB;
+use crate::telegram::client::send_message;
 use crate::utils;
 
 pub enum TelegramBot {
@@ -21,8 +24,8 @@ impl TelegramBot {
         })
     }
 
-    pub async fn run(&self, client: &Client) -> Result<(), String> {
-        let handler = Handler::new(client.clone());
+    pub async fn run(&self, client: &Client, db: DB) -> Result<(), String> {
+        let handler = Handler::new(client.clone(), db);
 
         match self {
             TelegramBot::LongPool => {
@@ -62,20 +65,51 @@ impl TelegramBot {
 
 struct Handler {
     client: Client,
+    db: DB,
 }
 
 impl Handler {
-    fn new(client: Client) -> Self {
-        Self { client }
+    fn new(client: Client, db: DB) -> Self {
+        Self { client, db }
     }
 }
 
 impl UpdateHandler for Handler {
     async fn handle(&self, update: Update) {
-        let msg = update.get_message()
-            .and_then(|msg| msg.get_text())
-            .map(|text| &text.data);
+        let chat_id = match update.get_chat_id() {
+            None => {
+                warn!("chat id not extractable: {:?}", update);
+                return;
+            }
+            Some(chat_id) => chat_id
+        };
 
-        info!("Got an update with message: {:?}", msg);
+        let user_id = match update.get_message()
+            .and_then(|msg| msg.get_text())
+            .map(|text| &text.data) {
+            None => return,
+            Some(text) => {
+                let texts = text.split(" ").collect::<Vec<&str>>();
+                let user_id_str = match texts.last() {
+                    None => return,
+                    Some(text) => text.to_owned()
+                };
+                match Uuid::parse_str(user_id_str) {
+                    Ok(user_id) => user_id,
+                    Err(_) => return,
+                }
+            }
+        };
+
+        match self.db.set_user_telegram_chat_id(&user_id, Some(chat_id.to_string())).await {
+            Ok(_) => info!("Set telegram_chat_id for user_id={:?}", user_id),
+            Err(err) => error!(err),
+        };
+
+        if let Err(err) = send_message(
+            &self.client,
+            chat_id.into(),
+            "We have saved your contact and will be able to send you payment notifications here."
+        ).await { error!(err) }
     }
 }

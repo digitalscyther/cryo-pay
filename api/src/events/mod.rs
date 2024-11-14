@@ -71,8 +71,9 @@ pub async fn process_log(app_state: Arc<MonitorAppState>, log: Log) -> Result<()
             .into_iter()
             .map(|n| {
                 let app_state = app_state.clone();
+                let invoice = invoice.clone();
                 tokio::spawn(async move {
-                    n.notify(app_state).await
+                    n.notify(app_state, invoice).await
                 })
             }
             )
