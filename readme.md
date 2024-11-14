@@ -44,7 +44,7 @@ WEB_BASE_URL=https://example.com:3000
   - [x] Refactor
   - [x] Integrate user_id for invoices
   - [x] Logout
-- [ ] Set up notifications about payment statuses for sellers via email and Telegram
+- [x] Set up notifications about payment statuses for sellers via email and Telegram
   - [x] Add email
   - [x] Add telegram chat id
   - [x] Add flags where to notify
