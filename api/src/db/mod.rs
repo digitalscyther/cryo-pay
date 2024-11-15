@@ -80,7 +80,7 @@ pub async fn create_invoice(pg_pool: &PgPool, amount: BigDecimal, seller: &str, 
         .await
 }
 
-pub async fn get_invoice(db: &PgPool, id: Uuid) -> Result<Invoice, sqlx::Error> {
+pub async fn get_invoice(db: &PgPool, id: Uuid) -> Result<Option<Invoice>, sqlx::Error> {
     sqlx::query_as!(
         Invoice,
         r#"
@@ -89,7 +89,7 @@ pub async fn get_invoice(db: &PgPool, id: Uuid) -> Result<Invoice, sqlx::Error> 
         "#,
         id
     )
-        .fetch_one(db)
+        .fetch_optional(db)
         .await
 }
 
@@ -280,4 +280,19 @@ pub async fn set_user_telegram_chat_id(db: &PgPool, id: &Uuid, telegram_chat_id:
         .await?;
 
     Ok(())
+}
+
+pub async fn delete_own_invoice(db: &PgPool, id: &Uuid, user_id: &Uuid) -> Result<bool, sqlx::Error> {
+    let result = sqlx::query!(
+        r#"
+        DELETE FROM invoice
+        WHERE id = $1 AND user_id = $2 AND paid_at IS NULL
+        "#,
+        id,
+        user_id
+    )
+    .execute(db)
+    .await?;
+
+    Ok(result.rows_affected() > 0)
 }

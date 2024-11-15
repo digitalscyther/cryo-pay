@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        DELETE FROM invoice\n        WHERE id = $1 AND user_id = $2 AND paid_at IS NULL\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "64e7cc398d8466df475916dcb75915f5a745f8748e3b13dc05567aa820ca5085"
+}

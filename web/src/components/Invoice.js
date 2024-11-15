@@ -1,13 +1,15 @@
 import React, {useEffect, useState} from 'react';
-import {useParams} from 'react-router-dom';
+import {useParams, useNavigate} from 'react-router-dom';
 import axios from 'axios';
 import Web3 from 'web3';
-import {Container, Button, Spinner, Alert} from 'react-bootstrap';
+import {Alert, Col, Container, Button, ListGroup, Row, Spinner} from 'react-bootstrap';
 import {apiUrl, getBlockchainInfo, getNetwork} from "../utils";
 
 function Invoice() {
+    const navigate = useNavigate();
     const {invoice_id} = useParams();
     const [invoice, setInvoice] = useState(null);
+    const [own, setOwn] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [processing, setProcessing] = useState(false);
@@ -16,36 +18,42 @@ function Invoice() {
     const [networks, setNetworks] = useState(null);
 
     useEffect(() => {
-        const fetchInvoice = async () => {
+        const fetchData = async () => {
             try {
-                const response = await axios.get(apiUrl(`/payment/invoice/${invoice_id}`));
+                const response = await axios.get(
+                    apiUrl(`/payment/invoice/${invoice_id}`),
+                    {withCredentials: true}
+                );
                 setInvoice(response.data.invoice);
+                setOwn(response.data.own);
+
+                try {
+                    const blockchainResponse = await getBlockchainInfo();
+                    const {networks, abi} = blockchainResponse.data;
+
+                    setErc20Abi(abi.erc20);
+                    setContractAbi(abi.contract);
+                    setNetworks(networks.reduce((acc, item) => {
+                        acc[item.id] = item;
+                        return acc;
+                    }, {}));
+                } catch (err) {
+                    setError('Failed to fetch blockchain info or connect to MetaMask');
+                }
+
             } catch (err) {
-                setError('Failed to fetch invoice data');
+                if (err.response && err.response.status === 404) {
+                    navigate('/not-found');
+                } else {
+                    setError('Failed to fetch invoice data');
+                }
             } finally {
                 setLoading(false);
             }
         };
 
-        const fetchBlockchainInfo = async () => {
-            try {
-                const response = await getBlockchainInfo();
-                const {networks, abi} = response.data;
-
-                setErc20Abi(abi.erc20);
-                setContractAbi(abi.contract);
-                setNetworks(networks.reduce((acc, item) => {
-                    acc[item.id] = item;
-                    return acc;
-                }, {}));
-            } catch (err) {
-                setError('Failed to fetch blockchain info or connect to MetaMask');
-            }
-        };
-
-        fetchInvoice();
-        fetchBlockchainInfo();
-    }, [invoice_id]);
+        fetchData();
+    }, [invoice_id, navigate]);
 
     const handlePayment = async () => {
         const web3 = new Web3(window.ethereum);
@@ -110,6 +118,22 @@ function Invoice() {
         }
     };
 
+    const handleDelete = async () => {
+        try {
+            setProcessing(true);
+            await axios.delete(
+                apiUrl(`/payment/invoice/${invoice_id}`),
+                {withCredentials: true}
+            );
+            alert('Invoice deleted successfully.');
+            navigate('/');
+        } catch (err) {
+            setError('Failed to delete the invoice, please try again.');
+        } finally {
+            setProcessing(false);
+        }
+    };
+
     if (loading) {
         return (
             <Container className="mt-5 text-center">
@@ -119,45 +143,81 @@ function Invoice() {
     }
 
     return (
-        <Container className="mt-5">
-            <h2>Pay Invoice</h2>
-            <p><strong>Invoice ID:</strong> {invoice.id}</p>
-            <p><strong>Amount:</strong> {parseFloat(invoice.amount).toFixed(2)} MTK</p>
-            <div><strong>Networks:</strong><br/>
-                {invoice.networks.length > 0 ? (
-                    <ul style={{listStyleType: "none", paddingLeft: "20px"}}>
-                        {invoice.networks.map((n) => (
-                            <li key={n}>– {getNetwork(n).name}</li>
-                        ))}
-                    </ul>
-                ) : (
-                    <span>&nbsp;&nbsp;&nbsp;&nbsp;No networks available</span>
+        <Container className="mt-5" style={{maxWidth: '600px'}}>
+            <h2 className="mb-4">Pay Invoice</h2>
+
+            <ListGroup variant="flush" className="mb-4">
+                <ListGroup.Item>
+                    <strong>Invoice ID:</strong> {invoice.id}
+                </ListGroup.Item>
+                <ListGroup.Item>
+                    <strong>Amount:</strong> {parseFloat(invoice.amount).toFixed(2)} MTK
+                </ListGroup.Item>
+                <ListGroup.Item>
+                    <strong>Networks:</strong>
+                    <div className="mt-2">
+                        {invoice.networks.length > 0 ? (
+                            <ListGroup variant="flush">
+                                {invoice.networks.map((n) => (
+                                    <ListGroup.Item key={n} className="border-0 ps-3">
+                                        – {getNetwork(n).name}
+                                    </ListGroup.Item>
+                                ))}
+                            </ListGroup>
+                        ) : (
+                            <span className="ps-3">No networks available</span>
+                        )}
+                    </div>
+                </ListGroup.Item>
+                <ListGroup.Item>
+                    <strong>Seller:</strong> {invoice.seller}
+                </ListGroup.Item>
+                <ListGroup.Item>
+                    <strong>Created At:</strong>{' '}
+                    {new Date(invoice.created_at).toLocaleString()}
+                </ListGroup.Item>
+                {invoice.paid_at && (
+                    <ListGroup.Item>
+                        <strong>Paid At:</strong>{' '}
+                        {new Date(invoice.paid_at).toLocaleString()}
+                    </ListGroup.Item>
                 )}
-            </div>
-            <p><strong>Seller:</strong> {invoice.seller}</p>
-            <p><strong>Created At:</strong> {new Date(invoice.created_at).toLocaleString()}</p>
+            </ListGroup>
 
             {invoice.paid_at ? (
-                <>
-                    <p><strong>Paid At:</strong> {new Date(invoice.paid_at).toLocaleString()}</p>
-                    <Alert variant="success">This invoice has already been paid.</Alert>
-                </>
+                <Alert variant="success" className="text-center">
+                    This invoice has already been paid.
+                </Alert>
             ) : (
-                <>
-                    {processing ? (
-                        <Button variant="primary" disabled>
-                            Processing Payment...
+                <Row className="align-items-center">
+                    <Col className="text-start">
+                        <Button
+                            variant="primary"
+                            onClick={handlePayment}
+                            disabled={processing}
+                        >
+                            {processing ? 'Processing Payment...' : 'Pay with MetaMask'}
                         </Button>
-                    ) : (
-                        <Button variant="primary" onClick={handlePayment}>
-                            Pay with MetaMask
-                        </Button>
+                    </Col>
+                    {own && (
+                        <Col className="text-end">
+                            <Button
+                                variant="danger"
+                                onClick={handleDelete}
+                                disabled={processing}
+                            >
+                                {processing ? 'Deleting...' : 'Delete Invoice'}
+                            </Button>
+                        </Col>
                     )}
-                </>
+                </Row>
             )}
 
-            {error && <Alert className="my-3" variant="danger">{error}</Alert>}
-
+            {error && (
+                <Alert variant="danger" className="text-center mt-4">
+                    {error}
+                </Alert>
+            )}
         </Container>
     );
 }

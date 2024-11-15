@@ -112,20 +112,20 @@ impl DB {
             .map_err(|err| utils::make_err(Box::new(err), "create invoice"))
     }
 
-    async fn get_invoice(&self, id: Uuid) -> Result<Invoice, String> {
+    async fn get_invoice(&self, id: Uuid) -> Result<Option<Invoice>, String> {
         db::get_invoice(&self.pg_pool, id)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "get invoice"))
     }
 
-    pub async fn get_own_invoice(&self, id: Uuid, user_id: Option<Uuid>) -> Result<(bool, Invoice), String> {
+    pub async fn get_own_invoice(&self, id: Uuid, user_id: Option<Uuid>) -> Result<(bool, Option<Invoice>), String> {
         let invoice = self.get_invoice(id).await?;
 
-        let own = match user_id {
+        let own = invoice.is_some() && match user_id {
             None => false,
             Some(user_id) => db::get_is_owner(&self.pg_pool, id, user_id)
                 .await
-                .map_err(|err| utils::make_err(Box::new(err), "get invoice"))?
+                .map_err(|err| utils::make_err(Box::new(err), "get own invoice"))?
         };
 
         Ok((own, invoice))
@@ -146,13 +146,13 @@ impl DB {
     pub async fn set_block_number(&self, network: &str, block_number: i64) -> Result<(), String> {
         db::create_or_update_block_number(&self.pg_pool, network, block_number)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "get block number"))
+            .map_err(|err| utils::make_err(Box::new(err), "set block number"))
     }
 
     pub async fn get_user_by_id(&self, id: &Uuid) -> Result<User, String> {
         db::get_user_by_id(&self.pg_pool, id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "get or create user"))
+            .map_err(|err| utils::make_err(Box::new(err), "get user by id"))
     }
 
     pub async fn get_or_create_user(&self, firebase_user_id: &str, email: Option<String>) -> Result<User, String> {
@@ -179,7 +179,13 @@ impl DB {
     ) -> Result<(), String> {
         db::set_user_telegram_chat_id(&self.pg_pool, user_id, telegram_chat_id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "update user"))
+            .map_err(|err| utils::make_err(Box::new(err), "set user telegram chat id"))
+    }
+
+    pub async fn delete_own_invoice(&self, id: &Uuid, user_id: &Uuid) -> Result<bool, String> {
+        db::delete_own_invoice(&self.pg_pool, id, user_id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "delete own invoice"))
     }
 }
 

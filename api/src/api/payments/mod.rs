@@ -3,13 +3,13 @@ use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::{Extension, Json, middleware, Router};
 use axum::response::IntoResponse;
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post};
 use bigdecimal::BigDecimal;
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::db::Invoice;
-use crate::api::middleware::{extract_jwt, MaybeUser};
+use crate::db::{Invoice, User};
+use crate::api::middleware::{extract_jwt, MaybeUser, only_auth};
 use crate::api::ping_pong::ping_pong;
 use crate::api::state::AppState;
 
@@ -48,6 +48,11 @@ pub fn get_router(app_state: Arc<AppState>) -> Router {
         .route("/invoice", get(get_invoices_handler))
         .route("/invoice", post(create_invoice_handler))
         .route("/invoice/:invoice_id", get(get_invoice_handler))
+        .route(
+            "/invoice/:invoice_id",
+            delete(delete_invoice_handler)
+                .layer(middleware::from_fn_with_state(app_state.clone(), only_auth))
+        )
         .layer(middleware::from_fn_with_state(app_state.clone(), extract_jwt))
         .with_state(app_state)
 }
@@ -141,7 +146,22 @@ async fn get_invoice_handler(
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    let own_invoice = OwnInvoiceResponse { own, invoice: invoice.into() };
+    match invoice {
+        None => Err(StatusCode::NOT_FOUND),
+        Some(invoice) => Ok(Json(
+            OwnInvoiceResponse { own, invoice: invoice.into() }
+        ))
+    }
+}
 
-    Ok(Json(own_invoice))
+async fn delete_invoice_handler(
+    State(state): State<Arc<AppState>>,
+    Path(invoice_id): Path<Uuid>,
+    Extension(user): Extension<User>,
+) -> impl IntoResponse {
+    match state.db.delete_own_invoice(&invoice_id, &user.id).await {
+        Ok(true) => StatusCode::NO_CONTENT,
+        Ok(false) => StatusCode::NOT_FOUND,
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
+    }
 }

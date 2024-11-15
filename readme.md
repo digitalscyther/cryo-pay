@@ -78,9 +78,9 @@ EMAIL_SENDER=noreply@example.com
     - [ ] Add smartcontract
       - [ ] Deploy
       - [ ] Add into config
-- [ ] Delete own invoice
-  - [ ] Backend endpoint
-  - [ ] Frontend button
+- [x] Delete own invoice
+  - [x] Backend endpoint
+  - [x] Frontend button
 
 ### Nice-to-Have
 - [ ] Add basic statistics for sellers (number of transactions, total amounts for a period)
