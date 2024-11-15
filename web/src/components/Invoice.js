@@ -18,7 +18,7 @@ function Invoice() {
     const [networks, setNetworks] = useState(null);
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchInvoice = async () => {
             try {
                 const response = await axios.get(
                     apiUrl(`/payment/invoice/${invoice_id}`),
@@ -26,21 +26,6 @@ function Invoice() {
                 );
                 setInvoice(response.data.invoice);
                 setOwn(response.data.own);
-
-                try {
-                    const blockchainResponse = await getBlockchainInfo();
-                    const {networks, abi} = blockchainResponse.data;
-
-                    setErc20Abi(abi.erc20);
-                    setContractAbi(abi.contract);
-                    setNetworks(networks.reduce((acc, item) => {
-                        acc[item.id] = item;
-                        return acc;
-                    }, {}));
-                } catch (err) {
-                    setError('Failed to fetch blockchain info or connect to MetaMask');
-                }
-
             } catch (err) {
                 if (err.response && err.response.status === 404) {
                     navigate('/not-found');
@@ -52,7 +37,24 @@ function Invoice() {
             }
         };
 
-        fetchData();
+        const fetchBlockchainInfo = async () => {
+            try {
+                const response = await getBlockchainInfo();
+                const {networks, abi} = response.data;
+
+                setErc20Abi(abi.erc20);
+                setContractAbi(abi.contract);
+                setNetworks(networks.reduce((acc, item) => {
+                    acc[item.id] = item;
+                    return acc;
+                }, {}));
+            } catch (err) {
+                setError('Failed to fetch blockchain info or connect to MetaMask');
+            }
+        };
+
+        fetchInvoice();
+        fetchBlockchainInfo();
     }, [invoice_id, navigate]);
 
     const handlePayment = async () => {

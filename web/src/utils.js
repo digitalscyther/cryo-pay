@@ -10,6 +10,11 @@ export const NETWORKS = {
         "id": 10,
         "order": 2,
         "name": "Optimism"
+    },
+    42161: {
+        "id": 42161,
+        "order": 3,
+        "name": "Arbitrum-One"
     }
 };
 

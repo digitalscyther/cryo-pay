@@ -28,7 +28,7 @@ INFRA_RPM=1
 ERC20_ABI_PATH=/opt/data/erc20_abi.json
 CONTRACT_ABI_PATH=/opt/data/invoice_abi.json
 EVENT_SIGNATURE=PayInvoiceEvent(string,address,address,uint128,uint128)
-NETWORKS=[{"name":"optimism-sepolia","id":11155420,"link":"https://optimism-sepolia.infura.io/v3/foo","addresses":{"erc20":"0x9A211fD6C60BdC4Cc1dB22cBe2f882ae527B1D87","contract":"..."}},{"name":"optimism","id":10,"link":"https://optimism-mainnet.infura.io/v3/foo","addresses":{"erc20":"0x94b008aa00579c1307b0ef2c499ad98a8ce58e58","contract":"..."}}]
+NETWORKS=[{"name":"optimism-sepolia","id":11155420,"link":"https://optimism-sepolia.infura.io/v3/foo","addresses":{"erc20":"0x9A211fD6C60BdC4Cc1dB22cBe2f882ae527B1D87","contract":"..."}},{"name":"optimism","id":10,"link":"https://optimism-mainnet.infura.io/v3/foo","addresses":{"erc20":"0x94b008aa00579c1307b0ef2c499ad98a8ce58e58","contract":"..."}},{"name":"arbitrum","id":42161,"link":"https://arbitrum-mainnet.infura.io/v3/foo","addresses":{"erc20":"0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9","contract":"..."}}]
 TGBOT_TOKEN=foobarbaz
 WEB_BASE_URL=https://example.com:3000
 BREVO_API_KEY=foobarbaz
@@ -65,22 +65,18 @@ EMAIL_SENDER=noreply@example.com
         - [x] Endpoint
         - [x] Get telegram chat name
     - [x] Send notification by chat_id
-- [ ] Add support for Arbitrum and Base networks
-  - [ ] Arbitrum
-    - [ ] Find network id
-    - [ ] Find USDT ERC20 smart contract address
-    - [ ] Add smartcontract
-      - [ ] Deploy
-      - [ ] Add into config
-  - [ ] Base
-    - [ ] Find network id
-    - [ ] Find USDT ERC20 smart contract address
-    - [ ] Add smartcontract
-      - [ ] Deploy
-      - [ ] Add into config
+- [x] Add support for Arbitrum and Base networks
+  - [x] Arbitrum
+    - [x] Find network id
+    - [x] Find USDT ERC20 smart contract address
+    - [x] Add smartcontract
+      - [x] Deploy
+      - [x] Add into config
+  - [ ] ~~Base~~ (add when will be popular)
 - [x] Delete own invoice
   - [x] Backend endpoint
   - [x] Frontend button
+- [ ] Set lower (Market) gas for transactions
 
 ### Nice-to-Have
 - [ ] Add basic statistics for sellers (number of transactions, total amounts for a period)
