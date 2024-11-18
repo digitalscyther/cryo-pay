@@ -7,8 +7,8 @@ services:
     ports:
       - ${POSTGRES_PORT}:5432
 
-#  redis:
-#    environment:
-#      - ALLOW_EMPTY_PASSWORD=yes
-#    ports:
-#      - ${REDIS_PORT}:6379
+  redis:
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - ${REDIS_PORT}:6379

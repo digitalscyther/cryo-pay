@@ -5,7 +5,7 @@ add config (with private key) to api/data/firebaseConfig.json
 add config to web/src/firebaseConfig.json
 
 ```text
-docker compose build && NGINX_PORT=80 POSTGRES_PORT=6432 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+docker compose build && NGINX_PORT=80 POSTGRES_PORT=6432 REDIS_PORT=6381 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
 
 #### local
@@ -21,6 +21,7 @@ HOST=0.0.0.0
 PORT=8080
 
 POSTGRES_URL=postgres://cryo:example@postgres/cryo
+REDIS_URL=redis://:redis123@redis
 
 APP_SECRET=your_secret
 GOOGLE_APPLICATION_CREDENTIALS=/opt/data/firebaseConfig.json
@@ -33,6 +34,7 @@ TGBOT_TOKEN=foobarbaz
 WEB_BASE_URL=https://example.com:3000
 BREVO_API_KEY=foobarbaz
 EMAIL_SENDER=noreply@example.com
+INFURA_TOKEN=<infura_token>
 ```
 
 ## TODO
@@ -77,6 +79,11 @@ EMAIL_SENDER=noreply@example.com
   - [x] Backend endpoint
   - [x] Frontend button
 - [ ] Set lower (Market) gas for transactions
+  - [x] Backend
+  - [ ] Frontend
+- [ ] Deploy
+  - [ ] Check
+  - [ ] Do
 
 ### Nice-to-Have
 - [ ] Add basic statistics for sellers (number of transactions, total amounts for a period)

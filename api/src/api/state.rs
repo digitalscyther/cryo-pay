@@ -1,6 +1,7 @@
 use bigdecimal::BigDecimal;
 use chrono::NaiveDateTime;
 use jsonwebtoken::{Algorithm, decode, DecodingKey, encode, EncodingKey, Header, Validation};
+use redis::{aio::MultiplexedConnection, AsyncCommands, ConnectionLike, RedisResult};
 use rs_firebase_admin_sdk::{credentials_provider, App, GcpCredentials, auth::token::{error::TokenVerificationError, jwt::JWToken, TokenVerifier}};
 use serde::{Deserialize, Serialize};
 use sqlx::migrate::MigrateError;
@@ -10,12 +11,16 @@ use crate::db::{self, Invoice, User};
 use crate::network::Network;
 use crate::telegram::TelegramClient;
 use crate::utils;
-use crate::utils::get_env_var;
+
+const SUGGESTED_GAS_FEE_TIMEOUT: u64 = 60 * 10;
 
 pub async fn setup_app_state(networks: Vec<Network>, db: DB, telegram_client: TelegramClient) -> Result<AppState, String> {
     let gc = GC::new().await?;
     let jwt = JWT::new()?;
-    Ok(AppState { db,telegram_client, networks, gc, jwt })
+    let redis = Redis::new().await?;
+    let infura_token = utils::get_env_var("INFURA_TOKEN")?;
+
+    Ok(AppState { db,telegram_client, networks, gc, jwt, redis, infura_token })
 }
 
 #[derive(Clone)]
@@ -34,12 +39,19 @@ pub struct JWT {
 }
 
 #[derive(Clone)]
+pub struct Redis {
+    connection: MultiplexedConnection,
+}
+
+#[derive(Clone)]
 pub struct AppState {
     pub db: DB,
     pub telegram_client: TelegramClient,
     pub networks: Vec<Network>,
     pub gc: GC,
     pub jwt: JWT,
+    pub redis: Redis,
+    pub infura_token: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -60,7 +72,7 @@ impl Claims {
 
 impl JWT {
     fn new() -> Result<Self, String> {
-        let secret = get_env_var("APP_SECRET")?;
+        let secret = utils::get_env_var("APP_SECRET")?;
 
         Ok(JWT { secret })
     }
@@ -87,7 +99,7 @@ impl JWT {
 
 impl DB {
     pub async fn new() -> Result<Self, String> {
-        let db_url = get_env_var("POSTGRES_URL")?;
+        let db_url = utils::get_env_var("POSTGRES_URL")?;
 
         let pg_pool = db::get_db_connection(&db_url).await.map_err(|_| "Failed to connect to database".to_string())?;
 
@@ -221,4 +233,51 @@ impl GC {
 pub enum VerifyError {
     Verification(TokenVerificationError),
     Unexpected(String),
+}
+
+impl Redis {
+    async fn new() -> Result<Self, String> {
+        let mut client  = redis::Client::open(utils::get_env_var("REDIS_URL")?)
+            .map_err(|e| utils::make_err(Box::new(e), "get redis client"))?;
+
+        assert!(client.check_connection());
+
+        let connection = client
+            .get_multiplexed_async_connection()
+            .await
+            .map_err(|e| utils::make_err(Box::new(e), "get redis connection"))?;
+
+        Ok(Self { connection })
+    }
+
+    async fn get(&self, key: &str) -> Result<Option<String>, String> {
+        Ok(self.connection
+            .clone()
+            .get(key)
+            .await
+            .map_err(|e| utils::make_err(Box::new(e), "get redis value"))?)
+    }
+
+    async fn set(&self, key: &str, value: String, timeout: u64) -> Result<(), String> {
+        let set_result: RedisResult<()> = self.connection
+            .clone()
+            .set_ex(key, value, timeout)
+            .await;
+
+        set_result.map_err(|e| utils::make_err(Box::new(e), "get redis value"))
+    }
+
+    pub async fn get_suggested_gas_fees(&self, network: &i64) ->  Result<Option<String>, String> {
+        let redis_key = get_suggested_gas_fees_key(network);
+        self.get(&redis_key).await
+    }
+
+    pub async fn set_suggested_gas_fees(&self, network: &i64, value: String) ->  Result<(), String> {
+        let redis_key = get_suggested_gas_fees_key(network);
+        self.set(&redis_key, value, SUGGESTED_GAS_FEE_TIMEOUT).await
+    }
+}
+
+fn get_suggested_gas_fees_key(network: &i64) -> String {
+    format!("network-suggested-gas-fees:{}", network)
 }

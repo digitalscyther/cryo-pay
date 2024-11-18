@@ -25,3 +25,4 @@ axum-extra = {version = "0.9.4", features = ["cookie"] }
 time = "0.3.36"
 tgbot = { version = "0.31.0", features = ["webhook"] }
 reqwest = "0.12.9"
+redis = { version = "0.27.5", features = ["aio", "tokio-comp"] }

@@ -11,7 +11,7 @@ services:
     networks:
       - nginx_network
       - postgres_network
-#      - redis_network
+      - redis_network
 
   web:
     build:
@@ -50,23 +50,23 @@ services:
     networks:
       - postgres_network
 
-#  redis:
-#    image: 'bitnami/redis:latest'
-#    environment:
-#      - REDIS_PASSWORD=redis123
-#    volumes:
-#      - redis_data:/bitnami/redis/data
-#    networks:
-#      - redis_network
+  redis:
+    image: 'bitnami/redis:7.4.1'
+    environment:
+      - REDIS_PASSWORD=redis123
+    volumes:
+      - redis_data:/bitnami/redis/data
+    networks:
+      - redis_network
 
 networks:
   nginx_network:
     driver: bridge
   postgres_network:
     driver: bridge
-#  redis_network:
-#    driver: bridge
+  redis_network:
+    driver: bridge
 
 volumes:
     postgres_data:
-#    redis_data:
+    redis_data:
