@@ -81,9 +81,9 @@ INFURA_TOKEN=<infura_token>
 - [x] Set lower (Market) gas for transactions
   - [x] Backend
   - [x] Frontend
-- [ ] Deploy
+- [x] Deploy
   - [x] Check
-  - [ ] Do
+  - [x] Do
 
 ### Nice-to-Have
 - [ ] (Bug) Failed pay step with correct popup (now show false successful payment)
