@@ -78,14 +78,15 @@ INFURA_TOKEN=<infura_token>
 - [x] Delete own invoice
   - [x] Backend endpoint
   - [x] Frontend button
-- [ ] Set lower (Market) gas for transactions
+- [x] Set lower (Market) gas for transactions
   - [x] Backend
-  - [ ] Frontend
+  - [x] Frontend
 - [ ] Deploy
   - [ ] Check
   - [ ] Do
 
 ### Nice-to-Have
+- [ ] (Bug) Failed pay step with correct popup (now show false successful payment)
 - [ ] Add basic statistics for sellers (number of transactions, total amounts for a period)
 - [ ] Automate QR code generation for invoices
 - [ ] Set up storage for sellers' contact information for sending notifications
