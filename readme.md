@@ -82,7 +82,7 @@ INFURA_TOKEN=<infura_token>
   - [x] Backend
   - [x] Frontend
 - [ ] Deploy
-  - [ ] Check
+  - [x] Check
   - [ ] Do
 
 ### Nice-to-Have
