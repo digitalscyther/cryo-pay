@@ -70,7 +70,7 @@ function App() {
         <>
             <Navbar bg="dark" variant="dark" expand="lg">
                 <Container>
-                    <Navbar.Brand href="/">MyApp</Navbar.Brand>
+                    <Navbar.Brand href="/">DS Billing</Navbar.Brand>
                     <Navbar.Toggle aria-controls="basic-navbar-nav"/>
                     <Navbar.Collapse id="basic-navbar-nav">
                         <Nav className="d-flex w-100">

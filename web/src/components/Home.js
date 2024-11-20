@@ -26,7 +26,7 @@ function Home({isLoggedIn}) {
 
     useEffect(() => {
         setLoading(true);
-        const onlyMy = searchParams.get('my') === 'true';
+        const onlyMy = searchParams.get('my') === '1';
         setUserIdChecked(onlyMy);
 
         const fetchBlockchainInfo = async () => {
@@ -107,7 +107,7 @@ function Home({isLoggedIn}) {
     const handleOnlyMyChange = (e) => {
         const params = Object.fromEntries([...searchParams]);
         if (e.target.checked) {
-            params.my = true;
+            params.my = 1;
         } else {
             delete params.my;
         }
