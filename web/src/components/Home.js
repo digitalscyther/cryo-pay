@@ -1,4 +1,5 @@
 import React, {useEffect, useState} from 'react';
+import {useSearchParams} from 'react-router-dom';
 import axios from 'axios';
 import {Alert, Button, Container, Form, Modal, Spinner, Table} from 'react-bootstrap';
 import MetaMaskButton from './MetaMaskButton';
@@ -21,9 +22,12 @@ function Home({isLoggedIn}) {
     const limit = PAGE_SIZE;
     const [networks, setNetworks] = useState([]);
     const [userIdChecked, setUserIdChecked] = useState(false);
+    const [searchParams, setSearchParams] = useSearchParams();
 
     useEffect(() => {
         setLoading(true);
+        const onlyMy = searchParams.get('my') === 'true';
+        setUserIdChecked(onlyMy);
 
         const fetchBlockchainInfo = async () => {
             try {
@@ -39,7 +43,7 @@ function Home({isLoggedIn}) {
 
         fetchBlockchainInfo();
 
-        let user_id = userIdChecked ? "user_id=my&" : "";
+        let user_id = onlyMy ? "user_id=my&" : "";
         axios
             .get(
                 apiUrl(`/payment/invoice?${user_id}limit=${limit}&offset=${offset}`),
@@ -55,7 +59,7 @@ function Home({isLoggedIn}) {
                 setError('Failed to fetch invoices');
                 setLoading(false);
             });
-    }, [limit, offset, userIdChecked]);
+    }, [limit, offset, searchParams]);
 
     const handleCreateInvoice = () => {
         setCreating(true);
@@ -100,6 +104,16 @@ function Home({isLoggedIn}) {
         }
     };
 
+    const handleOnlyMyChange = (e) => {
+        const params = Object.fromEntries([...searchParams]);
+        if (e.target.checked) {
+            params.my = true;
+        } else {
+            delete params.my;
+        }
+        setSearchParams(params);
+    }
+
     if (loading) {
         return (
             <Container className="mt-5 text-center">
@@ -133,7 +147,7 @@ function Home({isLoggedIn}) {
                             type="switch"
                             label="Only My"
                             checked={userIdChecked}
-                            onChange={(e) => setUserIdChecked(e.target.checked)}
+                            onChange={handleOnlyMyChange}
                         />
                     </Form>
                 )}
@@ -183,8 +197,8 @@ function Home({isLoggedIn}) {
                             <td><AmountDisplay amount={invoice.amount} size={1.0}/></td>
                             {/*<td>{invoice.seller}</td>*/}
                             {/*<td>{invoice.buyer || 'N/A'}</td>*/}
-                            <td><LocalDate date={invoice.created_at} /></td>
-                            <td>{invoice.paid_at ? <LocalDate date={invoice.paid_at} /> : 'Unpaid'}</td>
+                            <td><LocalDate date={invoice.created_at}/></td>
+                            <td>{invoice.paid_at ? <LocalDate date={invoice.paid_at}/> : 'Unpaid'}</td>
                         </tr>
                     ))}
                     </tbody>
