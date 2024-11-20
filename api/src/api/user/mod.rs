@@ -29,14 +29,14 @@ pub fn get_router(app_state: Arc<AppState>) -> Router {
 
 #[derive(Deserialize)]
 pub struct UserRequest {
-    pub email_notification: Option<bool>,
+    // pub email_notification: Option<bool>,   // TODO 123 when to turn on?
     pub telegram_notification: Option<bool>,
 }
 
 #[derive(Serialize)]
 pub struct UserResponse {
     pub attach_telegram_path: Option<String>,
-    pub email_notification: bool,
+    // pub email_notification: bool,    // TODO 123
     pub telegram_notification: bool,
 }
 
@@ -50,7 +50,7 @@ impl From<User> for UserResponse {
 
         UserResponse {
             attach_telegram_path,
-            email_notification: value.email_notification,
+            // email_notification: value.email_notification,    // TODO 123
             telegram_notification: value.telegram_notification
         }
     }
@@ -68,7 +68,8 @@ async fn update(
     Json(payload): Json<UserRequest>,
 ) -> Result<impl IntoResponse, StatusCode> {
     let response: UserResponse = state.db
-        .update_user(&user.id, payload.email_notification, payload.telegram_notification)
+        // .update_user(&user.id, payload.email_notification, payload.telegram_notification)    // TODO 123
+        .update_user(&user.id, None, payload.telegram_notification)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .into();

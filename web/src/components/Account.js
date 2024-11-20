@@ -5,7 +5,7 @@ import { apiUrl } from '../utils';
 
 function Account() {
     const [settings, setSettings] = useState({
-        email_notification: false,
+        // email_notification: false,   // TODO 123
         telegram_notification: false,
     });
     const [loading, setLoading] = useState(true);
@@ -60,14 +60,19 @@ function Account() {
             <h3>Notification Settings</h3>
 
             <Form className="my-4 mx-3">
-                <Form.Check
-                    type="switch"
-                    id="email-notification"
-                    label="Email"
-                    name="email_notification"
-                    checked={settings.email_notification}
-                    onChange={handleChange}
-                />
+                <div className="d-flex">
+                    <Form.Check
+                        type="switch"
+                        id="email-notification"
+                        label="Email"
+                        name="email_notification"
+                        // checked={settings.email_notification}    // TODO 123
+                        checked={false}
+                        onChange={handleChange}
+                        disabled    // TODO 123
+                    />
+                    <div className="ms-5 text-warning">Available only by subscription</div>
+                </div>
                 <Form.Check
                     type="switch"
                     id="telegram-notification"
