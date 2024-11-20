@@ -1,34 +1,19 @@
 import React, {useEffect, useState} from 'react';
-import {useSearchParams} from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import {Alert, Button, Container, Form, Modal, Spinner, Table} from 'react-bootstrap';
+import {Button, Container, Form, Modal} from 'react-bootstrap';
 import MetaMaskButton from './MetaMaskButton';
+import InvoiceTable from './InvoiceTable';
 import {apiUrl, getBlockchainInfo, NETWORKS} from "../utils";
-import AmountDisplay from "./AmountDisplay";
-import LocalDate from './LocalDate';
-
-
-const PAGE_SIZE = 10;
 
 function Home({isLoggedIn}) {
-    const [invoices, setInvoices] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const navigate = useNavigate();
     const [showModal, setShowModal] = useState(false);
     const [newInvoice, setNewInvoice] = useState({amount: '', seller: '', networks: []});
     const [creating, setCreating] = useState(false);
-    const [offset, setOffset] = useState(0);
-    const [hasMore, setHasMore] = useState(false);
-    const limit = PAGE_SIZE;
     const [networks, setNetworks] = useState([]);
-    const [userIdChecked, setUserIdChecked] = useState(false);
-    const [searchParams, setSearchParams] = useSearchParams();
 
     useEffect(() => {
-        setLoading(true);
-        const onlyMy = searchParams.get('my') === '1';
-        setUserIdChecked(onlyMy);
-
         const fetchBlockchainInfo = async () => {
             try {
                 const response = await getBlockchainInfo();
@@ -37,29 +22,12 @@ function Home({isLoggedIn}) {
 
                 setNetworks(toSetNetworks);
             } catch (err) {
-                setError('Failed to fetch blockchain info');
+                console.error('Failed to fetch blockchain info');
             }
         };
 
         fetchBlockchainInfo();
-
-        let user_id = onlyMy ? "user_id=my&" : "";
-        axios
-            .get(
-                apiUrl(`/payment/invoice?${user_id}limit=${limit}&offset=${offset}`),
-                {withCredentials: true}
-            )
-            .then((response) => {
-                setInvoices(response.data);
-                setHasMore(response.data.length === limit);
-                setLoading(false);
-            })
-            .catch((err) => {
-                console.log(`Failed get invoices: ${err}`);
-                setError('Failed to fetch invoices');
-                setLoading(false);
-            });
-    }, [limit, offset, searchParams]);
+    }, [])
 
     const handleCreateInvoice = () => {
         setCreating(true);
@@ -70,15 +38,14 @@ function Home({isLoggedIn}) {
                 networks: newInvoice.networks,
             }, {withCredentials: true})
             .then((response) => {
-                setInvoices([response.data, ...invoices]);
-                setOffset(0);
                 setCreating(false);
                 setShowModal(false);
                 setNewInvoice({amount: '', seller: '', networks: []});
+                const newInvoiceId = response.data.id;
+                navigate(`/invoices/${newInvoiceId}`)
             })
             .catch((err) => {
                 console.log("Failed to create invoice", err);
-                setError('Failed to create invoice');
                 setCreating(false);
             });
     };
@@ -104,106 +71,16 @@ function Home({isLoggedIn}) {
         }
     };
 
-    const handleOnlyMyChange = (e) => {
-        const params = Object.fromEntries([...searchParams]);
-        if (e.target.checked) {
-            params.my = 1;
-        } else {
-            delete params.my;
-        }
-        setSearchParams(params);
-    }
-
-    if (loading) {
-        return (
-            <Container className="mt-5 text-center">
-                <Spinner animation="border" variant="primary"/>
-            </Container>
-        );
-    }
-
-    if (error) {
-        return (
-            <Container className="mt-5">
-                <Alert variant="danger">{error}</Alert>
-            </Container>
-        );
-    }
-
     return (
         <Container className="mt-5">
             <h2>Invoice List</h2>
 
-            {/* Create Invoice Button */}
             <Button variant="primary" onClick={() => setShowModal(true)} className="mb-3">
                 Create Invoice
             </Button>
 
-            <div className="d-flex justify-content-end mt-3 mb-1 me-3">
-                {isLoggedIn && (
-                    <Form className="me-auto">
-                        <Form.Check
-                            className="text-primary"
-                            type="switch"
-                            label="Only My"
-                            checked={userIdChecked}
-                            onChange={handleOnlyMyChange}
-                        />
-                    </Form>
-                )}
-                <Button
-                    variant="primary"
-                    disabled={offset === 0}
-                    onClick={() => setOffset(offset - limit)}
-                    className="me-2"
-                >
-                    &laquo; {/* Unicode for left double angle quotation mark */}
-                </Button>
-
-                <Button
-                    variant="primary"
-                    disabled={!hasMore}
-                    onClick={() => setOffset(offset + limit)}
-                >
-                    &raquo; {/* Unicode for right double angle quotation mark */}
-                </Button>
-            </div>
-
-            {invoices.length === 0 ? (
-                <Alert variant="info">No invoices found</Alert>
-            ) : (
-                <Table striped bordered hover responsive>
-                    <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Amount</th>
-                        {/*<th>Seller</th>*/}
-                        {/*<th>Buyer</th>*/}
-                        <th>Created At</th>
-                        <th>Paid At</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {invoices.map((invoice) => (
-                        <tr key={invoice.id}>
-                            <td>
-                                <Button
-                                    variant="link"
-                                    onClick={() => window.location.href = `/invoices/${invoice.id}`}
-                                >
-                                    {invoice.id}
-                                </Button>
-                            </td>
-                            <td><AmountDisplay amount={invoice.amount} size={1.0}/></td>
-                            {/*<td>{invoice.seller}</td>*/}
-                            {/*<td>{invoice.buyer || 'N/A'}</td>*/}
-                            <td><LocalDate date={invoice.created_at}/></td>
-                            <td>{invoice.paid_at ? <LocalDate date={invoice.paid_at}/> : 'Unpaid'}</td>
-                        </tr>
-                    ))}
-                    </tbody>
-                </Table>
-            )}
+            {/* Invoice Table */}
+            <InvoiceTable isLoggedIn={isLoggedIn}/>
 
             {/* Modal for Creating New Invoice */}
             <Modal show={showModal} onHide={() => setShowModal(false)}>
@@ -258,8 +135,8 @@ function Home({isLoggedIn}) {
                                                     return {
                                                         ...prev,
                                                         networks: isSelected
-                                                            ? prev.networks.filter(id => id !== selectedId) // Deselect
-                                                            : [...prev.networks, selectedId] // Select
+                                                            ? prev.networks.filter(id => id !== selectedId)
+                                                            : [...prev.networks, selectedId]
                                                     };
                                                 });
                                             }}
@@ -276,7 +153,9 @@ function Home({isLoggedIn}) {
                     <Button
                         variant="primary"
                         onClick={handleCreateInvoice}
-                        disabled={creating || !newInvoice.amount || !newInvoice.seller || newInvoice.networks.length === 0}
+                        disabled={
+                            creating || !newInvoice.amount || !newInvoice.seller || newInvoice.networks.length === 0
+                        }
                     >
                         {creating ? 'Creating...' : 'Create Invoice'}
                     </Button>
