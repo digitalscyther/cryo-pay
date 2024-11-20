@@ -86,12 +86,13 @@ INFURA_TOKEN=<infura_token>
   - [x] Do
 
 ### Nice-to-Have
-- [ ] (Bug) Failed pay step with correct popup (now show false successful payment)
+- [x] (Bug) Failed pay step with correct popup (now show false successful payment)
 - [ ] Add basic statistics for sellers (number of transactions, total amounts for a period)
 - [ ] Automate QR code generation for invoices
 - [ ] Set up storage for sellers' contact information for sending notifications
 - [ ] Create a landing page with a service description and usage instructions
 - [ ] Reset Firebase first token after logout
+- [ ] Email notifications subscription
 
 ### Optional
 - [ ] Add the ability to create invoices in bulk (e.g., for sellers with a large number of small orders)

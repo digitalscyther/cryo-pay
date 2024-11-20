@@ -4,6 +4,7 @@ import {Alert, Button, Container, Form, Modal, Spinner, Table} from 'react-boots
 import MetaMaskButton from './MetaMaskButton';
 import {apiUrl, getBlockchainInfo, NETWORKS} from "../utils";
 import AmountDisplay from "./AmountDisplay";
+import LocalDate from './LocalDate';
 
 
 const PAGE_SIZE = 10;
@@ -182,8 +183,8 @@ function Home({isLoggedIn}) {
                             <td><AmountDisplay amount={invoice.amount} size={1.0}/></td>
                             {/*<td>{invoice.seller}</td>*/}
                             {/*<td>{invoice.buyer || 'N/A'}</td>*/}
-                            <td>{new Date(invoice.created_at).toLocaleString()}</td>
-                            <td>{invoice.paid_at ? new Date(invoice.paid_at).toLocaleString() : 'Unpaid'}</td>
+                            <td><LocalDate date={invoice.created_at} /></td>
+                            <td>{invoice.paid_at ? <LocalDate date={invoice.paid_at} /> : 'Unpaid'}</td>
                         </tr>
                     ))}
                     </tbody>

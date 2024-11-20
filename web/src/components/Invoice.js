@@ -6,6 +6,7 @@ import Web3 from 'web3';
 import {Alert, Col, Container, Button, ListGroup, Row, Spinner} from 'react-bootstrap';
 import AmountDisplay from './AmountDisplay';
 import {apiUrl, getBlockchainInfo, getNetwork} from "../utils";
+import LocalDate from "./LocalDate";
 
 function Invoice() {
     const navigate = useNavigate();
@@ -207,12 +208,12 @@ function Invoice() {
                 </ListGroup.Item>
                 <ListGroup.Item>
                     <strong>Created At:</strong>{' '}
-                    {new Date(invoice.created_at).toLocaleString()}
+                    <LocalDate date={invoice.created_at} />
                 </ListGroup.Item>
                 {invoice.paid_at && (
                     <ListGroup.Item>
                         <strong>Paid At:</strong>{' '}
-                        {new Date(invoice.paid_at).toLocaleString()}
+                        <LocalDate date={invoice.paid_at} />
                     </ListGroup.Item>
                 )}
             </ListGroup>
