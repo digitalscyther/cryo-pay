@@ -1,7 +1,9 @@
 import React, {useEffect, useState} from 'react';
 import axios from 'axios';
-import {Table, Container, Alert, Spinner, Button, Modal, Form} from 'react-bootstrap';
+import {Alert, Button, Container, Form, Modal, Spinner, Table} from 'react-bootstrap';
+import MetaMaskButton from './MetaMaskButton';
 import {apiUrl, getBlockchainInfo, NETWORKS} from "../utils";
+import AmountDisplay from "./AmountDisplay";
 
 
 const PAGE_SIZE = 10;
@@ -177,7 +179,7 @@ function Home({isLoggedIn}) {
                                     {invoice.id}
                                 </Button>
                             </td>
-                            <td>{parseFloat(invoice.amount).toFixed(2)}</td>
+                            <td><AmountDisplay amount={invoice.amount} size={1.0}/></td>
                             {/*<td>{invoice.seller}</td>*/}
                             {/*<td>{invoice.buyer || 'N/A'}</td>*/}
                             <td>{new Date(invoice.created_at).toLocaleString()}</td>
@@ -216,13 +218,7 @@ function Home({isLoggedIn}) {
                                     onChange={handleSellerChange}
                                     style={{resize: 'none', overflow: 'hidden'}}
                                 />
-                                <div><Button
-                                    variant="outline-primary"
-                                    className="ms-2"
-                                    onClick={handleUseMetaMaskAddress}
-                                >
-                                    Use MetaMask
-                                </Button></div>
+                                <MetaMaskButton onPress={handleUseMetaMaskAddress}></MetaMaskButton>
                             </div>
                         </Form.Group>
 

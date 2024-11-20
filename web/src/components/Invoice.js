@@ -4,6 +4,7 @@ import axios from 'axios';
 import BN from 'bn.js';
 import Web3 from 'web3';
 import {Alert, Col, Container, Button, ListGroup, Row, Spinner} from 'react-bootstrap';
+import AmountDisplay from './AmountDisplay';
 import {apiUrl, getBlockchainInfo, getNetwork} from "../utils";
 
 function Invoice() {
@@ -71,17 +72,12 @@ function Invoice() {
 
         const isValidState = () => web3 && account && invoice && erc20Contract && invoiceContract;
         const fetchGasFees = async () => {
-            try {
-                const response = await axios.get(apiUrl(`/blockchain/suggested_gas_fees/${networkId}`));
-                const {data} = response.data;
-                return {
-                    maxFeePerGas: Web3.utils.toWei(data.medium.suggestedMaxFeePerGas, 'gwei'),
-                    maxPriorityFeePerGas: Web3.utils.toWei(data.medium.suggestedMaxPriorityFeePerGas, 'gwei'),
-                };
-            } catch (error) {
-                console.error("Failed to fetch gas prices:", error);
-                return null;
-            }
+            const response = await axios.get(apiUrl(`/blockchain/suggested_gas_fees/${networkId}`));
+            const {data} = response.data;
+            return {
+                maxFeePerGas: Web3.utils.toWei(data.medium.suggestedMaxFeePerGas, 'gwei'),
+                maxPriorityFeePerGas: Web3.utils.toWei(data.medium.suggestedMaxPriorityFeePerGas, 'gwei'),
+            };
         };
         const checkAllowance = async (spender, amount) => {
             const allowance = await erc20Contract.methods.allowance(account, spender).call();
@@ -131,23 +127,14 @@ function Invoice() {
         if (!isValidState()) return;
 
         const processPayment = async (amount) => {
-            try {
-                const gasFees = await fetchGasFees();
+            const gasFees = await fetchGasFees();
 
-                const isAllowanceSufficient = await checkAllowance(invoiceContract._address, amount);
-                if (!isAllowanceSufficient) {
-                    console.log("Approval required, sending approval transaction...");
-                    await handleApproval(amount, gasFees);
-                    console.log('Approval successful');
-                } else {
-                    console.log("Sufficient allowance, skipping approval...");
-                }
-
-                await handlePaymentTransaction(amount, gasFees);
-                console.log('Payment successful');
-            } catch (error) {
-                console.error('Error in processing payment:', error);
+            const isAllowanceSufficient = await checkAllowance(invoiceContract._address, amount);
+            if (!isAllowanceSufficient) {
+                await handleApproval(amount, gasFees);
             }
+
+            await handlePaymentTransaction(amount, gasFees);
         };
 
         try {
@@ -197,7 +184,7 @@ function Invoice() {
                     <strong>Invoice ID:</strong> {invoice.id}
                 </ListGroup.Item>
                 <ListGroup.Item>
-                    <strong>Amount:</strong> {parseFloat(invoice.amount).toFixed(2)} MTK
+                    <strong>Amount:</strong> <AmountDisplay amount={invoice.amount} color={"text-success"} />
                 </ListGroup.Item>
                 <ListGroup.Item>
                     <strong>Networks:</strong>
