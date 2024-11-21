@@ -69,6 +69,7 @@ function App() {
     };
 
     const projectName = getProjectName();
+    document.title = projectName;
 
     return (
         <>
