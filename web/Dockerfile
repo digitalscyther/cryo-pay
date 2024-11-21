@@ -14,6 +14,9 @@ RUN --mount=type=bind,source=package.json,target=package.json \
 FROM deps as build
 
 ARG BASE_API_URL
+ARG PROJECT_NAME
+ARG CONTACTS
+ARG SEND_MESSAGE_URL
 
 RUN --mount=type=bind,source=package.json,target=package.json \
     --mount=type=bind,source=package-lock.json,target=package-lock.json \
@@ -23,6 +26,9 @@ RUN --mount=type=bind,source=package.json,target=package.json \
 COPY . .
 
 RUN REACT_APP_BASE_API_URL=${BASE_API_URL} \
+    REACT_APP_PROJECT_NAME=${PROJECT_NAME} \
+    REACT_APP_CONTACTS=${CONTACTS} \
+    REACT_APP_SEND_MESSAGE_URL=${SEND_MESSAGE_URL} \
   npm run build
 
 FROM base as final

@@ -19,6 +19,9 @@ services:
       target: final
       args:
         - BASE_API_URL=/api
+        - PROJECT_NAME=MyApp
+        - CONTACTS={"email":"foo@bar.baz","telegram":"foo","linkedin":"foo"}
+        - SEND_MESSAGE_URL="https://example.com"
     restart: always
     environment:
       NODE_ENV: production
