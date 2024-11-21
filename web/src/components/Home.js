@@ -16,10 +16,10 @@ const Home = ({ isLoggedIn }) => {
                             Fast, secure, and low-cost invoicing powered by decentralized networks.
                         </p>
                         <div className="mt-4">
-                            <Button className="m-3" variant="primary" size="lg" href="/dashboard">
+                            <Button className="m-2" variant="primary" size="lg" href="/dashboard">
                                 {isLoggedIn ? "Go to Dashboard" : "Get Started"}
                             </Button>
-                            <Button className="m-3" variant="outline-light" size="lg" href="/about">
+                            <Button className="m-2" variant="outline-light" size="lg" href="/about">
                                 Learn More
                             </Button>
                         </div>
