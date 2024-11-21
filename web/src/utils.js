@@ -35,6 +35,10 @@ export function getSendMessageUrl() {
     return process.env.REACT_APP_SEND_MESSAGE_URL
 }
 
+export function getProjectGitHubUrl() {
+    return process.env.REACT_APP_PROJECT_GITHUB_URL || "https://github.com/foo/bar"
+}
+
 export function getNetwork(networkId) {
     return NETWORKS[networkId]
 }

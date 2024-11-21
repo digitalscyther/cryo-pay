@@ -1,8 +1,9 @@
 import React from 'react';
 import { Container, Row, Col, Card, ListGroup, Button, Accordion } from 'react-bootstrap';
-import {getProjectName} from "../utils";
+import {getProjectGitHubUrl, getProjectName} from "../utils";
 
 const About = () => {
+    const projectGitHubUrl = getProjectGitHubUrl();
     const projectName = getProjectName();
     const commission = "0–1%";
 
@@ -126,7 +127,7 @@ const About = () => {
                     <h3>Additional Resources</h3>
                     <div className="d-flex justify-content-center">
                         <div>
-                            <a href="https://github.com/your-repo" target="_blank" rel="noopener noreferrer" className="m-2">
+                            <a href={projectGitHubUrl} target="_blank" rel="noopener noreferrer" className="m-2">
                                 <Button variant="secondary">
                                     GitHub Repository
                                 </Button>

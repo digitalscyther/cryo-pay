@@ -132,13 +132,12 @@ const Contact = () => {
             <hr/>
 
             <h3>Other Ways to Reach Us</h3>
+            <p><a href={`mailto:${contact_email}`}>Send Email</a>: {contact_email}</p>
             <p>If you'd like to get in touch directly, you can contact us through the following channels:</p>
-            <div variant="flush" className="d-flex">
-                <Button className="m-3" variant="outline-dark"
-                        href={`mailto:${contact_email}`}>Email: {contact_email}</Button>
-                <Button className="m-3" variant="outline-dark" href={`https://t.me/${contact_telegram}`} target="_blank"
+            <div className="d-flex flex-wrap">
+                <Button className="mx-3 my-1" variant="outline-dark" href={`https://t.me/${contact_telegram}`} target="_blank"
                         rel="noopener noreferrer">Telegram</Button>
-                <Button className="m-3" variant="outline-dark" href={`https://www.linkedin.com/in/${contact_linkedin}`}
+                <Button className="mx-3 my-1" variant="outline-dark" href={`https://www.linkedin.com/in/${contact_linkedin}`}
                         target="_blank" rel="noopener noreferrer">LinkedIn</Button>
             </div>
         </Container>
