@@ -174,8 +174,9 @@ const Documentation = () => {
 
 
     return (
-        <Container className="my-5">
-            <Row>
+        <>
+            <Row><Col><h2 className="m-3">Documentation</h2></Col></Row>
+            <Row className="mt-2">
                 {/* Sidebar */}
                 <Col id="doc-nav" md={3} className="bg-dark text-white p-3">
                     <Nav className="flex-column">
@@ -194,8 +195,7 @@ const Documentation = () => {
                 </Col>
 
                 {/* Content Area */}
-                <Col md={9}>
-                    <h2 className="mb-4">Documentation</h2>
+                <Col className="mt-md-0 mt-3" md={9}>
                     {sections.map((section) => (
                         <Card
                             key={section.id}
@@ -217,7 +217,7 @@ const Documentation = () => {
                     ))}
                 </Col>
             </Row>
-        </Container>
+        </>
     );
 }
 
