@@ -124,7 +124,7 @@ const Contact = () => {
                     />
                 </Form.Group>
 
-                <Button variant="outline-primary" type="submit" className="mt-3">
+                <Button variant="dark" type="submit" className="mt-3">
                     Send Message
                 </Button>
             </Form>
@@ -132,7 +132,7 @@ const Contact = () => {
             <hr/>
 
             <h3>Other Ways to Reach Us</h3>
-            <p><a href={`mailto:${contact_email}`}>Send Email</a>: {contact_email}</p>
+            <p className="m-3">Email <br/><code>{contact_email}</code></p>
             <p>If you'd like to get in touch directly, you can contact us through the following channels:</p>
             <div className="d-flex flex-wrap">
                 <Button className="mx-3 my-1" variant="outline-dark" href={`https://t.me/${contact_telegram}`} target="_blank"

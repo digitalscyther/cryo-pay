@@ -1,13 +1,50 @@
 body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.not-ready {
+    color: rgba(255, 255, 255, 0.5); /* Subtle white with transparency */
+    text-decoration: italic; /* Optional: Makes it look visually distinct */
+}
+
+.not-ready small {
+    font-style: italic;
+}
+
+#doc-nav .nav-link:hover {
+    background-color: #495057; /* Change the color as needed */
+    text-decoration: none; /* Optional: to remove underline if any */
+}
+
+#doc-nav .not-ready:hover {
+    background-color: transparent; /* Ensure the "not-ready" links don't react to hover */
+    cursor: not-allowed;
+}
+
+#main-navbar {
+
+    .navbar-nav .nav-link {
+        padding: 0.5rem 1rem;
+    }
+
+    .navbar-brand {
+        font-size: 1.5rem;
+    }
+
+    @media (max-width: 768px) {
+        .navbar-nav {
+            text-align: center;
+        }
+    }
+}
+

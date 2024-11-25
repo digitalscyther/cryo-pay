@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {Button, Container, Form, Modal} from 'react-bootstrap';
 import MetaMaskButton from './MetaMaskButton';
-import InvoiceTable from './InvoiceTable';
 import {apiUrl, getBlockchainInfo, NETWORKS} from "../utils";
+import InvoiceList from "./InvoiceList";
 
 function Dashboard({isLoggedIn}) {
     const navigate = useNavigate();
@@ -80,7 +80,7 @@ function Dashboard({isLoggedIn}) {
             </Button>
 
             {/* Invoice Table */}
-            <InvoiceTable isLoggedIn={isLoggedIn}/>
+            <InvoiceList isLoggedIn={isLoggedIn}/>
 
             {/* Modal for Creating New Invoice */}
             <Modal show={showModal} onHide={() => setShowModal(false)}>

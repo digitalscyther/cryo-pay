@@ -16,7 +16,7 @@ const Home = ({ isLoggedIn }) => {
                             Fast, secure, and low-cost invoicing powered by decentralized networks.
                         </p>
                         <div className="mt-4">
-                            <Button className="m-2" variant="primary" size="lg" href="/dashboard">
+                            <Button className="m-2" variant="light" size="lg" href="/dashboard">
                                 {isLoggedIn ? "Go to Dashboard" : "Get Started"}
                             </Button>
                             <Button className="m-2" variant="outline-light" size="lg" href="/about">
@@ -96,7 +96,7 @@ const Home = ({ isLoggedIn }) => {
                 <h2>Ready to Simplify Your Billing?</h2>
                 <p className="lead">Create invoices effortlessly and manage payments with ease.</p>
                 <div>
-                    <Button className="m-2" variant="success" size="lg" href="/dashboard">
+                    <Button className="m-2" variant="dark" size="lg" href="/dashboard">
                         Create an Invoice
                     </Button>
                     <Button className="m-2" variant="outline-dark" size="lg" href="/about">

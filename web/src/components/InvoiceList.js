@@ -8,7 +8,7 @@ import LocalDate from './LocalDate';
 
 const PAGE_SIZE = 10;
 
-const InvoiceTable = ({isLoggedIn}) => {
+const InvoiceList = ({isLoggedIn}) => {
     const [invoices, setInvoices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -154,4 +154,4 @@ const InvoiceTable = ({isLoggedIn}) => {
     );
 };
 
-export default InvoiceTable;
+export default InvoiceList;

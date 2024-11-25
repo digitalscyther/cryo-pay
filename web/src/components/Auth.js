@@ -36,14 +36,13 @@ function Auth({ onLogin }) {
                     <h2 className="text-center mb-4">{isSignUp ? 'Sign Up' : 'Login'}</h2>
                     {error && <Alert variant="danger">{error}</Alert>}
 
-                    <Form>
+                    <Form onKeyDown={(e) => e.key === 'Enter' && handleEmailAuth()}>
                         <Form.Group controlId="formEmail">
                             <Form.Label>Email address</Form.Label>
                             <Form.Control
                                 type="email"
                                 placeholder="Enter email"
                                 name="email"
-                                autocomplete="off"
                                 value={formData.email}
                                 onChange={handleChange}
                                 isInvalid={isSignUp && !formData.email.trim()}
@@ -56,7 +55,7 @@ function Auth({ onLogin }) {
                                 type="password"
                                 placeholder="Password"
                                 name="password"
-                                autocomplete="new-password"
+                                autoComplete="new-password"
                                 value={formData.password}
                                 onChange={handleChange}
                                 isInvalid={isSignUp && formData.password.length > 0 && formData.password.length < 6}
