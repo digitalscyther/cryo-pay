@@ -85,6 +85,7 @@ const InvoiceList = ({isLoggedIn}) => {
                             className="text-primary"
                             type="switch"
                             label="Only My"
+                            id="onlyOwnerSwitch"
                             checked={onlyOwner}
                             onChange={handleOnlyOwnerChange}
                         />
