@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 use futures::future::join_all;
-use tokio::time::sleep;
 use std::time::Duration;
 use std::sync::Arc;
 use async_channel::{bounded, Receiver, Sender, unbounded};
+use async_rate_limit::limiters::VariableCostRateLimiter;
+use async_rate_limit::sliding_window::SlidingWindowRateLimiter;
 use ethers::prelude::{Filter, Http, Provider, U64};
 use ethers::providers::Middleware;
 use ethers::types::Log;
@@ -15,6 +16,11 @@ use crate::api::state::DB;
 use crate::network::Network;
 use crate::mailer::Mailer;
 use crate::telegram::TelegramClient;
+
+const CREDITS_PER_SECOND: usize = 500;
+const CREDITS_PER_DAY: usize = 3_000_000;
+const COST_GET_BLOCK_NUMBER: usize = 80;
+const COST_GET_LOGS: usize = 255;
 
 #[derive(Clone)]
 pub struct MonitorAppState {
@@ -63,11 +69,6 @@ async fn get_last_block_from_network(
             GottenObject::Block(block) => Ok(block),
             _ => Err("Invalid object type: Expected a Block".to_string()),
         })
-}
-
-async fn sleep_duration(to_sleep: u64) {
-    info!("Sleeping for {} seconds between requests to infra", to_sleep);
-    sleep(Duration::from_secs(to_sleep)).await;
 }
 
 #[derive(Clone)]
@@ -211,6 +212,15 @@ enum GetObject {
     GetLastBlock,
 }
 
+impl GetObject {
+    fn cost(&self) -> usize {
+        match self {
+            GetObject::GetLogs(_, _) => COST_GET_LOGS,
+            GetObject::GetLastBlock => COST_GET_BLOCK_NUMBER,
+        }
+    }
+}
+
 #[derive(Debug)]
 enum GottenObject {
     Logs(Vec<Log>),
@@ -220,13 +230,30 @@ enum GottenObject {
 async fn request_handler(
     req_rx: Receiver<GetFromInfuraParams>,
     platform_hub: HashMap<String, NetworkPlatform>,
-    base_filter: Filter, rpm: i32,
+    base_filter: Filter,
+    rpm: i32,
 ) -> Result<(), String> {
+    let mut self_limiter = SlidingWindowRateLimiter::new(
+        Duration::from_secs(60), rpm as usize
+    );
+    let mut infura_day_limiter = SlidingWindowRateLimiter::new(
+        Duration::from_secs(24 * 3600), CREDITS_PER_DAY
+    );
+    let mut infura_second_limiter = SlidingWindowRateLimiter::new(
+        Duration::from_secs(1), CREDITS_PER_SECOND
+    );
+
     loop {
         if let Ok(get_logs_params) = req_rx.recv().await {
             info!("Got network={}, task={}", get_logs_params.network, get_logs_params.task_id);
 
             if let Some(platform) = platform_hub.get(&get_logs_params.network) {
+                let cost = get_logs_params.get_object.cost();
+
+                self_limiter.wait_with_cost(1).await;
+                infura_second_limiter.wait_with_cost(cost).await;
+                infura_day_limiter.wait_with_cost(cost).await;
+
                 let get_obj_result = match get_logs_params.get_object {
                     GetObject::GetLogs(block_from, block_to) => {
                         let filter = base_filter.clone()
@@ -256,7 +283,5 @@ async fn request_handler(
 
             info!("Finished network={}, task={}", get_logs_params.network, get_logs_params.task_id);
         }
-
-        sleep_duration((60 / rpm) as u64).await;
     };
 }

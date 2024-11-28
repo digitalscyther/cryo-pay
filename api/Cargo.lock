@@ -91,6 +91,7 @@ name = "api"
 version = "0.1.0"
 dependencies = [
  "async-channel",
+ "async-rate-limit",
  "axum",
  "axum-extra",
  "bigdecimal",
@@ -145,6 +146,15 @@ dependencies = [
  "event-listener-strategy",
  "futures-core",
  "pin-project-lite",
+]
+
+[[package]]
+name = "async-rate-limit"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eb5e9c973a751743250ee65c10cd11cca946a64a7169dd4770e9635e7283b9f5"
+dependencies = [
+ "tokio",
 ]
 
 [[package]]
