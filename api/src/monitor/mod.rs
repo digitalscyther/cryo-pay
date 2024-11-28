@@ -8,6 +8,7 @@ use async_rate_limit::sliding_window::SlidingWindowRateLimiter;
 use ethers::prelude::{Filter, Http, Provider, U64};
 use ethers::providers::Middleware;
 use ethers::types::Log;
+use tokio::time::sleep;
 use tracing::{error, info};
 use uuid::Uuid;
 
@@ -42,15 +43,29 @@ async fn get_last_block(
     sender: &Sender<GetFromInfuraParams>,
     receiver: &Receiver<Result<GottenObject, String>>,
 ) -> Result<U64, String> {
-    Ok(match db.get_block_number(&network).await {
-        Ok(Some(block_number)) => U64([block_number as u64]),
-        need_get_new => {
-            need_get_new?;
-            let block = get_last_block_from_network(network, sender, receiver).await?;
-            db.set_block_number(&network, block.0[0] as i64).await?;
-            block
-        }
-    })
+    if let Some(block_number) = db.get_block_number(&network).await? {
+        return Ok(U64([block_number as u64]));
+    }
+
+    let block = get_only_last_block_from_network(network, sender, receiver).await;
+    db.set_block_number(&network, block.0[0] as i64).await?;
+    Ok(block)
+}
+
+
+async fn get_only_last_block_from_network(
+    network: &str,
+    sender: &Sender<GetFromInfuraParams>,
+    receiver: &Receiver<Result<GottenObject, String>>,
+) -> U64 {
+    loop {
+        match get_last_block_from_network(network, sender, receiver).await {
+            Ok(block) => return block,
+            Err(err) => error!("Failed get_last_block_from_network: {}", err)
+        };
+
+        sleep(Duration::from_secs(1)).await;
+    }
 }
 
 async fn get_last_block_from_network(
@@ -63,12 +78,45 @@ async fn get_last_block_from_network(
         .await
         .map_err(|err| utils::make_err(Box::new(err), "send get_obj_result"))?;
 
-    receiver.recv().await
-        .map_err(|err| utils::make_err(Box::new(err), "receive response"))?
-        .and_then(|obj| match obj {
-            GottenObject::Block(block) => Ok(block),
-            _ => Err("Invalid object type: Expected a Block".to_string()),
-        })
+    match receiver.recv().await {
+        Ok(Ok(GottenObject::Block(block))) => Ok(block),
+        Ok(Ok(GottenObject::Logs(_))) => Err("not block response".to_string()),
+        Ok(Err(err)) => Err(err),
+        Err(err) => Err(utils::make_err(Box::new(err), "receive block response")),
+    }
+}
+
+async fn get_only_logs(
+    get_from_infura_params: &GetFromInfuraParams,
+    sender: &Sender<GetFromInfuraParams>,
+    receiver: &Receiver<Result<GottenObject, String>>,
+) -> Vec<Log> {
+    loop {
+        match get_logs(get_from_infura_params, sender, receiver).await {
+            Ok(logs) => return logs,
+            Err(err) => error!("Failed get_logs: {}", err)
+        };
+
+        sleep(Duration::from_secs(1)).await;
+    }
+}
+
+async fn get_logs(
+    get_from_infura_params: &GetFromInfuraParams,
+    sender: &Sender<GetFromInfuraParams>,
+    receiver: &Receiver<Result<GottenObject, String>>,
+) -> Result<Vec<Log>, String> {
+    sender
+        .send(get_from_infura_params.clone())
+        .await
+        .map_err(|err| utils::make_err(Box::new(err), "send get_obj_result"))?;
+
+    match receiver.recv().await {
+        Ok(Ok(GottenObject::Block(_))) => Err("not logs response".to_string()),
+        Ok(Ok(GottenObject::Logs(logs))) => Ok(logs),
+        Ok(Err(err)) => Err(err),
+        Err(err) => Err(utils::make_err(Box::new(err), "receive logs response")),
+    }
 }
 
 #[derive(Clone)]
@@ -101,24 +149,19 @@ impl Env {
         let mut last_block_number = get_last_block(&app_state.db, &network_name, &sender, &receiver).await?;
 
         loop {
-            let new_block_number = get_last_block_from_network(&network_name, &sender, &receiver).await?;
+            let new_block_number = get_only_last_block_from_network(&network_name, &sender, &receiver).await;
             if new_block_number <= last_block_number {
                 continue;
             }
 
-            sender
-                .send(GetFromInfuraParams::new(
+            let logs = get_only_logs(
+                &GetFromInfuraParams::new(
                     &network_name,
                     GetObject::GetLogs(last_block_number, new_block_number),
-                )).await
-                .map_err(|err| utils::make_err(Box::new(err), "send get_obj_result"))?;
-
-            let logs = receiver.recv().await
-                .map_err(|err| utils::make_err(Box::new(err), "receive response"))?
-                .and_then(|obj| match obj {
-                    GottenObject::Logs(logs) => Ok(logs),
-                    _ => Err("Invalid object type: Expected a Vec<Log>".to_string()),
-                })?;
+                ),
+                &sender,
+                &receiver,
+            ).await;
 
             for log in logs {
                 if let Err(err) = self.process_log(app_state.clone(), log).await {
@@ -193,6 +236,7 @@ impl NetworkPlatform {
     }
 }
 
+#[derive(Clone)]
 struct GetFromInfuraParams {
     task_id: String,
     network: String,
@@ -207,6 +251,7 @@ impl GetFromInfuraParams {
     }
 }
 
+#[derive(Clone)]
 enum GetObject {
     GetLogs(U64, U64),
     GetLastBlock,
@@ -234,13 +279,13 @@ async fn request_handler(
     rpm: i32,
 ) -> Result<(), String> {
     let mut self_limiter = SlidingWindowRateLimiter::new(
-        Duration::from_secs(60), rpm as usize
+        Duration::from_secs(60), rpm as usize,
     );
     let mut infura_day_limiter = SlidingWindowRateLimiter::new(
-        Duration::from_secs(24 * 3600), CREDITS_PER_DAY
+        Duration::from_secs(24 * 3600), CREDITS_PER_DAY,
     );
     let mut infura_second_limiter = SlidingWindowRateLimiter::new(
-        Duration::from_secs(1), CREDITS_PER_SECOND
+        Duration::from_secs(1), CREDITS_PER_SECOND,
     );
 
     loop {
