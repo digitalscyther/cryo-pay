@@ -26,8 +26,7 @@ pub enum AuthUser {
 impl AuthUser {
     fn user(&self) -> User {
         match self {
-            AuthUser::Api(u) => u,
-            AuthUser::Web(u) => u
+            AuthUser::Api(u) | AuthUser::Web(u) => u
         }.to_owned()
     }
 
@@ -46,10 +45,8 @@ impl AuthUser {
         }
     }
 
-    fn user_id(&self) -> &Uuid {
-        match self {
-            AuthUser::Api(u) | AuthUser::Web(u) => &u.id,
-        }
+    fn user_id(&self) -> Uuid {
+        self.user().id
     }
 }
 
