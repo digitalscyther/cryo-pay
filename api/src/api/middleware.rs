@@ -134,7 +134,7 @@ pub async fn extract_jwt(
     if let Some(_ip) = get_ip_from_headers(req.headers()).await {
         ip = _ip;
     } else {
-        ip = "anonymus".to_string();
+        ip = "-".to_string();
     };
     let to_insert: MaybeUser = MaybeUser::create(user, ip);
 
