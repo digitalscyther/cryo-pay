@@ -9,7 +9,7 @@ use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::db::{Invoice, User};
-use crate::api::middleware::{extract_jwt, MaybeUser, only_auth};
+use crate::api::middleware::{MaybeUser, extract_jwt, only_auth, rate_limit};
 use crate::api::ping_pong::ping_pong;
 use crate::api::state::AppState;
 
@@ -46,13 +46,15 @@ pub fn get_router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route("/ping", get(ping_pong))
         .route("/invoice", get(get_invoices_handler))
-        .route("/invoice", post(create_invoice_handler))
+        .route(
+            "/invoice",
+            post(create_invoice_handler)
+                .layer(middleware::from_fn_with_state(app_state.clone(), rate_limit)))
         .route("/invoice/:invoice_id", get(get_invoice_handler))
         .route(
             "/invoice/:invoice_id",
             delete(delete_invoice_handler)
-                .layer(middleware::from_fn_with_state(app_state.clone(), only_auth))
-        )
+                .layer(middleware::from_fn_with_state(app_state.clone(), only_auth)))
         .layer(middleware::from_fn_with_state(app_state.clone(), extract_jwt))
         .with_state(app_state)
 }
@@ -92,7 +94,7 @@ impl UserIdFilter {
 #[derive(Deserialize)]
 struct Filter {
     #[serde(default = "default_user_id")]
-    user_id: UserIdFilter
+    user_id: UserIdFilter,
 }
 
 fn default_user_id() -> UserIdFilter {
@@ -122,7 +124,7 @@ async fn get_invoices_handler(
 struct CreateInvoiceRequest {
     amount: BigDecimal,
     seller: String,
-    networks: Vec<i32>
+    networks: Vec<i32>,
 }
 
 async fn create_invoice_handler(

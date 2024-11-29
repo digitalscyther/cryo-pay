@@ -267,6 +267,22 @@ impl Redis {
         set_result.map_err(|e| utils::make_err(Box::new(e), "get redis value"))
     }
 
+    pub async fn incr(&self, key: &str, timeout: u64) -> Result<u64, String> {
+        let count: u64 = self.connection
+            .clone()
+            .incr(&key, 1)
+            .await
+            .map_err(|e| utils::make_err(Box::new(e), "increment redis value"))?;
+
+        let _: bool = self.connection
+            .clone()
+            .expire(&key, timeout as i64)
+            .await
+            .map_err(|e| utils::make_err(Box::new(e), "set redis key expiration"))?;
+
+        Ok(count)
+    }
+
     pub async fn get_suggested_gas_fees(&self, network: &i64) ->  Result<Option<String>, String> {
         let redis_key = get_suggested_gas_fees_key(network);
         self.get(&redis_key).await
