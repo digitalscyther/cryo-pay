@@ -90,6 +90,13 @@ impl MaybeUser {
     }
 }
 
+async fn get_ip_from_headers(headers: &HeaderMap) -> Option<String> {
+    headers
+        .get("X-Real-IP")
+        .and_then(|real_ip| real_ip.to_str().ok())
+        .map(|real_ip_str| real_ip_str.to_string())
+}
+
 async fn get_user_from_headers(headers: &HeaderMap, state: Arc<AppState>) -> Option<User> {
     let claims = headers
         .get(axum::http::header::COOKIE)
@@ -126,7 +133,12 @@ pub async fn extract_jwt(
     next: Next,
 ) -> impl IntoResponse {
     let user = get_user_from_headers(req.headers(), state).await;
-    let ip = "todo-ip".to_string();
+    let ip;
+    if let Some(_ip) = get_ip_from_headers(req.headers()).await {
+        ip = _ip;
+    } else {
+        ip = "anonymus".to_string();
+    };
     let to_insert: MaybeUser = MaybeUser::create(user, ip);
 
     req.extensions_mut().insert(to_insert);
