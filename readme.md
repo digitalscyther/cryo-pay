@@ -87,6 +87,7 @@ INFURA_TOKEN=<infura_token>
 
 ### Nice-to-Have
 - [x] (Bug) Failed pay step with correct popup (now show false successful payment)
+- [x] Rate limit for create invoices
 - [ ] Add basic statistics for sellers (number of transactions, total amounts for a period)
 - [ ] Automate QR code generation for invoices
 - [ ] Set up storage for sellers' contact information for sending notifications
