@@ -1,5 +1,5 @@
 import React from "react";
-import {Container, Row, Col, Card, Nav} from "react-bootstrap";
+import {Row, Col, Card, Nav} from "react-bootstrap";
 
 const Documentation = () => {
     const sections = [

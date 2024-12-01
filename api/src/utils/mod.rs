@@ -1,5 +1,9 @@
 use std::env;
+use hex::encode;
+use rand::{thread_rng, Rng};
+use rand::distributions::Alphanumeric;
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 pub fn make_err(err: Box<dyn std::error::Error>, process: &str) -> String {
@@ -44,4 +48,39 @@ pub async fn get_suggested_gas_fees(infura_token: &str, network_id: i64) -> Resu
         .json().await
         .map_err(|err| make_err(Box::new(err), "parse reqwest for get_suggested_gas_fees"))?
     )
+}
+
+pub struct ApiKey {
+    pub value: String
+}
+
+impl ApiKey {
+    fn new(user_id: Uuid) -> Self {
+        let random_suffix: String = thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(32)
+            .map(char::from)
+            .collect();
+        let value = format!("{}.{}", user_id, random_suffix);
+
+        Self { value }
+    }
+
+    pub fn hash_value(api_key: &str) -> String {
+        let app_secret = env::var("APP_SECRET").expect("APP_SECRET must be set");
+        let mut hasher = Sha256::new();
+        hasher.update(app_secret);
+        hasher.update(api_key);
+        let result = hasher.finalize();
+
+        encode(result)
+    }
+
+    pub fn hashed_value(&self) -> String {
+        ApiKey::hash_value(&self.value)
+    }
+}
+
+pub fn new_api_key(user_id: Uuid) -> ApiKey {
+    ApiKey::new(user_id)
 }

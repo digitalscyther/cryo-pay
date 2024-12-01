@@ -9,7 +9,7 @@ use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::db::{Invoice, User};
-use crate::api::middleware::{MaybeUser, extract_jwt, only_auth, rate_limit};
+use crate::api::middleware::{MaybeUser, extract_maybe_user, only_auth, rate_limit};
 use crate::api::ping_pong::ping_pong;
 use crate::api::state::AppState;
 
@@ -55,7 +55,7 @@ pub fn get_router(app_state: Arc<AppState>) -> Router {
             "/invoice/:invoice_id",
             delete(delete_invoice_handler)
                 .layer(middleware::from_fn_with_state(app_state.clone(), only_auth)))
-        .layer(middleware::from_fn_with_state(app_state.clone(), extract_jwt))
+        .layer(middleware::from_fn_with_state(app_state.clone(), extract_maybe_user))
         .with_state(app_state)
 }
 

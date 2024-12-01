@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::migrate::MigrateError;
 use sqlx::PgPool;
 use uuid::Uuid;
-use crate::db::{self, Invoice, User};
+use crate::db::{self, ApiKey, Invoice, User};
 use crate::network::Network;
 use crate::telegram::TelegramClient;
 use crate::utils;
@@ -20,7 +20,7 @@ pub async fn setup_app_state(networks: Vec<Network>, db: DB, telegram_client: Te
     let redis = Redis::new().await?;
     let infura_token = utils::get_env_var("INFURA_TOKEN")?;
 
-    Ok(AppState { db,telegram_client, networks, gc, jwt, redis, infura_token })
+    Ok(AppState { db, telegram_client, networks, gc, jwt, redis, infura_token })
 }
 
 #[derive(Clone)]
@@ -177,7 +177,7 @@ impl DB {
         &self,
         user_id: &Uuid,
         email_notification: Option<bool>,
-        telegram_notification: Option<bool>
+        telegram_notification: Option<bool>,
     ) -> Result<User, String> {
         db::update_user(&self.pg_pool, user_id, email_notification, telegram_notification)
             .await
@@ -198,6 +198,52 @@ impl DB {
         db::delete_own_invoice(&self.pg_pool, id, user_id)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "delete own invoice"))
+    }
+
+    pub async fn delete_api_key(&self, id: &Uuid, user_id: &Uuid) -> Result<bool, String> {
+        db::delete_api_key(&self.pg_pool, id, user_id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "soft delete API key"))
+    }
+
+    pub async fn create_api_key(
+        &self,
+        user_id: &Uuid,
+        hashed_api_key: &str,
+    ) -> Result<ApiKey, String> {
+        db::create_api_key(&self.pg_pool, user_id, hashed_api_key)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "create API key"))
+    }
+
+    pub async fn get_api_key(&self, id: &Uuid, user_id: &Uuid) -> Result<Option<ApiKey>, String> {
+        db::get_api_key(&self.pg_pool, id, user_id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "get API key by ID"))
+    }
+
+    pub async fn get_api_key_by_api_key(
+        &self,
+        hashed_api_key: &str,
+    ) -> Result<Option<ApiKey>, String> {
+        db::get_api_key_by_api_key(&self.pg_pool, hashed_api_key)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "get API key by api_key"))
+    }
+
+    pub async fn list_api_key(
+        &self,
+        user_id: &Uuid,
+    ) -> Result<Vec<ApiKey>, String> {
+        db::list_api_key(&self.pg_pool, user_id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "get active API keys by user ID"))
+    }
+
+    pub async fn update_api_key_last_used(&self, id: &Uuid) -> Result<(), String> {
+        db::update_api_key_last_used(&self.pg_pool, id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "update last used timestamp"))
     }
 }
 
@@ -237,7 +283,7 @@ pub enum VerifyError {
 
 impl Redis {
     async fn new() -> Result<Self, String> {
-        let mut client  = redis::Client::open(utils::get_env_var("REDIS_URL")?)
+        let mut client = redis::Client::open(utils::get_env_var("REDIS_URL")?)
             .map_err(|e| utils::make_err(Box::new(e), "get redis client"))?;
 
         assert!(client.check_connection());
@@ -283,12 +329,12 @@ impl Redis {
         Ok(count)
     }
 
-    pub async fn get_suggested_gas_fees(&self, network: &i64) ->  Result<Option<String>, String> {
+    pub async fn get_suggested_gas_fees(&self, network: &i64) -> Result<Option<String>, String> {
         let redis_key = get_suggested_gas_fees_key(network);
         self.get(&redis_key).await
     }
 
-    pub async fn set_suggested_gas_fees(&self, network: &i64, value: String) ->  Result<(), String> {
+    pub async fn set_suggested_gas_fees(&self, network: &i64, value: String) -> Result<(), String> {
         let redis_key = get_suggested_gas_fees_key(network);
         self.set(&redis_key, value, SUGGESTED_GAS_FEE_TIMEOUT).await
     }

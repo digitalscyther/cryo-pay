@@ -10,12 +10,18 @@ use tracing::error;
 use uuid::Uuid;
 use crate::api::state::AppState;
 use crate::db::User;
+use crate::utils;
 
 
 const API_RPD: u64 = 1000;
 const WEB_RPD: u64 = 1000;
 const ANONYMUS_RPD: u64 = 1000;
 
+
+pub enum AuthType {
+    Api,
+    Web,
+}
 
 #[derive(Clone, Debug)]
 pub enum AuthUser {
@@ -78,13 +84,6 @@ impl MaybeUser {
             MaybeUser::Anonymus(_) => ANONYMUS_RPD,
         }
     }
-
-    fn create(u: Option<User>, ip: String) -> Self {
-        match u {
-            None => MaybeUser::Anonymus(ip),
-            Some(u) => MaybeUser::AuthUser(AuthUser::Web(u))
-        }
-    }
 }
 
 async fn get_ip_from_headers(headers: &HeaderMap) -> Option<String> {
@@ -94,7 +93,43 @@ async fn get_ip_from_headers(headers: &HeaderMap) -> Option<String> {
         .map(|real_ip_str| real_ip_str.to_string())
 }
 
-async fn get_user_from_headers(headers: &HeaderMap, state: Arc<AppState>) -> Option<User> {
+struct Auth {
+    type_: AuthType,
+    user: User,
+}
+
+impl Auth {
+    fn new(type_: AuthType, user: User) -> Self {
+        Self { type_, user }
+    }
+}
+
+impl From<(Option<Auth>, String)> for MaybeUser {
+    fn from(value: (Option<Auth>, String)) -> Self {
+        let (auth, ip) = value;
+        match auth {
+            None => MaybeUser::Anonymus(ip),
+            Some(auth) => match auth.type_ {
+                AuthType::Api => MaybeUser::AuthUser(AuthUser::Api(auth.user)),
+                AuthType::Web => MaybeUser::AuthUser(AuthUser::Web(auth.user))
+            }
+        }
+    }
+}
+
+async fn get_auth_from_headers(headers: &HeaderMap, state: Arc<AppState>) -> Option<Auth> {
+    if let Some(user) = get_web_user_from_headers(headers, state.clone()).await {
+        return Some(Auth::new(AuthType::Web, user));
+    };
+
+    if let Some(user) = get_api_user_from_headers(headers, state).await {
+        return Some(Auth::new(AuthType::Api, user));
+    };
+
+    None
+}
+
+async fn get_web_user_from_headers(headers: &HeaderMap, state: Arc<AppState>) -> Option<User> {
     let claims = headers
         .get(axum::http::header::COOKIE)
         .and_then(|cookies| cookies.to_str().ok())
@@ -124,19 +159,47 @@ async fn get_user_from_headers(headers: &HeaderMap, state: Arc<AppState>) -> Opt
     }
 }
 
-pub async fn extract_jwt(
+async fn get_api_user_from_headers(headers: &HeaderMap, state: Arc<AppState>) -> Option<User> {
+    let api_key = headers
+        .get("Authorization")
+        .and_then(|auth_header| auth_header.to_str().ok())
+        .map(|auth_str| auth_str.trim_start_matches("Bearer ").trim());
+
+    if let Some(api_key) = api_key {
+        if let Ok(Some(api_key)) = state.db
+            .get_api_key_by_api_key(&utils::ApiKey::hash_value(api_key))
+            .await
+            .map_err(|e| {
+                error!(e);
+                None::<User>
+            }) {
+            if let Err(e) = state.db.update_api_key_last_used(&api_key.id).await {
+                error!(e);
+            };
+            return state.db
+                .get_user_by_id(&api_key.user_id)
+                .await
+                .map_err(|e| {
+                    error!(e);
+                    None::<User>
+                })
+                .ok();
+        }
+    };
+
+    None
+}
+
+
+pub async fn extract_maybe_user(
     State(state): State<Arc<AppState>>,
     mut req: Request,
     next: Next,
 ) -> impl IntoResponse {
-    let user = get_user_from_headers(req.headers(), state).await;
-    let ip;
-    if let Some(_ip) = get_ip_from_headers(req.headers()).await {
-        ip = _ip;
-    } else {
-        ip = "-".to_string();
-    };
-    let to_insert: MaybeUser = MaybeUser::create(user, ip);
+    let ip = get_ip_from_headers(req.headers()).await.unwrap_or("-".to_string());
+
+    let auth = get_auth_from_headers(req.headers(), state).await;
+    let to_insert: MaybeUser = (auth, ip).into();
 
     req.extensions_mut().insert(to_insert);
     next.run(req).await
