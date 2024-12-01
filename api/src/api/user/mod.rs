@@ -7,7 +7,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Redirect};
 use axum::routing::{get, patch};
 use serde::{Deserialize, Serialize};
-use crate::api::middleware::{extract_maybe_user, only_auth};
+use crate::api::middleware::{extract_user, only_web};
 use crate::api::ping_pong::ping_pong;
 use crate::api::state::AppState;
 use crate::api::USER_BASE_PATH;
@@ -26,8 +26,8 @@ pub fn get_router(app_state: Arc<AppState>) -> Router {
         .route("/", patch(update))
         .route(ATTACH_TELEGRAM_PATH, get(attach_telegram))
         .nest("/api_key", api_key::get_router(app_state.clone()))
-        .layer(middleware::from_fn_with_state(app_state.clone(), only_auth))
-        .layer(middleware::from_fn_with_state(app_state.clone(), extract_maybe_user))
+        .layer(middleware::from_fn_with_state(app_state.clone(), only_web))
+        .layer(middleware::from_fn_with_state(app_state.clone(), extract_user))
         .with_state(app_state)
 }
 

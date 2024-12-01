@@ -9,7 +9,7 @@ use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::db::{Invoice, User};
-use crate::api::middleware::{MaybeUser, extract_maybe_user, only_auth, rate_limit};
+use crate::api::middleware::{AppUser, extract_user, only_auth, rate_limit};
 use crate::api::ping_pong::ping_pong;
 use crate::api::state::AppState;
 
@@ -55,7 +55,7 @@ pub fn get_router(app_state: Arc<AppState>) -> Router {
             "/invoice/:invoice_id",
             delete(delete_invoice_handler)
                 .layer(middleware::from_fn_with_state(app_state.clone(), only_auth)))
-        .layer(middleware::from_fn_with_state(app_state.clone(), extract_maybe_user))
+        .layer(middleware::from_fn_with_state(app_state.clone(), extract_user))
         .with_state(app_state)
 }
 
@@ -83,10 +83,10 @@ pub enum UserIdFilter {
 }
 
 impl UserIdFilter {
-    fn to_user_id(&self, maybe_user: MaybeUser) -> Option<Uuid> {
+    fn to_user_id(&self, app_user: AppUser) -> Option<Uuid> {
         match self {
             UserIdFilter::All => None,
-            UserIdFilter::My => maybe_user.user_id()
+            UserIdFilter::My => app_user.user_id()
         }
     }
 }
@@ -103,14 +103,14 @@ fn default_user_id() -> UserIdFilter {
 
 async fn get_invoices_handler(
     State(state): State<Arc<AppState>>,
-    Extension(maybe_user): Extension<MaybeUser>,
+    Extension(app_user): Extension<AppUser>,
     Query(pagination): Query<Pagination>,
     Query(filter): Query<Filter>,
 ) -> Result<Json<Vec<InvoiceResponse>>, StatusCode> {
     let limit = pagination.limit;
     let offset = pagination.offset;
 
-    let invoices = state.db.list_invoices(limit, offset, filter.user_id.to_user_id(maybe_user))
+    let invoices = state.db.list_invoices(limit, offset, filter.user_id.to_user_id(app_user))
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .into_iter()
@@ -129,10 +129,10 @@ struct CreateInvoiceRequest {
 
 async fn create_invoice_handler(
     State(state): State<Arc<AppState>>,
-    Extension(maybe_user): Extension<MaybeUser>,
+    Extension(app_user): Extension<AppUser>,
     Json(payload): Json<CreateInvoiceRequest>,
 ) -> Result<Json<InvoiceResponse>, StatusCode> {
-    let invoice = state.db.create_invoice(payload.amount, &payload.seller, &payload.networks, maybe_user.user_id())
+    let invoice = state.db.create_invoice(payload.amount, &payload.seller, &payload.networks, app_user.user_id())
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
@@ -142,9 +142,9 @@ async fn create_invoice_handler(
 async fn get_invoice_handler(
     State(state): State<Arc<AppState>>,
     Path(invoice_id): Path<Uuid>,
-    Extension(maybe_user): Extension<MaybeUser>,
+    Extension(app_user): Extension<AppUser>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let (own, invoice) = state.db.get_own_invoice(invoice_id, maybe_user.user_id())
+    let (own, invoice) = state.db.get_own_invoice(invoice_id, app_user.user_id())
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 

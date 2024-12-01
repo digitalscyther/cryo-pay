@@ -17,71 +17,81 @@ const API_RPD: u64 = 1000;
 const WEB_RPD: u64 = 1000;
 const ANONYMUS_RPD: u64 = 1000;
 
-
+#[derive(Clone, Debug)]
 pub enum AuthType {
-    Api,
-    Web,
+    API,
+    WEB,
 }
 
-#[derive(Clone, Debug)]
-pub enum AuthUser {
-    Api(User),
-    Web(User),
-}
-
-impl AuthUser {
-    fn user(&self) -> User {
+impl AuthType {
+    fn rpd(&self) -> u64{
         match self {
-            AuthUser::Api(u) | AuthUser::Web(u) => u
-        }.to_owned()
-    }
-
-    fn rate_limit_key(&self) -> String {
-        let key = match self {
-            AuthUser::Api(_) => "api",
-            AuthUser::Web(_) => "web",
-        };
-        format!("rate_limit:{}:{}", key, self.user_id())
-    }
-
-    fn rpd_allowed(&self) -> u64 {
-        match self {
-            AuthUser::Api(_) => API_RPD,
-            AuthUser::Web(_) => WEB_RPD,
+            AuthType::API => API_RPD,
+            AuthType::WEB => WEB_RPD,
         }
     }
 
-    fn user_id(&self) -> Uuid {
-        self.user().id
+    fn is_web(&self) -> bool {
+        match self {
+            AuthType::WEB => true,
+            _ => false,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Auth {
+    auth_type: AuthType,
+    user: User,
+}
+
+impl Auth {
+    fn new(auth_type: AuthType, user: User) -> Self {
+        Self { auth_type, user }
+    }
+
+    fn redis_key(&self) -> String {
+        format!("{:?}:{}", self.auth_type, self.user.id)
+    }
+
+    fn rpd(&self) -> u64 {
+        self.auth_type.rpd()
     }
 }
 
 
 #[derive(Clone, Debug)]
-pub enum MaybeUser {
-    AuthUser(AuthUser),
-    Anonymus(String),
+pub struct AppUser {
+    ip: String,
+    auth: Option<Auth>,
 }
 
-impl MaybeUser {
+impl AppUser {
+    pub fn new(ip: String, auth: Option<Auth>) -> Self {
+        Self { ip, auth }
+    }
+
     pub fn user_id(&self) -> Option<Uuid> {
-        match self {
-            MaybeUser::AuthUser(auth_user) => Some(auth_user.user_id().to_owned()),
-            MaybeUser::Anonymus(_) => None,
-        }
+        if let Some(auth) = &self.auth {
+            return Some(auth.user.id)
+        };
+
+        None
     }
 
-    fn rate_limit_key(&self) -> String {
-        match self {
-            MaybeUser::AuthUser(auth_user) => auth_user.rate_limit_key(),
-            MaybeUser::Anonymus(ip) => format!("rate_limit:anonymus:{}", ip)
-        }
+    fn rate_limit_redis_key(&self) -> String {
+        let redis_key_suffix = match &self.auth {
+            Some(auth) => auth.redis_key(),
+            None => format!("anonymus:{}", self.ip),
+        };
+
+        format!("rate_limit:{}", redis_key_suffix)
     }
 
-    fn rpd_allowed(&self) -> u64 {
-        match self {
-            MaybeUser::AuthUser(auth_user) => auth_user.rpd_allowed(),
-            MaybeUser::Anonymus(_) => ANONYMUS_RPD,
+    fn rpd(&self) -> u64 {
+        match &self.auth {
+            Some(auth) => auth.rpd(),
+            None => ANONYMUS_RPD,
         }
     }
 }
@@ -93,37 +103,13 @@ async fn get_ip_from_headers(headers: &HeaderMap) -> Option<String> {
         .map(|real_ip_str| real_ip_str.to_string())
 }
 
-struct Auth {
-    type_: AuthType,
-    user: User,
-}
-
-impl Auth {
-    fn new(type_: AuthType, user: User) -> Self {
-        Self { type_, user }
-    }
-}
-
-impl From<(Option<Auth>, String)> for MaybeUser {
-    fn from(value: (Option<Auth>, String)) -> Self {
-        let (auth, ip) = value;
-        match auth {
-            None => MaybeUser::Anonymus(ip),
-            Some(auth) => match auth.type_ {
-                AuthType::Api => MaybeUser::AuthUser(AuthUser::Api(auth.user)),
-                AuthType::Web => MaybeUser::AuthUser(AuthUser::Web(auth.user))
-            }
-        }
-    }
-}
-
 async fn get_auth_from_headers(headers: &HeaderMap, state: Arc<AppState>) -> Option<Auth> {
     if let Some(user) = get_web_user_from_headers(headers, state.clone()).await {
-        return Some(Auth::new(AuthType::Web, user));
+        return Some(Auth::new(AuthType::WEB, user));
     };
 
     if let Some(user) = get_api_user_from_headers(headers, state).await {
-        return Some(Auth::new(AuthType::Api, user));
+        return Some(Auth::new(AuthType::API, user));
     };
 
     None
@@ -191,7 +177,7 @@ async fn get_api_user_from_headers(headers: &HeaderMap, state: Arc<AppState>) ->
 }
 
 
-pub async fn extract_maybe_user(
+pub async fn extract_user(
     State(state): State<Arc<AppState>>,
     mut req: Request,
     next: Next,
@@ -199,23 +185,40 @@ pub async fn extract_maybe_user(
     let ip = get_ip_from_headers(req.headers()).await.unwrap_or("-".to_string());
 
     let auth = get_auth_from_headers(req.headers(), state).await;
-    let to_insert: MaybeUser = (auth, ip).into();
+    let app_user = AppUser::new(ip, auth);
 
-    req.extensions_mut().insert(to_insert);
+    req.extensions_mut().insert(app_user);
     next.run(req).await
 }
 
 pub async fn only_auth(
-    Extension(maybe_user): Extension<MaybeUser>,
+    Extension(app_user): Extension<AppUser>,
+    req: Request,
+    next: Next,
+) -> Result<impl IntoResponse, StatusCode> {
+    match app_user.auth {
+        Some(auth) => only(auth.user, req, next).await,
+       _ => Err(StatusCode::UNAUTHORIZED)
+    }
+}
+
+async fn only(
+    user: User,
     mut req: Request,
     next: Next,
 ) -> Result<impl IntoResponse, StatusCode> {
-    match maybe_user {
-        MaybeUser::AuthUser(auth_user) => {
-            req.extensions_mut().insert(auth_user.user());
-            Ok(next.run(req).await)
-        }
-        MaybeUser::Anonymus(_) => Err(StatusCode::UNAUTHORIZED)
+    req.extensions_mut().insert(user);
+    Ok(next.run(req).await)
+}
+
+pub async fn only_web(
+    Extension(app_user): Extension<AppUser>,
+    req: Request,
+    next: Next,
+) -> Result<impl IntoResponse, StatusCode> {
+    match app_user.auth {
+        Some(auth) if auth.auth_type.is_web() => only(auth.user, req, next).await,
+       _ => Err(StatusCode::UNAUTHORIZED)
     }
 }
 
@@ -230,11 +233,11 @@ pub async fn is_rpd_ok(state: Arc<AppState>, key: &str, rpd_allowed: u64) -> Res
 
 pub async fn rate_limit(
     State(state): State<Arc<AppState>>,
-    Extension(maybe_user): Extension<MaybeUser>,
+    Extension(app_user): Extension<AppUser>,
     req: Request,
     next: Next,
 ) -> Result<impl IntoResponse, StatusCode> {
-    match is_rpd_ok(state, &maybe_user.rate_limit_key(), maybe_user.rpd_allowed()).await {
+    match is_rpd_ok(state, &app_user.rate_limit_redis_key(), app_user.rpd()).await {
         Ok(true) => Ok(next.run(req).await),
         Ok(false) => Err(StatusCode::TOO_MANY_REQUESTS),
         Err(e) => {
