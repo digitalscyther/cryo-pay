@@ -12,6 +12,9 @@ use crate::api::state::AppState;
 use crate::{db, utils};
 
 
+const API_KEY_LIMIT: usize = 5;
+
+
 pub fn get_router(app_state: Arc<AppState>) -> Router<Arc<AppState>> {
     Router::new()
         .route("/ping", get(ping_pong))
@@ -56,12 +59,13 @@ async fn list(
 
 #[derive(Serialize)]
 struct CreateResponse {
-    api_key: String,
+    key: String,
+    instance: GetApiKeyResponse,
 }
 
 impl CreateResponse {
-    fn new(api_key: &str) -> Self {
-        Self { api_key: api_key.to_string() }
+    fn new(api_key: &str, instance: GetApiKeyResponse) -> Self {
+        Self { key: api_key.to_string(), instance }
     }
 }
 
@@ -69,14 +73,24 @@ async fn create(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<db::User>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let api_key = utils::new_api_key(user.id);
-
-    state.db
-        .create_api_key(&user.id, &api_key.hashed_value())
+    let api_keys_number = state.db
+        .count_api_keys_by_user_id(&user.id)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    Ok(Json(CreateResponse::new(&api_key.value)))
+    if api_keys_number >= API_KEY_LIMIT {
+        return Err(StatusCode::CONFLICT)
+    }
+
+    let api_key = utils::new_api_key(user.id);
+
+    let instance: GetApiKeyResponse = state.db
+        .create_api_key(&user.id, &api_key.hashed_value())
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .into();
+
+    Ok(Json(CreateResponse::new(&api_key.value, instance)))
 }
 
 async fn read(

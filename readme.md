@@ -88,13 +88,16 @@ INFURA_TOKEN=<infura_token>
 ### Nice-to-Have
 - [x] (Bug) Failed pay step with correct popup (now show false successful payment)
 - [x] Rate limit for create invoices
-- [x] API
-  - [ ] backend
+- [ ] API
+  - [x] backend
     - [x] crud
-    - [ ] auth
+    - [x] auth
       - [x] general
-      - [ ] split web and api
+      - [x] split web and api
   - [ ] frontend
+    - [x] settings c~~ru~~d
+    - [ ] documentation
+    - [ ] create invoice limit per day info 
 - [ ] Add basic statistics for sellers (number of transactions, total amounts for a period)
 - [ ] Automate QR code generation for invoices
 - [ ] Set up storage for sellers' contact information for sending notifications

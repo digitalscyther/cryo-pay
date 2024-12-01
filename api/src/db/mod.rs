@@ -397,3 +397,20 @@ pub async fn update_api_key_last_used(pg_pool: &PgPool, id: &Uuid) -> Result<(),
         .await?;
     Ok(())
 }
+
+pub async fn count_api_keys_by_user_id(
+    pg_pool: &PgPool,
+    user_id: &Uuid,
+) -> Result<Option<i64>, sqlx::Error> {
+    sqlx::query_scalar!(
+        r#"
+        SELECT COUNT(*) as count
+        FROM api_key
+        WHERE user_id = $1
+        "#,
+        user_id
+    )
+        .fetch_one(pg_pool)
+        .await
+}
+

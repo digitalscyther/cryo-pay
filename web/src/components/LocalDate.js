@@ -7,9 +7,9 @@ const LocalDate = ({date}) => {
     };
 
     return (
-        <div>
+        <span>
             {formatDateTime(date)}
-        </div>
+        </span>
     );
 };
 

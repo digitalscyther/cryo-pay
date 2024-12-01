@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Container, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import axios from 'axios';
+import ApiKeys from "./ApiKeys";
 import { apiUrl } from '../utils';
 
 function Account() {
@@ -53,45 +54,49 @@ function Account() {
     };
 
     if (loading) return <div className="text-center"><Spinner animation="border" /></div>;
-    console.log(attachTelegramPath);
 
     return (
         <Container>
-            <h3>Notification Settings</h3>
+            <>
+                <h3>Notification Settings</h3>
 
-            <Form className="my-4 mx-3">
-                <div className="d-flex">
+                <Form className="my-4 mx-3">
+                    <div className="d-flex">
+                        <Form.Check
+                            type="switch"
+                            id="email-notification"
+                            label="Email"
+                            name="email_notification"
+                            // checked={settings.email_notification}    // TODO 123
+                            checked={false}
+                            onChange={handleChange}
+                            disabled    // TODO 123
+                        />
+                        <div className="ms-5 text-warning">Available only by subscription</div>
+                    </div>
                     <Form.Check
                         type="switch"
-                        id="email-notification"
-                        label="Email"
-                        name="email_notification"
-                        // checked={settings.email_notification}    // TODO 123
-                        checked={false}
+                        id="telegram-notification"
+                        label="Telegram"
+                        name="telegram_notification"
+                        checked={settings.telegram_notification}
                         onChange={handleChange}
-                        disabled    // TODO 123
                     />
-                    <div className="ms-5 text-warning">Available only by subscription</div>
-                </div>
-                <Form.Check
-                    type="switch"
-                    id="telegram-notification"
-                    label="Telegram"
-                    name="telegram_notification"
-                    checked={settings.telegram_notification}
-                    onChange={handleChange}
-                />
-            </Form>
+                </Form>
 
-            {error && <Alert variant="danger">{error}</Alert>}
+                {error && <Alert variant="danger">{error}</Alert>}
 
-            {/* Telegram Bot Warning */}
-            {attachTelegramPath && (
-                <Alert variant="warning" className="d-flex justify-content-between align-items-center">
-                    <span>Activate the bot to receive Telegram notifications.</span>
-                    <Button onClick={handleActivateBot} variant="outline-primary" size="sm">Activate Bot</Button>
-                </Alert>
-            )}
+                {/* Telegram Bot Warning */}
+                {attachTelegramPath && (
+                    <Alert variant="warning" className="d-flex justify-content-between align-items-center">
+                        <span>Activate the bot to receive Telegram notifications.</span>
+                        <Button onClick={handleActivateBot} variant="outline-primary" size="sm">Activate Bot</Button>
+                    </Alert>
+                )}
+            </>
+            <hr/>
+            {/* API Keys Section */}
+            <ApiKeys/>
         </Container>
     );
 }

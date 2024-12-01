@@ -245,6 +245,16 @@ impl DB {
             .await
             .map_err(|err| utils::make_err(Box::new(err), "update last used timestamp"))
     }
+
+    pub async fn count_api_keys_by_user_id(&self, user_id: &Uuid) -> Result<usize, String> {
+        match db::count_api_keys_by_user_id(&self.pg_pool, user_id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "update last used timestamp"))? {
+            None => Err("count_api_keys_by_user_id didn't return value".to_string()),
+            Some(count) => Ok(count as usize)
+        }
+
+    }
 }
 
 impl GC {
