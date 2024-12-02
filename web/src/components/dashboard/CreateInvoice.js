@@ -1,17 +1,17 @@
-import React, {useEffect, useState} from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import {Button, Container, Form, Modal} from 'react-bootstrap';
-import MetaMaskButton from './MetaMaskButton';
-import {apiUrl, getBlockchainInfo, NETWORKS} from "../utils";
-import InvoiceList from "./InvoiceList";
+import {Button, Form, Modal} from "react-bootstrap";
+import MetaMaskButton from "./MetaMaskButton";
+import {apiUrl, getBlockchainInfo, NETWORKS} from "../../utils";
+import React, {useEffect, useState} from "react";
+import {useNavigate} from "react-router-dom";
+import axios from "axios";
 
-function Dashboard({isLoggedIn}) {
+function CreateInvoice() {
     const navigate = useNavigate();
     const [showModal, setShowModal] = useState(false);
     const [newInvoice, setNewInvoice] = useState({amount: '', seller: '', networks: []});
     const [creating, setCreating] = useState(false);
     const [networks, setNetworks] = useState([]);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         const fetchBlockchainInfo = async () => {
@@ -29,8 +29,10 @@ function Dashboard({isLoggedIn}) {
         fetchBlockchainInfo();
     }, [])
 
+
     const handleCreateInvoice = () => {
         setCreating(true);
+        setError(null);
         axios
             .post(apiUrl('/payment/invoice'), {
                 amount: newInvoice.amount,
@@ -42,11 +44,15 @@ function Dashboard({isLoggedIn}) {
                 setShowModal(false);
                 setNewInvoice({amount: '', seller: '', networks: []});
                 const newInvoiceId = response.data.id;
-                navigate(`/invoices/${newInvoiceId}`)
+                navigate(`/invoices/${newInvoiceId}`);
             })
             .catch((err) => {
-                console.log("Failed to create invoice", err);
                 setCreating(false);
+                if (err.response && err.response.status === 429) {
+                    setError("You have reached the limit of creating invoices for today. Please try again tomorrow.");
+                } else {
+                    console.error("Failed to create invoice", err);
+                }
             });
     };
 
@@ -72,22 +78,27 @@ function Dashboard({isLoggedIn}) {
     };
 
     return (
-        <Container className="mt-5">
-            <h2>Invoice List</h2>
+        <>
 
             <Button variant="primary" onClick={() => setShowModal(true)} className="mb-3">
                 Create Invoice
             </Button>
 
-            {/* Invoice Table */}
-            <InvoiceList isLoggedIn={isLoggedIn}/>
-
-            {/* Modal for Creating New Invoice */}
             <Modal show={showModal} onHide={() => setShowModal(false)}>
                 <Modal.Header closeButton>
                     <Modal.Title>Create Invoice</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
+                    {
+                        error && <div className="alert alert-danger" role="alert">
+                            <>{error}</>
+                            <div className="d-flex">
+                                <small className="mt-2 ms-auto" style={{ fontSize: "0.8em" }}>
+                                    More info about limits <a href="/docs#limits">here</a>
+                                </small>
+                            </div>
+                        </div>
+                    }
                     <Form>
                         <Form.Group controlId="formAmount">
                             <Form.Label>Amount</Form.Label>
@@ -161,8 +172,8 @@ function Dashboard({isLoggedIn}) {
                     </Button>
                 </Modal.Footer>
             </Modal>
-        </Container>
-    );
+        </>
+    )
 }
 
-export default Dashboard;
+export default CreateInvoice;

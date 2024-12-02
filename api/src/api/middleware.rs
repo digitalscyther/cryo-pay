@@ -14,8 +14,8 @@ use crate::utils;
 
 
 const API_RPD: u64 = 1000;
-const WEB_RPD: u64 = 1000;
-const ANONYMUS_RPD: u64 = 1000;
+const WEB_RPD: u64 = 100;
+const ANONYMUS_RPD: u64 = WEB_RPD;
 
 #[derive(Clone, Debug)]
 pub enum AuthType {

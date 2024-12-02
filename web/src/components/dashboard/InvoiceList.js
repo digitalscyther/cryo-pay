@@ -2,9 +2,9 @@ import React, {useEffect, useState} from 'react';
 import {Alert, Button, Spinner, Table, Form} from 'react-bootstrap';
 import axios from 'axios';
 import {useSearchParams} from 'react-router-dom';
-import {apiUrl} from "../utils";
-import AmountDisplay from "./AmountDisplay";
-import LocalDate from './LocalDate';
+import {apiUrl} from "../../utils";
+import AmountDisplay from "../common/AmountDisplay";
+import LocalDate from '../common/LocalDate';
 
 const PAGE_SIZE = 10;
 

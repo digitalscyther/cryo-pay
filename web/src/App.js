@@ -9,9 +9,9 @@ import About from './components/About';
 import Contact from './components/Contact';
 import Invoice from './components/Invoice';
 import Auth from './components/Auth';
-import Account from './components/Account';
+import Account from './components/settings/Account';
 import NotFound from './components/NotFound';
-import Dashboard from './components/Dashboard';
+import Dashboard from './components/dashboard/Dashboard';
 import {apiUrl, getProjectName} from "./utils";
 import Documentation from "./components/Documentation";
 

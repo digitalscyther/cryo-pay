@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Container, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import axios from 'axios';
 import ApiKeys from "./ApiKeys";
-import { apiUrl } from '../utils';
+import { apiUrl } from '../../utils';
 
 function Account() {
     const [settings, setSettings] = useState({

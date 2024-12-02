@@ -1,8 +1,9 @@
 import React, {useState, useEffect} from 'react';
 import {Container, Button, Alert, Spinner, Card} from 'react-bootstrap';
 import axios from 'axios';
-import {apiUrl} from '../utils';
-import LocalDate from "./LocalDate";
+import {apiUrl} from '../../utils';
+import LocalDate from "../common/LocalDate";
+import {Link} from "react-router-dom";
 
 function ApiKeys() {
     const [apiKeys, setApiKeys] = useState([]);
@@ -59,6 +60,7 @@ function ApiKeys() {
     return (
         <Container>
             <h3 className="text-dark">API Keys</h3>
+            <div className="m-3"><Link to="/docs#api-endpoints">API Documentation</Link></div>
             <p className="text-dark">
                 Manage your API keys for accessing the application programmatically.
             </p>
@@ -93,10 +95,10 @@ function ApiKeys() {
                             <Card.Body>
                                 <Card.Title className="text-truncate">{key.id}</Card.Title>
                                 <Card.Text>
-                                    <strong>Created:</strong> <LocalDate date={key.created} />
+                                    <strong>Created:</strong> <LocalDate date={key.created}/>
                                     <br/>
                                     <strong>Last
-                                        Used:</strong> {key.last_used ? <LocalDate date={key.last_used} /> : 'Never'}
+                                        Used:</strong> {key.last_used ? <LocalDate date={key.last_used}/> : 'Never'}
                                 </Card.Text>
                                 <Button
                                     variant="danger"

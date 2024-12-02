@@ -1,7 +1,18 @@
-import React from "react";
-import {Row, Col, Card, Nav} from "react-bootstrap";
+import React, { useEffect } from "react";
+import {Alert, Table, Row, Col, Card, Nav} from "react-bootstrap";
+import {NETWORKS} from "../utils";
 
 const Documentation = () => {
+    useEffect(() => {
+        const hash = window.location.hash;
+        if (hash) {
+            const element = document.getElementById(hash.substring(1)); // Remove the '#' character
+            if (element) {
+                element.scrollIntoView({behavior: 'smooth', block: 'start'});
+            }
+        }
+    }, []);
+
     const sections = [
         {
             id: "overview",
@@ -18,6 +29,25 @@ const Documentation = () => {
                     <p>
                         Whether you are a developer integrating with our API, a client monitoring payments,
                         or a seller creating invoices, this documentation will guide you through every step.
+                    </p>
+                </>
+            ),
+        },
+        {
+            id: "limits",
+            title: "Limits",
+            content: (
+                <>
+                    <h5>Invoice Creation Limits</h5>
+                    <p>
+                        To ensure smooth operations, there are limits on the number of invoices you can create:
+                    </p>
+                    <ul>
+                        <li><strong>Web Users:</strong> Up to 100 invoices per day.</li>
+                        <li><strong>API Users:</strong> Up to 1,000 invoices per day.</li>
+                    </ul>
+                    <p>
+                        If you need higher limits, please contact our support team to explore available options.
                     </p>
                 </>
             ),
@@ -138,40 +168,133 @@ const Documentation = () => {
                 </>
             ),
         },
+
         {
             id: "api-endpoints",
             title: "API Endpoints",
-            notReady: true,
+            notReady: false,
             content: (
                 <>
-                    <h5>API Features</h5>
+                    <Alert variant="primary">
+                        <h5 className="mb-3">🚀 API Endpoints</h5>
+                        <p>
+                            Our API currently supports **invoice management** functionalities. Below are the details of
+                            how to
+                            integrate and use the API securely and effectively.
+                        </p>
+                    </Alert>
+
+                    <h6>🔒 Authentication</h6>
                     <p>
-                        Our API empowers developers to integrate and extend the functionality of
-                        the billing gateway into their applications. It provides endpoints for:
+                        Access to the API requires an <strong>API key</strong>. Generate your API key in
+                        the <em>Settings</em> section of your account.
+                        Include it in the request headers like this:
                     </p>
+                    <pre>
+                {`Authorization: Bearer YOUR_API_KEY`}
+            </pre>
+                    <p><strong>Note:</strong> API keys are available only to logged-in users.</p>
+
+                    <h6>📜 Available Invoice Endpoints</h6>
+                    <Table bordered hover>
+                        <thead>
+                        <tr>
+                            <th>Endpoint</th>
+                            <th>Method</th>
+                            <th>Description</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td>/invoice</td>
+                            <td>GET</td>
+                            <td>Retrieve a list of invoices with pagination and filtering.</td>
+                        </tr>
+                        <tr>
+                            <td>/invoice</td>
+                            <td>POST</td>
+                            <td>Create a new invoice by specifying the amount, seller address, and supported networks.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>/invoice/:invoice_id</td>
+                            <td>GET</td>
+                            <td>Get details of a specific invoice, including ownership information.</td>
+                        </tr>
+                        <tr>
+                            <td>/invoice/:invoice_id</td>
+                            <td>DELETE</td>
+                            <td>Delete an invoice owned by the authenticated user.</td>
+                        </tr>
+                        </tbody>
+                    </Table>
+
+                    <h6>📜 Request Payload for Creating an Invoice</h6>
+                    <p>Here’s how the payload for creating a new invoice looks:</p>
+                    <pre>
+                {`POST /invoice HTTP/1.1
+Authorization: Bearer YOUR_API_KEY
+Content-Type: application/json
+
+{
+    "amount": "150.00",
+    "seller": "0xYourEthereumAddressHere",
+    "networks": [10, 42161]
+}`}
+            </pre>
+                    <Alert variant="info">
+                        <strong>⚠️ Seller:</strong> This should be the Ethereum-based address (e.g., <code>0x...</code>)
+                        where funds will be accepted.
+                    </Alert>
+
+                    <h6>🌐 Supported Networks</h6>
+                    <Table striped bordered>
+                        <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Network ID</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {Object.values(NETWORKS).map(network => (
+                            <tr key={network.id}>
+                                <td>{network.name}</td>
+                                <td>{network.id}</td>
+                            </tr>
+                        ))}
+                        </tbody>
+                    </Table>
+
+                    <h6>🎯 Pagination and Filtering</h6>
+                    <p>The <code>GET /invoice</code> endpoint supports the following query parameters:</p>
                     <ul>
                         <li>
-                            <strong>Authentication:</strong> Secure login and logout using tokens.
+                            <strong>limit:</strong> The maximum number of invoices to retrieve (default: 10).
                         </li>
                         <li>
-                            <strong>Invoices:</strong> Create, retrieve, and manage invoices.
+                            <strong>offset:</strong> The number of invoices to skip before starting retrieval (default:
+                            0).
                         </li>
                         <li>
-                            <strong>Payments:</strong> Process invoice payments and update statuses.
-                        </li>
-                        <li>
-                            <strong>Notifications:</strong> Enable email and Telegram notifications.
+                            <strong>user_id:</strong> Filter invoices based on ownership. Use <code>all</code> for all
+                            invoices
+                            or <code>my</code> for only the authenticated user’s invoices (default: all).
                         </li>
                     </ul>
-                    <p>
-                        Detailed API documentation, including request/response formats and code examples
-                        in Python, JavaScript, and other languages, is available for developers.
-                    </p>
+
+                    <h6>🚦 Response Codes</h6>
+                    <p>Here are some common response codes and their meanings:</p>
+                    <ul>
+                        <li><strong>200 OK:</strong> The request was successful.</li>
+                        <li><strong>201 Created:</strong> The invoice was successfully created.</li>
+                        <li><strong>404 Not Found:</strong> The requested invoice does not exist.</li>
+                        <li><strong>401 Unauthorized:</strong> Invalid or missing API key.</li>
+                        <li><strong>429 Too Many Requests:</strong> You’ve exceeded the API rate limit.</li>
+                    </ul>
                 </>
             ),
         },
     ];
-
 
     return (
         <>

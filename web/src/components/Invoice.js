@@ -4,9 +4,9 @@ import axios from 'axios';
 import BN from 'bn.js';
 import Web3 from 'web3';
 import {Alert, Col, Container, Button, ListGroup, Row, Spinner} from 'react-bootstrap';
-import AmountDisplay from './AmountDisplay';
+import AmountDisplay from './common/AmountDisplay';
 import {apiUrl, getBlockchainInfo, getNetwork} from "../utils";
-import LocalDate from "./LocalDate";
+import LocalDate from "./common/LocalDate";
 
 function Invoice() {
     const navigate = useNavigate();
