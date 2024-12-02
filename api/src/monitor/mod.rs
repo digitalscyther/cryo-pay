@@ -178,7 +178,7 @@ impl Env {
 pub async fn run_monitor(test: bool, networks: Vec<Network>, db: DB, telegram_client: TelegramClient) -> Result<(), String> {
     let event_signature = utils::get_env_var("EVENT_SIGNATURE")?;
     let rpm = utils::get_env_or("INFRA_RPM", "1".to_string())?;
-    let rpm = rpm.parse::<i32>()
+    let rpm = rpm.parse::<u64>()
         .map_err(|err| utils::make_err(Box::new(err), "parse infra rpm"))?;
 
     let app_state = Arc::new(MonitorAppState::new(db, telegram_client)?);
@@ -276,10 +276,12 @@ async fn request_handler(
     req_rx: Receiver<GetFromInfuraParams>,
     platform_hub: HashMap<String, NetworkPlatform>,
     base_filter: Filter,
-    rpm: i32,
+    rpm: u64,
 ) -> Result<(), String> {
+    let self_repeat_timeout = (60.0 / rpm as f64).ceil() as u64;
+    info!("self_repeat_timeout = {self_repeat_timeout}");
     let mut self_limiter = SlidingWindowRateLimiter::new(
-        Duration::from_secs(60), rpm as usize,
+        Duration::from_secs(self_repeat_timeout), 1,
     );
     let mut infura_day_limiter = SlidingWindowRateLimiter::new(
         Duration::from_secs(24 * 3600), CREDITS_PER_DAY,
