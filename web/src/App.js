@@ -82,7 +82,6 @@ function App() {
                     <Navbar.Toggle aria-controls="basic-navbar-nav"/>
                     <Navbar.Collapse id="basic-navbar-nav">
                         <Nav className="d-flex w-100">
-                            <Nav.Link href="/" active={isActive("/")}>Home</Nav.Link>
                             <Nav.Link href="/dashboard" active={isActive("/dashboard")}>Dashboard</Nav.Link>
                             <Nav.Link href="/docs" active={isActive("/docs")}>Documentation</Nav.Link>
                             <Nav.Link href="/about" active={isActive("/about")}>About</Nav.Link>
@@ -91,7 +90,8 @@ function App() {
                                 {!isLoggedIn ?
                                     <Nav.Link href="/login" active={isActive("/login")}>Login</Nav.Link>
                                     : <>
-                                        <Nav.Link className="mx-lg-2" href="/settings" active={isActive("/settings")}>Settings</Nav.Link>
+                                        <Nav.Link className="mx-lg-2" href="/settings"
+                                                  active={isActive("/settings")}>Settings</Nav.Link>
                                         <Nav.Link className="mx-lg-2" onClick={handleLogout}>Logout</Nav.Link>
                                     </>}
                             </div>

@@ -15,7 +15,8 @@ function Invoice() {
     const [own, setOwn] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [processing, setProcessing] = useState(false);
+    const [processingPayment, setPaymentProcessing] = useState(false);
+    const [processingDelete, setDeleteProcessing] = useState(false);
     const [erc20Abi, setErc20Abi] = useState(null);
     const [contractAbi, setContractAbi] = useState(null);
     const [networks, setNetworks] = useState(null);
@@ -139,7 +140,7 @@ function Invoice() {
         };
 
         try {
-            setProcessing(true);
+            setPaymentProcessing(true);
             const amount = invoice.amount * (10 ** 6);
 
             await processPayment(amount);
@@ -148,23 +149,23 @@ function Invoice() {
             console.error('Payment failed', error);
             setError('Payment failed, please try again');
         } finally {
-            setProcessing(false);
+            setPaymentProcessing(false);
         }
     };
 
     const handleDelete = async () => {
         try {
-            setProcessing(true);
+            setDeleteProcessing(true);
             await axios.delete(
                 apiUrl(`/payment/invoice/${invoice_id}`),
                 {withCredentials: true}
             );
             alert('Invoice deleted successfully.');
-            navigate('/');
+            navigate('/dashboard');
         } catch (err) {
             setError('Failed to delete the invoice, please try again.');
         } finally {
-            setProcessing(false);
+            setDeleteProcessing(false);
         }
     };
 
@@ -228,9 +229,9 @@ function Invoice() {
                         <Button
                             variant="primary"
                             onClick={handlePayment}
-                            disabled={processing}
+                            disabled={processingPayment}
                         >
-                            {processing ? 'Processing Payment...' : 'Pay with MetaMask'}
+                            {processingPayment ? 'Processing Payment...' : 'Pay with MetaMask'}
                         </Button>
                     </Col>
                     {own && (
@@ -238,9 +239,9 @@ function Invoice() {
                             <Button
                                 variant="danger"
                                 onClick={handleDelete}
-                                disabled={processing}
+                                disabled={processingDelete}
                             >
-                                {processing ? 'Deleting...' : 'Delete Invoice'}
+                                {processingDelete ? 'Deleting...' : 'Delete Invoice'}
                             </Button>
                         </Col>
                     )}

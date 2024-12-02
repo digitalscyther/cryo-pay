@@ -12,6 +12,7 @@ function CreateInvoice() {
     const [creating, setCreating] = useState(false);
     const [networks, setNetworks] = useState([]);
     const [error, setError] = useState(null);
+    const [validationError, setValidationError] = useState(null);
 
     useEffect(() => {
         const fetchBlockchainInfo = async () => {
@@ -27,12 +28,38 @@ function CreateInvoice() {
         };
 
         fetchBlockchainInfo();
-    }, [])
+    }, []);
 
+    // Validation helper functions
+    const isValidEthereumAddress = (address) => /^0x[a-fA-F0-9]{40}$/.test(address);
+    const isValidAmount = (amount) => parseFloat(amount) > 0;
 
     const handleCreateInvoice = () => {
-        setCreating(true);
+        setValidationError(null);
         setError(null);
+
+        // Validation checks
+        if (!isValidEthereumAddress(newInvoice.seller)) {
+            setValidationError(
+                <>
+                    Seller address must be a valid Ethereum address like (e.g., <code>0xYourEthereumAddressHere</code>).
+                </>
+            );
+            return;
+        }
+
+        if (!isValidAmount(newInvoice.amount)) {
+            setValidationError("Amount must be greater than 0.");
+            return;
+        }
+
+        if (newInvoice.networks.length === 0) {
+            setValidationError("At least one network must be selected.");
+            return;
+        }
+
+        // If validations pass, proceed with API call
+        setCreating(true);
         axios
             .post(apiUrl('/payment/invoice'), {
                 amount: newInvoice.amount,
@@ -79,7 +106,6 @@ function CreateInvoice() {
 
     return (
         <>
-
             <Button variant="primary" onClick={() => setShowModal(true)} className="mb-3">
                 Create Invoice
             </Button>
@@ -97,6 +123,11 @@ function CreateInvoice() {
                                     More info about limits <a href="/docs#limits">here</a>
                                 </small>
                             </div>
+                        </div>
+                    }
+                    {
+                        validationError && <div className="alert alert-warning" role="alert">
+                            {validationError}
                         </div>
                     }
                     <Form>
@@ -173,7 +204,7 @@ function CreateInvoice() {
                 </Modal.Footer>
             </Modal>
         </>
-    )
+    );
 }
 
 export default CreateInvoice;

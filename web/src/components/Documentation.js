@@ -1,7 +1,6 @@
 import React, { useEffect } from "react";
 import {Alert, Table, Row, Col, Card, Nav} from "react-bootstrap";
 import {apiUrl, NETWORKS} from "../utils";
-import invoiceList from "./dashboard/InvoiceList";
 
 const Documentation = () => {
     useEffect(() => {
