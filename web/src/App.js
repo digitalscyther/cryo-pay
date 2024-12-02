@@ -7,7 +7,7 @@ import Cookies from "js-cookie";
 import Home from './components/Home';
 import About from './components/About';
 import Contact from './components/Contact';
-import Invoice from './components/Invoice';
+import Invoice from './components/invoice/Invoice';
 import Auth from './components/Auth';
 import Account from './components/settings/Account';
 import NotFound from './components/NotFound';
@@ -56,7 +56,7 @@ function App() {
             .catch((err) => {
                 console.log("Failed to login", err);
             });
-        navigate('/');
+        navigate('/dashboard');
     };
 
     const handleLogout = () => {
@@ -68,7 +68,7 @@ function App() {
             .catch((err) => {
                 console.log("Failed to logout", err);
             });
-        navigate('/');
+        navigate('/dashboard');
     };
 
     const projectName = getProjectName();
