@@ -80,7 +80,7 @@ function Invoice() {
                 own={own}
                 erc20Abi={erc20Abi}
                 contractAbi={contractAbi}
-                network={networks}
+                networks={networks}
             />}
 
             {error && (

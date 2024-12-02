@@ -9,6 +9,7 @@ import {useNavigate} from "react-router-dom";
 function Controller({ invoice, own, erc20Abi, contractAbi, networks }) {
     const navigate = useNavigate();
     const [processingPayment, setPaymentProcessing] = useState(false);
+    const [paymentSuccessful, setPaymentSuccessful] = useState(false);
     const [processingDelete, setDeleteProcessing] = useState(false);
     const [error, setError] = useState(null);
 
@@ -95,6 +96,7 @@ function Controller({ invoice, own, erc20Abi, contractAbi, networks }) {
             const amount = invoice.amount * (10 ** 6);
 
             await processPayment(amount);
+            setPaymentSuccessful(true);
             alert('Payment is under processing. It will be marked as paid once everything is fine.');
         } catch (error) {
             console.error('Payment failed', error);
@@ -130,11 +132,15 @@ function Controller({ invoice, own, erc20Abi, contractAbi, networks }) {
             <Row className="align-items-center">
                 <Col className="text-start">
                     <Button
-                        variant="primary"
+                        variant={paymentSuccessful ? "success" : "primary"}
                         onClick={handlePayment}
-                        disabled={processingPayment}
+                        disabled={processingPayment || paymentSuccessful}
                     >
-                        {processingPayment ? 'Processing Payment...' : 'Pay with MetaMask'}
+                        {paymentSuccessful
+                            ? 'Checking...'
+                            : processingPayment
+                            ? 'Processing Payment...'
+                            : 'Pay with MetaMask'}
                     </Button>
                 </Col>
                 {own && (
