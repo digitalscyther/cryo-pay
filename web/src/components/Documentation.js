@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import {Alert, Table, Row, Col, Card, Nav} from "react-bootstrap";
-import {NETWORKS} from "../utils";
+import {apiUrl, NETWORKS} from "../utils";
+import invoiceList from "./dashboard/InvoiceList";
 
 const Documentation = () => {
     useEffect(() => {
@@ -12,6 +13,9 @@ const Documentation = () => {
             }
         }
     }, []);
+
+    const urlInvoices = apiUrl("/payment/invoice");
+    const urlInvoicesInstance = apiUrl("/payment/invoice/:invoice_id");
 
     const sections = [
         {
@@ -206,23 +210,23 @@ const Documentation = () => {
                         </thead>
                         <tbody>
                         <tr>
-                            <td>/invoice</td>
+                            <td>{urlInvoices}</td>
                             <td>GET</td>
                             <td>Retrieve a list of invoices with pagination and filtering.</td>
                         </tr>
                         <tr>
-                            <td>/invoice</td>
+                            <td>{urlInvoices}</td>
                             <td>POST</td>
                             <td>Create a new invoice by specifying the amount, seller address, and supported networks.
                             </td>
                         </tr>
                         <tr>
-                            <td>/invoice/:invoice_id</td>
+                            <td>{urlInvoicesInstance}</td>
                             <td>GET</td>
                             <td>Get details of a specific invoice, including ownership information.</td>
                         </tr>
                         <tr>
-                            <td>/invoice/:invoice_id</td>
+                            <td>{urlInvoicesInstance}</td>
                             <td>DELETE</td>
                             <td>Delete an invoice owned by the authenticated user.</td>
                         </tr>
@@ -232,7 +236,7 @@ const Documentation = () => {
                     <h6>📜 Request Payload for Creating an Invoice</h6>
                     <p>Here’s how the payload for creating a new invoice looks:</p>
                     <pre>
-                {`POST /invoice HTTP/1.1
+                {`POST ${urlInvoices} HTTP/1.1
 Authorization: Bearer YOUR_API_KEY
 Content-Type: application/json
 
@@ -266,7 +270,7 @@ Content-Type: application/json
                     </Table>
 
                     <h6>🎯 Pagination and Filtering</h6>
-                    <p>The <code>GET /invoice</code> endpoint supports the following query parameters:</p>
+                    <p>The <code>GET {urlInvoices}</code> endpoint supports the following query parameters:</p>
                     <ul>
                         <li>
                             <strong>limit:</strong> The maximum number of invoices to retrieve (default: 10).
