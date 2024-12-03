@@ -1,8 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {useParams, useNavigate} from 'react-router-dom';
-import axios from 'axios';
 import {Alert, Container, Spinner} from 'react-bootstrap';
-import {apiUrl, getBlockchainInfo} from "../../utils";
+import {getBlockchainInfo, getInvoice} from "../../utils";
 import Info from "./Info";
 import Controller from "./Controller";
 
@@ -18,28 +17,8 @@ function Invoice() {
     const [networks, setNetworks] = useState(null);
 
     useEffect(() => {
-        const fetchInvoice = async () => {
-            try {
-                const response = await axios.get(
-                    apiUrl(`/payment/invoice/${invoice_id}`),
-                    {withCredentials: true}
-                );
-                setInvoice(response.data.invoice);
-                setOwn(response.data.own);
-            } catch (err) {
-                if (err.response && err.response.status === 404) {
-                    navigate('/not-found');
-                } else {
-                    setError('Failed to fetch invoice data');
-                }
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        const fetchBlockchainInfo = async () => {
-            try {
-                const response = await getBlockchainInfo();
+        getBlockchainInfo()
+            .then((response) => {
                 const {networks, abi} = response.data;
 
                 setErc20Abi(abi.erc20);
@@ -48,13 +27,28 @@ function Invoice() {
                     acc[item.id] = item;
                     return acc;
                 }, {}));
-            } catch (err) {
+            })
+            .catch((err) => {
+                console.error(err);
                 setError('Failed to fetch blockchain info or connect to MetaMask');
-            }
-        };
+            })
+    }, []);
 
-        fetchInvoice();
-        fetchBlockchainInfo();
+    useEffect(() => {
+        getInvoice(invoice_id)
+            .then((response) => {
+                setInvoice(response.data.invoice);
+                setOwn(response.data.own);
+            })
+            .catch((err) => {
+                if (err.response && err.response.status === 404) {
+                    navigate('/not-found');
+                } else {
+                    console.error(err);
+                    setError('Failed to fetch invoice data');
+                }
+            })
+            .finally(() => setLoading(false));
     }, [invoice_id, navigate]);
 
     if (loading) {

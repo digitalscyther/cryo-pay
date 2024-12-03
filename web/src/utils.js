@@ -46,3 +46,10 @@ export function getNetwork(networkId) {
 export async function getBlockchainInfo() {
     return await axios.get(apiUrl("/blockchain/info"))
 }
+
+export async function getInvoice(invoice_id) {
+    return await axios.get(
+        apiUrl(`/payment/invoice/${invoice_id}`),
+        {withCredentials: true}
+    );
+}
