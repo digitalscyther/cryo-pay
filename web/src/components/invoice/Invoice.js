@@ -5,6 +5,8 @@ import {getBlockchainInfo, getInvoice} from "../../utils";
 import Info from "./Info";
 import Controller from "./Controller";
 
+const updateIfNotPaidAfterSeconds = 10;
+
 function Invoice() {
     const navigate = useNavigate();
     const {invoice_id} = useParams();
@@ -50,6 +52,21 @@ function Invoice() {
             })
             .finally(() => setLoading(false));
     }, [invoice_id, navigate]);
+
+    useEffect(() => {
+        if (!!invoice && !invoice.paid_at) {
+            const interval = setInterval(() => {
+                getInvoice(invoice_id)
+                .then((response) => {
+                    if (!!response.data.invoice.paid_at) {
+                        navigate(0);
+                    }
+                })
+                .catch((err) => console.error("Failed monitor invoice paid_at", err))
+            }, updateIfNotPaidAfterSeconds * 1000);
+            return () => clearInterval(interval);
+        }
+    }, [invoice_id, invoice, navigate])
 
     if (loading) {
         return (
