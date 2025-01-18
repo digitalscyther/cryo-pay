@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use axum::Extension;
-use axum::extract::{Request, State};
+use axum::extract::{Path, Request, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::middleware::Next;
 use axum::response::IntoResponse;
@@ -245,4 +245,20 @@ pub async fn rate_limit(
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
+}
+
+pub async fn only_bill_owner(
+    State(state): State<Arc<AppState>>,
+    Path(invoice_id): Path<Uuid>,
+    Extension(app_user): Extension<AppUser>,
+    req: Request,
+    next: Next,
+) -> Result<impl IntoResponse, StatusCode> {
+    if let Some(auth) = app_user.auth {
+        if let Ok(true) = state.db.get_is_owner(invoice_id, auth.user.id).await {
+            return Ok(next.run(req).await);
+        }
+    }
+
+    Err(StatusCode::NOT_FOUND)
 }

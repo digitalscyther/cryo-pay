@@ -135,12 +135,16 @@ impl DB {
 
         let own = invoice.is_some() && match user_id {
             None => false,
-            Some(user_id) => db::get_is_owner(&self.pg_pool, id, user_id)
-                .await
-                .map_err(|err| utils::make_err(Box::new(err), "get own invoice"))?
+            Some(user_id) => self.get_is_owner(id, user_id).await?
         };
 
         Ok((own, invoice))
+    }
+
+    pub async fn get_is_owner(&self, id: Uuid, user_id: Uuid) -> Result<bool, String> {
+        db::get_is_owner(&self.pg_pool, id, user_id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "get is owner"))
     }
 
     pub async fn set_invoice_paid(&self, id: Uuid, seller: &str, amount: BigDecimal, buyer: &str, paid_at: NaiveDateTime) -> Result<Invoice, String> {
