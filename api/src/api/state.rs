@@ -124,14 +124,14 @@ impl DB {
             .map_err(|err| utils::make_err(Box::new(err), "create invoice"))
     }
 
-    async fn get_invoice(&self, id: Uuid) -> Result<Option<Invoice>, String> {
+    pub async fn get_invoice(&self, id: &Uuid) -> Result<Option<Invoice>, String> {
         db::get_invoice(&self.pg_pool, id)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "get invoice"))
     }
 
     pub async fn get_own_invoice(&self, id: Uuid, user_id: Option<Uuid>) -> Result<(bool, Option<Invoice>), String> {
-        let invoice = self.get_invoice(id).await?;
+        let invoice = self.get_invoice(&id).await?;
 
         let own = invoice.is_some() && match user_id {
             None => false,
@@ -284,6 +284,12 @@ impl DB {
             None => Err("count_callback_urls didn't return value".to_string()),
             Some(cnt) => Ok(cnt as usize)
         }
+    }
+
+    pub async fn exists_callback_url(&self, url: &str, user_id: &Uuid) -> Result<bool, String> {
+        db::exists_callback_url(&self.pg_pool, url, user_id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "exists callback url"))
     }
 }
 

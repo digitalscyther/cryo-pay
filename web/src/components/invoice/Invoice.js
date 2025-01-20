@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
-import {useParams, useNavigate} from 'react-router-dom';
+import {useParams, useNavigate, useSearchParams} from 'react-router-dom';
 import {Alert, Container, Spinner} from 'react-bootstrap';
-import {getBlockchainInfo, getInvoice} from "../../utils";
+import {apiUrl, getBlockchainInfo, getInvoice} from "../../utils";
 import Info from "./Info";
 import Controller from "./Controller";
 
@@ -9,6 +9,7 @@ const updateIfNotPaidAfterSeconds = 10;
 
 function Invoice() {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const {invoice_id} = useParams();
     const [invoice, setInvoice] = useState(null);
     const [own, setOwn] = useState(false);
@@ -54,12 +55,18 @@ function Invoice() {
     }, [invoice_id, navigate]);
 
     useEffect(() => {
+        const callbackUrl = searchParams.get('callback_url');
+
         if (!!invoice && !invoice.paid_at) {
             const interval = setInterval(() => {
                 getInvoice(invoice_id)
                 .then((response) => {
                     if (!!response.data.invoice.paid_at) {
-                        navigate(0);
+                        if (callbackUrl) {
+                            window.location.href = apiUrl(`/payment/invoice/${invoice_id}/redirect?url=${encodeURIComponent(callbackUrl)}`);
+                        } else {
+                            navigate(0);
+                        }
                     }
                 })
                 .catch((err) => console.error("Failed monitor invoice paid_at", err))

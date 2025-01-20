@@ -80,7 +80,7 @@ pub async fn create_invoice(pg_pool: &PgPool, amount: BigDecimal, seller: &str, 
         .await
 }
 
-pub async fn get_invoice(db: &PgPool, id: Uuid) -> Result<Option<Invoice>, sqlx::Error> {
+pub async fn get_invoice(db: &PgPool, id: &Uuid) -> Result<Option<Invoice>, sqlx::Error> {
     sqlx::query_as!(
         Invoice,
         r#"
@@ -488,4 +488,21 @@ pub async fn count_callback_urls_by_user_id(
     )
         .fetch_one(pg_pool)
         .await
+}
+
+pub async fn exists_callback_url(pg_pool: &PgPool, url: &str, user_id: &Uuid) -> Result<bool, sqlx::Error> {
+    match sqlx::query!(
+        r#"
+        SELECT 1 AS some FROM callback_urls
+        WHERE url = $1 AND user_id = $2
+        "#,
+        url,
+        user_id
+    )
+        .fetch_optional(pg_pool)
+        .await {
+        Ok(row) => Ok(row.is_some()),
+        Err(sqlx::Error::RowNotFound) => Ok(false),
+        Err(e) => Err(e),
+    }
 }
