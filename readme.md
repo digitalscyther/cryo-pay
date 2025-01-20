@@ -98,6 +98,15 @@ INFURA_TOKEN=<infura_token>
     - [x] settings c~~ru~~d
     - [x] documentation
     - [x] create invoice limit per day info 
+- [ ] On success redirect to API client page
+  - [ ] Backend
+    - [x] Main logic
+    - [ ] If empty whitelist - allow any
+  - [ ] Frontend
+    - [x] On paid - redirect
+    - [ ] Documentation
+    - [ ] Add some loaders or info that need stay on page (for payer)
+- [ ] Redirect on pay - if subscription - check blockchain instantly
 - [ ] Add basic statistics for sellers (number of transactions, total amounts for a period)
 - [ ] Automate QR code generation for invoices
 - [ ] Set up storage for sellers' contact information for sending notifications
