@@ -104,7 +104,7 @@ INFURA_TOKEN=<infura_token>
     - [x] If empty whitelist - allow any
   - [ ] Frontend
     - [x] On paid - redirect
-    - [ ] Documentation
+    - [x] Documentation
     - [ ] Add some loaders or info that need stay on page (for payer)
 - [ ] Redirect on pay - if subscription - check blockchain instantly
 - [ ] Add basic statistics for sellers (number of transactions, total amounts for a period)

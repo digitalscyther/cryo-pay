@@ -53,3 +53,8 @@ export async function getInvoice(invoice_id) {
         {withCredentials: true}
     );
 }
+
+export const getFullUrl = (path = '') => {
+  const baseUrl = window.location.origin;
+  return path ? new URL(path, baseUrl).href : baseUrl;
+};
