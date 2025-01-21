@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::migrate::MigrateError;
 use sqlx::PgPool;
 use uuid::Uuid;
-use crate::db::{self, ApiKey, Invoice, User};
+use crate::db::{self, ApiKey, CallbackUrl, Invoice, User};
 use crate::network::Network;
 use crate::telegram::TelegramClient;
 use crate::utils;
@@ -124,14 +124,14 @@ impl DB {
             .map_err(|err| utils::make_err(Box::new(err), "create invoice"))
     }
 
-    async fn get_invoice(&self, id: Uuid) -> Result<Option<Invoice>, String> {
+    pub async fn get_invoice(&self, id: &Uuid) -> Result<Option<Invoice>, String> {
         db::get_invoice(&self.pg_pool, id)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "get invoice"))
     }
 
     pub async fn get_own_invoice(&self, id: Uuid, user_id: Option<Uuid>) -> Result<(bool, Option<Invoice>), String> {
-        let invoice = self.get_invoice(id).await?;
+        let invoice = self.get_invoice(&id).await?;
 
         let own = invoice.is_some() && match user_id {
             None => false,
@@ -257,7 +257,39 @@ impl DB {
             None => Err("count_api_keys_by_user_id didn't return value".to_string()),
             Some(count) => Ok(count as usize)
         }
+    }
 
+    pub async fn create_callback_url(&self, url: &str, user_id: &Uuid) -> Result<CallbackUrl, String> {
+        db::create_callback_url(&self.pg_pool, url, user_id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "create callback url"))
+    }
+
+    pub async fn list_callback_urls(&self, user_id: &Uuid) -> Result<Vec<CallbackUrl>, String> {
+        db::list_callback_urls_by_user_id(&self.pg_pool, user_id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "list callback urls"))
+    }
+
+    pub async fn delete_callback_url(&self, callback_url_id: &Uuid, user_id: &Uuid) -> Result<bool, String> {
+        db::delete_callback_url_by_id_and_user_id(&self.pg_pool, callback_url_id, user_id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "delete callback url"))
+    }
+
+    pub async fn count_callback_urls(&self, user_id: &Uuid) -> Result<usize, String> {
+        match db::count_callback_urls_by_user_id(&self.pg_pool, user_id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "list callback urls"))? {
+            None => Err("count_callback_urls didn't return value".to_string()),
+            Some(cnt) => Ok(cnt as usize)
+        }
+    }
+
+    pub async fn exists_callback_url(&self, url: &str, user_id: &Uuid) -> Result<bool, String> {
+        db::exists_callback_url(&self.pg_pool, url, user_id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "exists callback url"))
     }
 }
 

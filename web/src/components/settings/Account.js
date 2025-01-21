@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Container, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import axios from 'axios';
 import ApiKeys from "./ApiKeys";
+import CallbackUrls from "./CallbackUrls";
 import { apiUrl } from '../../utils';
 
 function Account() {
@@ -95,6 +96,8 @@ function Account() {
                 )}
             </>
             <hr/>
+            {/* Callback Urls Section */}
+            <CallbackUrls/>
             {/* API Keys Section */}
             <ApiKeys/>
         </Container>

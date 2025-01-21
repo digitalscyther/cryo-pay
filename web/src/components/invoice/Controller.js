@@ -6,7 +6,7 @@ import {apiUrl} from "../../utils";
 import BN from "bn.js";
 import {useNavigate} from "react-router-dom";
 
-function Controller({ invoice, own, erc20Abi, contractAbi, networks }) {
+function Controller({ invoice, own, erc20Abi, contractAbi, networks, waitPaymentSuccessful }) {
     const navigate = useNavigate();
     const [processingPayment, setPaymentProcessing] = useState(false);
     const [paymentSuccessful, setPaymentSuccessful] = useState(false);
@@ -97,7 +97,7 @@ function Controller({ invoice, own, erc20Abi, contractAbi, networks }) {
 
             await processPayment(amount);
             setPaymentSuccessful(true);
-            alert('Payment is under processing. It will be marked as paid once everything is fine.');
+            waitPaymentSuccessful();
         } catch (error) {
             console.error('Payment failed', error);
             setError('Payment failed, please try again');

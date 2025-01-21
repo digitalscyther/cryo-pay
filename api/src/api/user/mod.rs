@@ -1,4 +1,5 @@
 mod api_key;
+mod callback_url;
 
 use std::sync::Arc;
 use axum::extract::State;
@@ -26,6 +27,7 @@ pub fn get_router(app_state: Arc<AppState>) -> Router {
         .route("/", patch(update))
         .route(ATTACH_TELEGRAM_PATH, get(attach_telegram))
         .nest("/api_key", api_key::get_router(app_state.clone()))
+        .nest("/callback_url", callback_url::get_router(app_state.clone()))
         .layer(middleware::from_fn_with_state(app_state.clone(), only_web))
         .layer(middleware::from_fn_with_state(app_state.clone(), extract_user))
         .with_state(app_state)

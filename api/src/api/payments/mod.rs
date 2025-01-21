@@ -2,11 +2,12 @@ use std::sync::Arc;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::{Extension, Json, middleware, Router};
-use axum::response::IntoResponse;
+use axum::response::{IntoResponse, Redirect};
 use axum::routing::{delete, get, post};
 use bigdecimal::BigDecimal;
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
+use url::Url;
 use uuid::Uuid;
 use crate::db::{Invoice, User};
 use crate::api::middleware::{AppUser, extract_user, only_auth, only_bill_owner, rate_limit};
@@ -57,6 +58,7 @@ pub fn get_router(app_state: Arc<AppState>) -> Router {
                 .layer(middleware::from_fn_with_state(app_state.clone(), only_auth))
                 .layer(middleware::from_fn_with_state(app_state.clone(), only_bill_owner)))
         .layer(middleware::from_fn_with_state(app_state.clone(), extract_user))
+        .route("/invoice/:invoice_id/redirect", get(redirect_invoice_handler))
         .with_state(app_state)
 }
 
@@ -167,4 +169,45 @@ async fn delete_invoice_handler(
         Ok(false) => StatusCode::NOT_FOUND,
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
     }
+}
+
+#[derive(Deserialize)]
+struct RedirectInvoiceQuery {
+    url: Option<String>,
+}
+
+async fn redirect_invoice_handler(
+    State(state): State<Arc<AppState>>,
+    Path(invoice_id): Path<Uuid>,
+    query: Query<RedirectInvoiceQuery>,
+) -> Result<impl IntoResponse, StatusCode> {
+    match &query.url {
+        None => Err(StatusCode::BAD_REQUEST),   // TODO message
+        Some(url) => match state.db.get_invoice(&invoice_id)
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)? {
+            None => Err(StatusCode::NOT_FOUND),
+            Some(invoice) => {
+                let was_paid = invoice.paid_at.is_some();
+                let get_success_response = || get_redirect_url(&url, &invoice_id, was_paid);
+                match invoice.user_id {
+                    None => get_success_response(),
+                    Some(user_id) => match state.db.exists_callback_url(&url, &user_id)
+                        .await
+                        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)? {
+                        false => Err(StatusCode::BAD_REQUEST),  // TODO message
+                        true => get_success_response(),
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn get_redirect_url(url: &str, invoice_id: &Uuid, was_paid: bool) -> Result<impl IntoResponse, StatusCode> {
+    let mut parsed_url = Url::parse(url).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    parsed_url.query_pairs_mut().append_pair("invoice_id", &invoice_id.to_string());
+    parsed_url.query_pairs_mut().append_pair("status", if was_paid { "SUCCESS" } else { "PENDING" });
+
+    Ok(Redirect::to(parsed_url.as_str()))
 }

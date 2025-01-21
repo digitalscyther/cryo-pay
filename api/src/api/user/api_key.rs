@@ -20,8 +20,8 @@ pub fn get_router(app_state: Arc<AppState>) -> Router<Arc<AppState>> {
         .route("/ping", get(ping_pong))
         .route("/", get(list))
         .route("/", post(create))
-        .route("/:invoice_id", get(read))
-        .route("/:invoice_id", delete(destroy))
+        .route("/:api_key_id", get(read))
+        .route("/:api_key_id", delete(destroy))
         .with_state(app_state)
 }
 
