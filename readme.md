@@ -99,9 +99,9 @@ INFURA_TOKEN=<infura_token>
     - [x] documentation
     - [x] create invoice limit per day info 
 - [ ] On success redirect to API client page
-  - [ ] Backend
+  - [x] Backend
     - [x] Main logic
-    - [ ] If empty whitelist - allow any
+    - [x] If empty whitelist - allow any
   - [ ] Frontend
     - [x] On paid - redirect
     - [ ] Documentation

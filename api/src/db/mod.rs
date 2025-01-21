@@ -451,8 +451,8 @@ pub async fn list_callback_urls_by_user_id(
         "#,
         user_id
     )
-    .fetch_all(pg_pool)
-    .await
+        .fetch_all(pg_pool)
+        .await
 }
 
 pub async fn delete_callback_url_by_id_and_user_id(
@@ -468,8 +468,8 @@ pub async fn delete_callback_url_by_id_and_user_id(
         id,
         user_id
     )
-    .execute(pg_pool)
-    .await?;
+        .execute(pg_pool)
+        .await?;
 
     Ok(result.rows_affected() > 0)
 }
@@ -491,6 +491,21 @@ pub async fn count_callback_urls_by_user_id(
 }
 
 pub async fn exists_callback_url(pg_pool: &PgPool, url: &str, user_id: &Uuid) -> Result<bool, sqlx::Error> {
+    match sqlx::query!(
+        r#"
+        SELECT EXISTS (
+            SELECT 1 FROM callback_urls WHERE user_id = $1
+        ) AS exists
+        "#,
+        user_id
+    )
+        .fetch_one(pg_pool)
+        .await?
+        .exists {
+        Some(exists) if !exists => return Ok(false),
+        _ => {}
+    }
+
     match sqlx::query!(
         r#"
         SELECT 1 AS some FROM callback_urls
