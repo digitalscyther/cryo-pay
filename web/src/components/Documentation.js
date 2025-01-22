@@ -120,11 +120,11 @@ function APIEndpoints({urlInvoices, urlInvoicesInstance}) {
             invoice details.
             The format of the URL is:
         </p>
-        <pre>{invoice_url}</pre>
+        <p><code>{invoice_url}</code></p>
         <p>
             For example:
         </p>
-        <pre>{invoice_url_example}</pre>
+        <p><code>{invoice_url_example}</code></p>
         <p>
             You can share this URL directly with your clients for payment.
         </p>
@@ -139,7 +139,7 @@ function APIEndpoints({urlInvoices, urlInvoicesInstance}) {
         <p>
             Example of an invoice URL with a <code>callback_url</code>:
         </p>
-        <pre>{invoice_url_with_callback_url}</pre>
+        <p><code>{invoice_url_with_callback_url}</code></p>
         <p>
             In this example, after the payment is completed, the user will be redirected
             to <code>{redirect_url}</code>.
