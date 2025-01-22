@@ -107,8 +107,8 @@ INFURA_TOKEN=<infura_token>
     - [x] Documentation
     - [x] Add some ~~loaders~~ modal or info that need stay on page (for payer)
 - [ ] Add monetization
-  - [ ] Notification
-    - [ ] Beautify exists telegram messages
+  - [x] Notification
+    - [x] Beautify exists telegram messages
   - [ ] Subscriptions
     - [ ] Instant blockchain verification
     - [ ] Anonymus invoices

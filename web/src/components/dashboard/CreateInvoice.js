@@ -1,18 +1,25 @@
-import {Button, Form, Modal} from "react-bootstrap";
+import {Badge, Button, Collapse, Form, Modal, OverlayTrigger, Tooltip} from "react-bootstrap";
 import MetaMaskButton from "./MetaMaskButton";
 import {apiUrl, getBlockchainInfo, NETWORKS} from "../../utils";
 import React, {useEffect, useState} from "react";
 import {useNavigate} from "react-router-dom";
 import axios from "axios";
 
+const ExternalIdInfo = ({id, children, title}) => (
+    <OverlayTrigger overlay={<Tooltip id={id}>{title}</Tooltip>}>
+        {children}
+    </OverlayTrigger>
+);
+
 function CreateInvoice() {
     const navigate = useNavigate();
     const [showModal, setShowModal] = useState(false);
-    const [newInvoice, setNewInvoice] = useState({amount: '', seller: '', networks: []});
+    const [newInvoice, setNewInvoice] = useState({amount: '', seller: '', networks: [], external_id: ''});
     const [creating, setCreating] = useState(false);
     const [networks, setNetworks] = useState([]);
     const [error, setError] = useState(null);
     const [validationError, setValidationError] = useState(null);
+    const [showExternalId, setShowExternalId] = useState(false);
 
     useEffect(() => {
         const fetchBlockchainInfo = async () => {
@@ -58,18 +65,32 @@ function CreateInvoice() {
             return;
         }
 
+        if (newInvoice.external_id.length > 255) {
+            setValidationError("External ID must be less than 255 characters.");
+            return;
+        }
+
+        // Prepare data for API call
+        const data = {
+            amount: newInvoice.amount,
+            seller: newInvoice.seller,
+            networks: newInvoice.networks,
+        };
+
+        let external_id = (newInvoice.external_id || "").trim() || null;
+        if (external_id) {
+            data.external_id = newInvoice.external_id;
+        }
+
         // If validations pass, proceed with API call
         setCreating(true);
         axios
-            .post(apiUrl('/payment/invoice'), {
-                amount: newInvoice.amount,
-                seller: newInvoice.seller,
-                networks: newInvoice.networks,
-            }, {withCredentials: true})
+            .post(apiUrl('/payment/invoice'), data, {withCredentials: true})
             .then((response) => {
                 setCreating(false);
                 setShowModal(false);
-                setNewInvoice({amount: '', seller: '', networks: []});
+                setNewInvoice({amount: '', seller: '', networks: [], external_id: ''});
+                setShowExternalId(false);
                 const newInvoiceId = response.data.id;
                 navigate(`/invoices/${newInvoiceId}`);
             })
@@ -104,6 +125,10 @@ function CreateInvoice() {
         }
     };
 
+    let externalIdInfoText = (
+        "This ID will be visible to the payer. You can use it as a name or for any other purpose."
+    );
+
     return (
         <>
             <Button variant="primary" onClick={() => setShowModal(true)} className="mb-3">
@@ -119,7 +144,7 @@ function CreateInvoice() {
                         error && <div className="alert alert-danger" role="alert">
                             <>{error}</>
                             <div className="d-flex">
-                                <small className="mt-2 ms-auto" style={{ fontSize: "0.8em" }}>
+                                <small className="mt-2 ms-auto" style={{fontSize: "0.8em"}}>
                                     More info about limits <a href="/docs#limits">here</a>
                                 </small>
                             </div>
@@ -185,6 +210,35 @@ function CreateInvoice() {
                                         />
                                     ))}
                             </div>
+                        </Form.Group>
+                        <Form.Group controlId="formExternalId" className="mt-3">
+                            <Button
+                                variant="outline-primary"
+                                onClick={() => setShowExternalId(!showExternalId)}
+                                aria-controls="external-id-collapse"
+                                aria-expanded={showExternalId}
+                            >
+                                Add External ID
+                            </Button>
+                            <Collapse in={showExternalId}>
+                                <div id="external-id-collapse">
+                                    <Form.Label>
+                                        External ID (Optional){" "}<ExternalIdInfo
+                                        title={externalIdInfoText}
+                                        id="external-id-link"
+                                    ><Badge pill bg="secondary"> ? </Badge></ExternalIdInfo>
+                                    </Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        placeholder="Enter external ID"
+                                        value={newInvoice.external_id}
+                                        onChange={(e) => setNewInvoice({
+                                            ...newInvoice,
+                                            external_id: e.target.value
+                                        })}
+                                    />
+                                </div>
+                            </Collapse>
                         </Form.Group>
                     </Form>
                 </Modal.Body>

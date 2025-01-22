@@ -28,6 +28,7 @@ pub struct Invoice {
     pub paid_at: Option<NaiveDateTime>,
     pub networks: Vec<i32>,
     pub user_id: Option<Uuid>,
+    pub external_id: Option<String>,
 }
 
 impl Invoice {
@@ -44,7 +45,7 @@ pub async fn list_invoices(
 ) -> Result<Vec<Invoice>, sqlx::Error> {
     match user_id {
         None => sqlx::query_as!(
-                Invoice,
+            Invoice,
             "SELECT * FROM invoice ORDER BY created_at DESC LIMIT $1 OFFSET $2",
             limit,
             offset
@@ -63,18 +64,26 @@ pub async fn list_invoices(
     }
 }
 
-pub async fn create_invoice(pg_pool: &PgPool, amount: BigDecimal, seller: &str, networks: &Vec<i32>, user_id: Option<Uuid>) -> Result<Invoice, sqlx::Error> {
+pub async fn create_invoice(
+    pg_pool: &PgPool,
+    amount: BigDecimal,
+    seller: &str,
+    networks: &Vec<i32>,
+    user_id: Option<Uuid>,
+    external_id: Option<String>,
+) -> Result<Invoice, sqlx::Error> {
     sqlx::query_as!(
         Invoice,
         r#"
-        INSERT INTO invoice (amount, seller, networks, user_id)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO invoice (amount, seller, networks, user_id, external_id)
+        VALUES ($1, $2, $3, $4, $5)
         RETURNING *
         "#,
         amount,
         seller.to_lowercase(),
         networks,
-        user_id
+        user_id,
+        external_id,
     )
         .fetch_one(pg_pool)
         .await

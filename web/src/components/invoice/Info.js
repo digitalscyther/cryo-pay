@@ -10,6 +10,11 @@ function Info({invoice}) {
             <ListGroup.Item>
                 <strong>Invoice ID:</strong> {invoice.id}
             </ListGroup.Item>
+            {invoice.external_id && (
+                <ListGroup.Item>
+                    <strong>External ID:</strong> {invoice.external_id}
+                </ListGroup.Item>
+            )}
             <ListGroup.Item>
                 <strong>Amount:</strong> <AmountDisplay amount={invoice.amount} color={"text-success"}/>
             </ListGroup.Item>

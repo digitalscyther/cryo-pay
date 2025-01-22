@@ -42,6 +42,11 @@
         "ordinal": 7,
         "name": "user_id",
         "type_info": "Uuid"
+      },
+      {
+        "ordinal": 8,
+        "name": "external_id",
+        "type_info": "Varchar"
       }
     ],
     "parameters": {
@@ -59,6 +64,7 @@
       true,
       true,
       false,
+      true,
       true
     ]
   },

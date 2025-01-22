@@ -22,6 +22,7 @@ struct InvoiceResponse {
     pub seller: String,
     pub paid_at: Option<NaiveDateTime>,
     pub networks: Vec<i32>,
+    pub external_id: Option<String>
 }
 
 impl From<Invoice> for InvoiceResponse {
@@ -33,6 +34,7 @@ impl From<Invoice> for InvoiceResponse {
             seller: i.seller,
             paid_at: i.paid_at,
             networks: i.networks,
+            external_id: i.external_id
         }
     }
 }
@@ -128,6 +130,7 @@ struct CreateInvoiceRequest {
     amount: BigDecimal,
     seller: String,
     networks: Vec<i32>,
+    external_id: Option<String>,
 }
 
 async fn create_invoice_handler(
@@ -135,7 +138,12 @@ async fn create_invoice_handler(
     Extension(app_user): Extension<AppUser>,
     Json(payload): Json<CreateInvoiceRequest>,
 ) -> Result<Json<InvoiceResponse>, StatusCode> {
-    let invoice = state.db.create_invoice(payload.amount, &payload.seller, &payload.networks, app_user.user_id())
+    let invoice = state.db.create_invoice(
+        payload.amount,
+        &payload.seller,
+        &payload.networks,
+        app_user.user_id(),
+        payload.external_id)
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 

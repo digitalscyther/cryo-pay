@@ -81,6 +81,6 @@ impl Notify for EmailNotifier {
 
 impl Notify for TelegramNotifier {
     async fn notify(&self, app_state: Arc<MonitorAppState>, invoice: Invoice) ->  Result<(), String>{
-        app_state.telegram_client.send_invoice_paid(&self.chat_id, &invoice.web_url()?).await
+        app_state.telegram_client.send_invoice_paid(&self.chat_id, &invoice).await
     }
 }
