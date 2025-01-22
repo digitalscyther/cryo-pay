@@ -106,6 +106,17 @@ INFURA_TOKEN=<infura_token>
     - [x] On paid - redirect
     - [x] Documentation
     - [x] Add some ~~loaders~~ modal or info that need stay on page (for payer)
+- [ ] Add monetization
+  - [ ] Notification
+    - [ ] Beautify exists telegram messages
+  - [ ] Subscriptions
+    - [ ] Instant blockchain verification
+    - [ ] Anonymus invoices
+    - [ ] Limits
+  - [ ] WaitList
+    - [ ] Custom tokens \ blockchains
+    - [ ] Advanced Sales Analytics
+    - [ ] White-label
 - [ ] Redirect on pay - if subscription - check blockchain instantly
 - [ ] Add basic statistics for sellers (number of transactions, total amounts for a period)
 - [ ] Automate QR code generation for invoices
