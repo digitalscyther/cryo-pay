@@ -84,3 +84,9 @@ impl ApiKey {
 pub fn new_api_key(user_id: Uuid) -> ApiKey {
     ApiKey::new(user_id)
 }
+
+pub fn get_bind_address() -> Result<String, String> {
+    let host = get_env_var("HOST")?;
+    let port = get_env_var("PORT")?;
+    Ok(format!("{}:{}", host, port))
+}

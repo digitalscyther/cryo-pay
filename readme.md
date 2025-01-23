@@ -110,6 +110,11 @@ INFURA_TOKEN=<infura_token>
   - [x] Notification
     - [x] Beautify exists telegram messages
   - [ ] Subscriptions
+    - [ ] Payment
+      - [x] Create
+      - [ ] Checkout endpoint
+      - [ ] Dummy Subscription
+      - [ ] Frontend
     - [ ] Instant blockchain verification
     - [ ] Anonymus invoices
     - [ ] Limits

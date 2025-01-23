@@ -20,6 +20,12 @@ use crate::telegram::TelegramClient;
 use crate::utils;
 
 const USER_BASE_PATH: &str = "/user";
+const PAYMENT_BASE_PATH: &str = "/payment";
+const INVOICE_PATH: &str = "/invoice";
+
+pub fn get_invoice_full_path() -> String {
+    format!("{}{}", PAYMENT_BASE_PATH, INVOICE_PATH)
+}
 
 pub async fn run_api(networks: Vec<Network>, db: DB, telegram_client: TelegramClient) -> Result<(), String> {
     let app_state = state::setup_app_state(networks, db, telegram_client).await?;
@@ -32,7 +38,7 @@ pub async fn run_api(networks: Vec<Network>, db: DB, telegram_client: TelegramCl
         .route("/ping", get(ping_pong))
         .nest("/auth", auth::get_router(app_state.clone()))
         .nest(USER_BASE_PATH, user::get_router(app_state.clone()))
-        .nest("/payment", payments::get_router(app_state.clone()))
+        .nest(PAYMENT_BASE_PATH, payments::get_router(app_state.clone()))
         .nest("/blockchain", blockchain::get_router(app_state.clone()))
         .layer(TraceLayer::new_for_http());
 
@@ -42,9 +48,7 @@ pub async fn run_api(networks: Vec<Network>, db: DB, telegram_client: TelegramCl
         router = router.layer(cors);
     }
 
-    let host = utils::get_env_var("HOST")?;
-    let port = utils::get_env_var("PORT")?;
-    let bind_address = format!("{}:{}", host, port);
+    let bind_address = utils::get_bind_address()?;
     info!("Listening on {}", bind_address);
     let listener = tokio::net::TcpListener::bind(bind_address)
         .await

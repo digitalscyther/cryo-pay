@@ -9,6 +9,7 @@ use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use url::Url;
 use uuid::Uuid;
+use crate::api::INVOICE_PATH;
 use crate::db::{Invoice, User};
 use crate::api::middleware::{AppUser, extract_user, only_auth, only_bill_owner, rate_limit};
 use crate::api::ping_pong::ping_pong;
@@ -22,7 +23,7 @@ struct InvoiceResponse {
     pub seller: String,
     pub paid_at: Option<NaiveDateTime>,
     pub networks: Vec<i32>,
-    pub external_id: Option<String>
+    pub external_id: Option<String>,
 }
 
 impl From<Invoice> for InvoiceResponse {
@@ -34,7 +35,7 @@ impl From<Invoice> for InvoiceResponse {
             seller: i.seller,
             paid_at: i.paid_at,
             networks: i.networks,
-            external_id: i.external_id
+            external_id: i.external_id,
         }
     }
 }
@@ -48,19 +49,19 @@ struct OwnInvoiceResponse {
 pub fn get_router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route("/ping", get(ping_pong))
-        .route("/invoice", get(get_invoices_handler))
+        .route(INVOICE_PATH, get(get_invoices_handler))
         .route(
-            "/invoice",
+            INVOICE_PATH,
             post(create_invoice_handler)
                 .layer(middleware::from_fn_with_state(app_state.clone(), rate_limit)))
-        .route("/invoice/:invoice_id", get(get_invoice_handler))
+        .route(&format!("{INVOICE_PATH}/:invoice_id"), get(get_invoice_handler))
         .route(
-            "/invoice/:invoice_id",
+            &format!("{INVOICE_PATH}/:invoice_id"),
             delete(delete_invoice_handler)
                 .layer(middleware::from_fn_with_state(app_state.clone(), only_auth))
                 .layer(middleware::from_fn_with_state(app_state.clone(), only_bill_owner)))
         .layer(middleware::from_fn_with_state(app_state.clone(), extract_user))
-        .route("/invoice/:invoice_id/redirect", get(redirect_invoice_handler))
+        .route(&format!("{INVOICE_PATH}/:invoice_id/redirect"), get(redirect_invoice_handler))
         .with_state(app_state)
 }
 

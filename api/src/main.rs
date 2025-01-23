@@ -8,6 +8,7 @@ mod events;
 mod network;
 mod telegram;
 mod mailer;
+mod payments;
 
 #[tokio::main]
 async fn main() -> Result<(), String> {
