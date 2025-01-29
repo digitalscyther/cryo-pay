@@ -112,8 +112,8 @@ INFURA_TOKEN=<infura_token>
   - [ ] Subscriptions
     - [ ] Payment
       - [x] Create
-      - [ ] Checkout endpoint
-      - [ ] Dummy Subscription
+      - [x] Checkout endpoint
+      - [x] Dummy Subscription
       - [ ] Frontend
     - [ ] Instant blockchain verification
     - [ ] Anonymus invoices

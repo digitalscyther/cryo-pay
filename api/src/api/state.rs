@@ -4,10 +4,12 @@ use jsonwebtoken::{Algorithm, decode, DecodingKey, encode, EncodingKey, Header, 
 use redis::{aio::MultiplexedConnection, AsyncCommands, ConnectionLike, RedisResult};
 use rs_firebase_admin_sdk::{credentials_provider, App, GcpCredentials, auth::token::{error::TokenVerificationError, jwt::JWToken, TokenVerifier}};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use sqlx::migrate::MigrateError;
 use sqlx::PgPool;
 use uuid::Uuid;
 use crate::db::{self, ApiKey, CallbackUrl, Invoice, User};
+use crate::db::billing::{create_payment, get_payment, Payment};
 use crate::network::Network;
 use crate::telegram::TelegramClient;
 use crate::utils;
@@ -297,6 +299,18 @@ impl DB {
         db::exists_callback_url(&self.pg_pool, url, user_id)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "exists callback url"))
+    }
+
+    pub async fn get_payment(&self, id: &Uuid) -> Result<Option<Payment>, String> {
+        get_payment(&self.pg_pool, id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "get payment"))
+    }
+
+    pub async fn create_payment(&self, id: &Uuid, data: &Value) -> Result<(), String> {
+        create_payment(&self.pg_pool, id, data)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "create payment"))
     }
 }
 

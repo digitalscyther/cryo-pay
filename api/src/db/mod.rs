@@ -1,3 +1,5 @@
+pub mod billing;
+
 use bigdecimal::BigDecimal;
 use serde::Serialize;
 use sqlx::{PgPool, types::{chrono::NaiveDateTime, Uuid}};
@@ -33,7 +35,7 @@ pub struct Invoice {
 
 impl Invoice {
     pub fn web_url(&self) -> Result<String, String> {
-        utils::get_invoice_url(self.id)
+        utils::get_invoice_url(&self.id)
     }
 }
 

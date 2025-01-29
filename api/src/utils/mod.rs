@@ -28,11 +28,11 @@ fn contains_value(list: &Vec<&str>, value: &str) -> bool {
     list.contains(&value)
 }
 
-fn web_base_url() -> Result<String, String> {
+pub fn web_base_url() -> Result<String, String> {
     get_env_var("WEB_BASE_URL")
 }
 
-pub fn get_invoice_url(invoice_id: Uuid) -> Result<String, String> {
+pub fn get_invoice_url(invoice_id: &Uuid) -> Result<String, String> {
     Ok(format!("{}/invoices/{}", web_base_url()?, invoice_id.to_string()))
 }
 
@@ -89,4 +89,12 @@ pub fn get_bind_address() -> Result<String, String> {
     let host = get_env_var("HOST")?;
     let port = get_env_var("PORT")?;
     Ok(format!("{}:{}", host, port))
+}
+
+pub fn combine_paths(paths: &[&str]) -> String {
+    paths.concat()
+}
+
+pub fn get_self_url() -> Result<String, String> {
+    get_bind_address().map(|addr| format!("http://{}", addr))
 }

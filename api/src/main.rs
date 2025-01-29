@@ -19,7 +19,7 @@ async fn main() -> Result<(), String> {
 
     let test = false;
 
-    let networks = network::Network::vec_from_env("NETWORKS")?;
+    let networks = network::Network::default_vec()?;
     let db = api::state::DB::new().await?;
     let telegram_client = telegram::TelegramClient::new().await?;
 
