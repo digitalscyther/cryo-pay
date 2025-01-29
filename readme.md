@@ -117,7 +117,7 @@ INFURA_TOKEN=<infura_token>
       - [ ] Frontend
     - [ ] Instant blockchain verification
     - [ ] Anonymus invoices
-    - [ ] Limits
+    - [x] Limits
   - [ ] WaitList
     - [ ] Custom tokens \ blockchains
     - [ ] Advanced Sales Analytics

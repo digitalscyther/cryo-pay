@@ -1,5 +1,5 @@
 use bigdecimal::BigDecimal;
-use chrono::{NaiveDateTime, Utc};
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -17,8 +17,10 @@ pub struct Subscription {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-enum SubscriptionTarget {
-    Blank
+pub enum SubscriptionTarget {
+    InstantBlockchainChecking,
+    PrivateInvoices,
+    UnlimitedInvoices
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -29,10 +31,6 @@ pub struct Donation {
 }
 
 impl Payable {
-    fn create_subscription_blank() -> Self {
-        Self::create_subscription(Subscription::blank())
-    }
-
     fn create_subscription(subscription: Subscription) -> Self {
         Self::Subscription(subscription)
     }
@@ -47,10 +45,6 @@ impl Payable {
 }
 
 impl Subscription {
-    fn blank() -> Self {
-        Subscription::new(SubscriptionTarget::Blank, Utc::now().naive_utc())
-    }
-
     fn new(target: SubscriptionTarget, until: NaiveDateTime) -> Self {
         Self { target, until }
     }
@@ -63,5 +57,11 @@ impl Donation {
 
     fn new(donor: Option<String>, target: Option<String>, amount: BigDecimal) -> Self {
         Self { donor, target, amount }
+    }
+}
+
+impl From<SubscriptionTarget> for String {
+    fn from(value: SubscriptionTarget) -> Self {
+        serde_json::to_string(&value).unwrap_or_default()
     }
 }

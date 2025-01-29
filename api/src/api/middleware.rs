@@ -10,11 +10,12 @@ use tracing::error;
 use uuid::Uuid;
 use crate::api::state::AppState;
 use crate::db::User;
+use crate::payments::payable::SubscriptionTarget;
 use crate::utils;
 
 
-const API_RPD: u64 = 1000;
-const WEB_RPD: u64 = 100;
+const API_RPD: u64 = 10;
+const WEB_RPD: u64 = 3;
 const ANONYMUS_RPD: u64 = WEB_RPD;
 
 #[derive(Clone, Debug)]
@@ -24,7 +25,7 @@ pub enum AuthType {
 }
 
 impl AuthType {
-    fn rpd(&self) -> u64{
+    fn rpd(&self) -> u64 {
         match self {
             AuthType::API => API_RPD,
             AuthType::WEB => WEB_RPD,
@@ -73,7 +74,7 @@ impl AppUser {
 
     pub fn user_id(&self) -> Option<Uuid> {
         if let Some(auth) = &self.auth {
-            return Some(auth.user.id)
+            return Some(auth.user.id);
         };
 
         None
@@ -198,7 +199,7 @@ pub async fn only_auth(
 ) -> Result<impl IntoResponse, StatusCode> {
     match app_user.auth {
         Some(auth) => only(auth.user, req, next).await,
-       _ => Err(StatusCode::UNAUTHORIZED)
+        _ => Err(StatusCode::UNAUTHORIZED)
     }
 }
 
@@ -218,7 +219,7 @@ pub async fn only_web(
 ) -> Result<impl IntoResponse, StatusCode> {
     match app_user.auth {
         Some(auth) if auth.auth_type.is_web() => only(auth.user, req, next).await,
-       _ => Err(StatusCode::UNAUTHORIZED)
+        _ => Err(StatusCode::UNAUTHORIZED)
     }
 }
 
@@ -237,6 +238,12 @@ pub async fn rate_limit(
     req: Request,
     next: Next,
 ) -> Result<impl IntoResponse, StatusCode> {
+    if let Some(user_id) = app_user.user_id() {
+        let target: String = SubscriptionTarget::UnlimitedInvoices.into();
+        if let Ok(Some(_)) = state.db.get_user_active_subscription(&user_id, &target).await {
+            return Ok(next.run(req).await);
+        }
+    }
     match is_rpd_ok(state, &app_user.rate_limit_redis_key(), app_user.rpd()).await {
         Ok(true) => Ok(next.run(req).await),
         Ok(false) => Err(StatusCode::TOO_MANY_REQUESTS),

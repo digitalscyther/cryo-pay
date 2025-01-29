@@ -9,7 +9,7 @@ use sqlx::migrate::MigrateError;
 use sqlx::PgPool;
 use uuid::Uuid;
 use crate::db::{self, ApiKey, CallbackUrl, Invoice, User};
-use crate::db::billing::{create_payment, get_payment, Payment};
+use crate::db::billing::{self, Payment, Subscription};
 use crate::network::Network;
 use crate::telegram::TelegramClient;
 use crate::utils;
@@ -302,15 +302,27 @@ impl DB {
     }
 
     pub async fn get_payment(&self, id: &Uuid) -> Result<Option<Payment>, String> {
-        get_payment(&self.pg_pool, id)
+        billing::get_payment(&self.pg_pool, id)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "get payment"))
     }
 
     pub async fn create_payment(&self, id: &Uuid, data: &Value) -> Result<(), String> {
-        create_payment(&self.pg_pool, id, data)
+        billing::create_payment(&self.pg_pool, id, data)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "create payment"))
+    }
+
+    pub async fn get_user_active_subscription(&self, user_id: &Uuid, target: &str) -> Result<Option<Subscription>, String> {
+        billing::get_active_subscription(&self.pg_pool, user_id, target)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "get user active subscription"))
+    }
+
+    pub async fn create_or_update_subscription(&self, user_id: &Uuid, target: &str, data: &Value, until: NaiveDateTime) -> Result<(), String> {
+        billing::create_or_update_subscription(&self.pg_pool, user_id, target, data, until)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "create or update subscription"))
     }
 }
 

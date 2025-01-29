@@ -28,8 +28,8 @@ pub async fn create_payment(
         id,
         data
     )
-    .execute(pg_pool)
-    .await;
+        .execute(pg_pool)
+        .await;
 
     Ok(())
 }
@@ -44,6 +44,59 @@ pub async fn get_payment(pg_pool: &PgPool, id: &Uuid) -> Result<Option<Payment>,
         "#,
         id
     )
-    .fetch_optional(pg_pool)
-    .await
+        .fetch_optional(pg_pool)
+        .await
+}
+
+#[derive(Clone, Serialize, sqlx::FromRow)]
+pub struct Subscription {
+    id: Uuid,
+    user_id: Uuid,
+    target: String,
+    data: Value,
+    created_at: NaiveDateTime,
+    until: NaiveDateTime,
+}
+
+pub async fn create_or_update_subscription(
+    pg_pool: &PgPool,
+    user_id: &Uuid,
+    target: &str,
+    data: &Value,
+    until: NaiveDateTime,
+) -> Result<(), sqlx::Error> {
+    let _ = sqlx::query!(
+        r#"
+        INSERT INTO subscriptions (user_id, target, data, until)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (user_id, target)
+        DO UPDATE SET data = EXCLUDED.data, until = EXCLUDED.until
+        "#,
+        user_id,
+        target,
+        data,
+        until
+    )
+        .execute(pg_pool)
+        .await?;
+
+    Ok(())
+}
+
+pub async fn get_active_subscription(
+    pg_pool: &PgPool,
+    user_id: &Uuid,
+    target: &str,
+) -> Result<Option<Subscription>, sqlx::Error> {
+    sqlx::query_as!(
+        Subscription,
+        r#"
+        SELECT * FROM subscriptions
+        WHERE user_id = $1 AND target = $2 AND until > NOW()
+        "#,
+        user_id,
+        target
+    )
+        .fetch_optional(pg_pool)
+        .await
 }
