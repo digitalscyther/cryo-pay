@@ -8,6 +8,7 @@ use uuid::Uuid;
 #[derive(Clone, Debug, Serialize, sqlx::FromRow)]
 pub struct Payment {
     pub id: Uuid,
+    pub user_id: Option<Uuid>,
     pub data: Value,
     pub created_at: NaiveDateTime,
     pub paid_at: Option<NaiveDateTime>,
@@ -16,16 +17,18 @@ pub struct Payment {
 pub async fn create_payment(
     pg_pool: &PgPool,
     id: &Uuid,
+    user_id: Option<Uuid>,
     data: &Value,
 ) -> Result<(), sqlx::Error> {
     let data = serde_json::to_value(data)
         .map_err(|err| sqlx::Error::Encode(BoxDynError::from(err)))?;
     let _ = sqlx::query!(
         r#"
-        INSERT INTO payments (id, data)
-        VALUES ($1, $2)
+        INSERT INTO payments (id, user_id, data)
+        VALUES ($1, $2, $3)
         "#,
         id,
+        user_id,
         data
     )
         .execute(pg_pool)
@@ -38,8 +41,7 @@ pub async fn get_payment(pg_pool: &PgPool, id: &Uuid) -> Result<Option<Payment>,
     sqlx::query_as!(
         Payment,
         r#"
-        SELECT id, data, created_at, paid_at
-        FROM payments
+        SELECT * FROM payments
         WHERE id = $1
         "#,
         id
@@ -62,7 +64,7 @@ pub async fn create_or_update_subscription(
     pg_pool: &PgPool,
     user_id: &Uuid,
     target: &str,
-    data: &Value,
+    data: Option<Value>,
     until: NaiveDateTime,
 ) -> Result<(), sqlx::Error> {
     let _ = sqlx::query!(

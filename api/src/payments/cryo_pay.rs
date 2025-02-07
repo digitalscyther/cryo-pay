@@ -4,6 +4,8 @@ use serde_json::{json, Value};
 use url::Url;
 use uuid::Uuid;
 use crate::api::{get_invoice_full_path, get_target_invoice_path};
+use crate::api::state::DB;
+use crate::db::billing::Payment;
 use crate::network::Network;
 use crate::utils;
 
@@ -144,4 +146,20 @@ pub fn get_payment_path(invoice_id: &Uuid, callback_url: Option<String>) -> Resu
     let trimmed = &url_str[web_base_url_len..];
 
     Ok(trimmed.to_string())
+}
+
+pub enum PaidPayableResult {
+    NotPaid,
+    NotFound,
+    Payment(Payment),
+}
+
+pub async fn get_paid_payable(db: &DB, invoice_id: &Uuid) -> Result<PaidPayableResult, String> {
+    Ok(match db.get_payment(invoice_id).await? {
+        None => PaidPayableResult::NotFound,
+        Some(payment) => match CryoPayApi::default().is_invoice_paid(invoice_id).await? {
+            false => PaidPayableResult::NotPaid,
+            true => PaidPayableResult::Payment(payment)
+        }
+    })
 }

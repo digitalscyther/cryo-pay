@@ -20,13 +20,17 @@ pub enum ToPayId {
 
 impl ToPay {
     pub async fn create_donation(amount: BigDecimal) -> Result<Self, String> {
+        let payable = Payable::create_anonymus_no_target_donation(&amount);
+
+        Self::create(amount.clone(), Some(format!("Donation of {amount}")), payable).await
+    }
+
+    pub async fn create(amount: BigDecimal, custom_id: Option<String>, payable: Payable) -> Result<Self, String> {
         let cryo_pay_api = CryoPayApi::default();
         let cryo_pay_recipient = CryoPayRecipient::default(
             &Network::default_vec()?
         )?;
-        let custom_id = Some(format!("Donation of {amount}"));
 
-        let payable = Payable::create_anonymus_no_target_donation(&amount);
         let invoice_id = cryo_pay_api
             .create_invoice(&cryo_pay_recipient.seller, &cryo_pay_recipient.networks, custom_id, &amount)
             .await?;

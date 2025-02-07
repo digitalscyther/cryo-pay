@@ -307,8 +307,8 @@ impl DB {
             .map_err(|err| utils::make_err(Box::new(err), "get payment"))
     }
 
-    pub async fn create_payment(&self, id: &Uuid, data: &Value) -> Result<(), String> {
-        billing::create_payment(&self.pg_pool, id, data)
+    pub async fn create_payment(&self, id: &Uuid, user_id: Option<Uuid>, data: &Value) -> Result<(), String> {
+        billing::create_payment(&self.pg_pool, id, user_id, data)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "create payment"))
     }
@@ -319,7 +319,7 @@ impl DB {
             .map_err(|err| utils::make_err(Box::new(err), "get user active subscription"))
     }
 
-    pub async fn create_or_update_subscription(&self, user_id: &Uuid, target: &str, data: &Value, until: NaiveDateTime) -> Result<(), String> {
+    pub async fn create_or_update_subscription(&self, user_id: &Uuid, target: &str, data: Option<Value>, until: NaiveDateTime) -> Result<(), String> {
         billing::create_or_update_subscription(&self.pg_pool, user_id, target, data, until)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "create or update subscription"))

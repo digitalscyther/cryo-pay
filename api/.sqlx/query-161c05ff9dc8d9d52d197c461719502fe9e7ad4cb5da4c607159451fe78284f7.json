@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT id, data, created_at, paid_at\n        FROM payments\n        WHERE id = $1\n        ",
+  "query": "\n        SELECT * FROM payments\n        WHERE id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -22,6 +22,11 @@
         "ordinal": 3,
         "name": "paid_at",
         "type_info": "Timestamp"
+      },
+      {
+        "ordinal": 4,
+        "name": "user_id",
+        "type_info": "Uuid"
       }
     ],
     "parameters": {
@@ -33,8 +38,9 @@
       false,
       false,
       false,
-      true
+      true,
+      false
     ]
   },
-  "hash": "c1073ee2a191ddd9c2af902707ee98d6b284c3d81f25f77617c3c96f44e935f5"
+  "hash": "161c05ff9dc8d9d52d197c461719502fe9e7ad4cb5da4c607159451fe78284f7"
 }
