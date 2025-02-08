@@ -7,7 +7,7 @@ use axum::routing::{get, post};
 use chrono::{Duration, Utc};
 use serde::Deserialize;
 use tracing::warn;
-use crate::api::buy::create_payment_url;
+use crate::api::buy::to_pay::create_payment_url;
 use crate::api::middleware::{extract_user, only_auth};
 use crate::api::middleware::rate_limiting::middleware::RateLimitType;
 use crate::api::ping_pong::ping_pong;
@@ -18,8 +18,8 @@ use crate::payments::ToPay;
 
 pub fn get_router(app_state: Arc<AppState>) -> Router {
     Router::new()
-        .route("/", post(create_subscription)
-            .layer(middleware::from_fn_with_state(app_state.clone(), RateLimitType::user_invoice)))
+        .route("/", post(create_subscription))
+        .layer(middleware::from_fn_with_state(app_state.clone(), RateLimitType::user_invoice))
         .layer(middleware::from_fn_with_state(app_state.clone(), only_auth))
         .layer(middleware::from_fn_with_state(app_state.clone(), extract_user))
         .with_state(app_state)
