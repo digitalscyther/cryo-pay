@@ -9,6 +9,7 @@ use serde::Deserialize;
 use tracing::warn;
 use crate::api::buy::create_payment_url;
 use crate::api::middleware::{extract_user, only_auth};
+use crate::api::middleware::rate_limiting::middleware::RateLimitType;
 use crate::api::ping_pong::ping_pong;
 use crate::api::state::AppState;
 use crate::db::User;
@@ -17,7 +18,8 @@ use crate::payments::ToPay;
 
 pub fn get_router(app_state: Arc<AppState>) -> Router {
     Router::new()
-        .route("/", post(create_subscription))
+        .route("/", post(create_subscription)
+            .layer(middleware::from_fn_with_state(app_state.clone(), RateLimitType::user_invoice)))
         .layer(middleware::from_fn_with_state(app_state.clone(), only_auth))
         .layer(middleware::from_fn_with_state(app_state.clone(), extract_user))
         .with_state(app_state)
@@ -30,7 +32,6 @@ struct CreateSubscriptionRequest {
     days: u64,
 }
 
-// TODO rate-limit
 async fn create_subscription(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<User>,

@@ -1,3 +1,6 @@
+pub mod auth;
+pub mod rate_limiting;
+
 use std::sync::Arc;
 use axum::Extension;
 use axum::extract::{Path, Request, State};
@@ -5,97 +8,12 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::middleware::Next;
 use axum::response::IntoResponse;
 use axum_extra::extract::cookie::Cookie;
-use chrono::Utc;
 use tracing::error;
 use uuid::Uuid;
+use auth::{AppUser, Auth, AuthType};
 use crate::api::state::AppState;
 use crate::db::User;
-use crate::payments::payable::SubscriptionTarget;
 use crate::utils;
-
-
-const API_RPD: u64 = 10;
-const WEB_RPD: u64 = 3;
-const ANONYMUS_RPD: u64 = WEB_RPD;
-
-#[derive(Clone, Debug)]
-pub enum AuthType {
-    API,
-    WEB,
-}
-
-impl AuthType {
-    fn rpd(&self) -> u64 {
-        match self {
-            AuthType::API => API_RPD,
-            AuthType::WEB => WEB_RPD,
-        }
-    }
-
-    fn is_web(&self) -> bool {
-        match self {
-            AuthType::WEB => true,
-            _ => false,
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct Auth {
-    auth_type: AuthType,
-    user: User,
-}
-
-impl Auth {
-    fn new(auth_type: AuthType, user: User) -> Self {
-        Self { auth_type, user }
-    }
-
-    fn redis_key(&self) -> String {
-        format!("{:?}:{}", self.auth_type, self.user.id)
-    }
-
-    fn rpd(&self) -> u64 {
-        self.auth_type.rpd()
-    }
-}
-
-
-#[derive(Clone, Debug)]
-pub struct AppUser {
-    ip: String,
-    auth: Option<Auth>,
-}
-
-impl AppUser {
-    pub fn new(ip: String, auth: Option<Auth>) -> Self {
-        Self { ip, auth }
-    }
-
-    pub fn user_id(&self) -> Option<Uuid> {
-        if let Some(auth) = &self.auth {
-            return Some(auth.user.id);
-        };
-
-        None
-    }
-
-    fn rate_limit_redis_key(&self) -> String {
-        let redis_key_suffix = match &self.auth {
-            Some(auth) => auth.redis_key(),
-            None => format!("anonymus:{}", self.ip),
-        };
-
-        format!("rate_limit:{}", redis_key_suffix)
-    }
-
-    fn rpd(&self) -> u64 {
-        match &self.auth {
-            Some(auth) => auth.rpd(),
-            None => ANONYMUS_RPD,
-        }
-    }
-}
 
 async fn get_ip_from_headers(headers: &HeaderMap) -> Option<String> {
     headers
@@ -220,37 +138,6 @@ pub async fn only_web(
     match app_user.auth {
         Some(auth) if auth.auth_type.is_web() => only(auth.user, req, next).await,
         _ => Err(StatusCode::UNAUTHORIZED)
-    }
-}
-
-pub async fn is_rpd_ok(state: Arc<AppState>, key: &str, rpd_allowed: u64) -> Result<bool, String> {
-    let now = Utc::now();
-    let key = format!("{}:{}", key, now.format("%Y-%m-%d"));
-
-    state.redis.incr(&key, 24 * 3600)
-        .await
-        .map(|rpd_done| rpd_allowed >= rpd_done)
-}
-
-pub async fn rate_limit(
-    State(state): State<Arc<AppState>>,
-    Extension(app_user): Extension<AppUser>,
-    req: Request,
-    next: Next,
-) -> Result<impl IntoResponse, StatusCode> {
-    if let Some(user_id) = app_user.user_id() {
-        let target: String = SubscriptionTarget::UnlimitedInvoices.into();
-        if let Ok(Some(_)) = state.db.get_user_active_subscription(&user_id, &target).await {
-            return Ok(next.run(req).await);
-        }
-    }
-    match is_rpd_ok(state, &app_user.rate_limit_redis_key(), app_user.rpd()).await {
-        Ok(true) => Ok(next.run(req).await),
-        Ok(false) => Err(StatusCode::TOO_MANY_REQUESTS),
-        Err(e) => {
-            error!("{}", e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
     }
 }
 

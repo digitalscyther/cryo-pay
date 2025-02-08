@@ -1,9 +1,11 @@
 use std::env;
+use axum::http::StatusCode;
 use hex::encode;
 use rand::{thread_rng, Rng};
 use rand::distributions::Alphanumeric;
 use serde_json::Value;
 use sha2::{Digest, Sha256};
+use tracing::error;
 use uuid::Uuid;
 
 pub fn make_err(err: Box<dyn std::error::Error>, process: &str) -> String {
@@ -97,4 +99,9 @@ pub fn combine_paths(paths: &[&str]) -> String {
 
 pub fn get_self_url() -> Result<String, String> {
     get_bind_address().map(|addr| format!("http://{}", addr))
+}
+
+pub fn log_and_error(err: String) -> StatusCode {
+    error!("{err}");
+    StatusCode::INTERNAL_SERVER_ERROR
 }

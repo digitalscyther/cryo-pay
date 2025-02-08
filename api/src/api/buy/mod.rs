@@ -11,7 +11,9 @@ use serde::Deserialize;
 use serde_json::Value;
 use tracing::warn;
 use uuid::Uuid;
-use crate::api::middleware::{AppUser, extract_user};
+use crate::api::middleware::extract_user;
+use crate::api::middleware::auth::AppUser;
+use crate::api::middleware::rate_limiting::middleware::RateLimitType;
 use crate::api::ping_pong::ping_pong;
 use crate::api::state::{AppState, DB};
 use crate::db::billing::Payment;
@@ -21,7 +23,8 @@ use crate::payments::payable::{apply, Payable};
 
 pub fn get_router(app_state: Arc<AppState>) -> Router {
     Router::new()
-        .route("/donate", get(donate))
+        .route("/donate", get(donate)
+            .layer(middleware::from_fn_with_state(app_state.clone(), RateLimitType::user_invoice)))
         .layer(middleware::from_fn_with_state(app_state.clone(), extract_user))
         .route("/recheck/:payment_id", post(recheck))
         .with_state(app_state.clone())
@@ -70,7 +73,6 @@ impl TryFrom<Payment> for ToPay {
     }
 }
 
-// TODO rate-limit
 async fn donate(
     State(state): State<Arc<AppState>>,
     Query(payload): Query<DonateRequest>,

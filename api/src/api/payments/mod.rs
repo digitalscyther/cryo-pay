@@ -11,7 +11,9 @@ use url::Url;
 use uuid::Uuid;
 use crate::api::INVOICE_PATH;
 use crate::db::{Invoice, User};
-use crate::api::middleware::{AppUser, extract_user, only_auth, only_bill_owner, rate_limit};
+use crate::api::middleware::{extract_user, only_auth, only_bill_owner};
+use crate::api::middleware::auth::AppUser;
+use crate::api::middleware::rate_limiting::middleware::RateLimitType;
 use crate::api::ping_pong::ping_pong;
 use crate::api::state::AppState;
 
@@ -53,7 +55,7 @@ pub fn get_router(app_state: Arc<AppState>) -> Router {
         .route(
             INVOICE_PATH,
             post(create_invoice_handler)
-                .layer(middleware::from_fn_with_state(app_state.clone(), rate_limit)))
+                .layer(middleware::from_fn_with_state(app_state.clone(), RateLimitType::product_invoice)))
         .route(&format!("{INVOICE_PATH}/:invoice_id"), get(get_invoice_handler))
         .route(
             &format!("{INVOICE_PATH}/:invoice_id"),
