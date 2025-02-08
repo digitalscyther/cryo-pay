@@ -7,7 +7,7 @@ import { apiUrl } from '../../utils';
 
 function Account() {
     const [settings, setSettings] = useState({
-        // email_notification: false,   // TODO 123
+        // email_notification: false,   // TODO notification_turned_off
         telegram_notification: false,
     });
     const [loading, setLoading] = useState(true);
@@ -68,10 +68,10 @@ function Account() {
                             id="email-notification"
                             label="Email"
                             name="email_notification"
-                            // checked={settings.email_notification}    // TODO 123
+                            // checked={settings.email_notification}    // TODO notification_turned_off
                             checked={false}
                             onChange={handleChange}
-                            disabled    // TODO 123
+                            disabled    // TODO notification_turned_off
                         />
                         <div className="ms-5 text-warning">Available only by subscription</div>
                     </div>

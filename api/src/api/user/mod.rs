@@ -75,7 +75,7 @@ async fn update(
 ) -> Result<impl IntoResponse, StatusCode> {
     let response: UserResponse = state.db
         .update_user(&user.id, payload.email_notification, payload.telegram_notification)
-        // .update_user(&user.id, None, payload.telegram_notification)     // TODO 123
+        // .update_user(&user.id, None, payload.telegram_notification)     // TODO notification_turned_off
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
         .into();
