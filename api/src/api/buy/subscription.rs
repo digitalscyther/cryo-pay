@@ -6,7 +6,6 @@ use axum::response::{IntoResponse, Redirect};
 use axum::routing::{get, post};
 use chrono::{Duration, Utc};
 use serde::Deserialize;
-use tracing::warn;
 use crate::api::buy::to_pay::create_payment_url;
 use crate::api::middleware::{extract_user, only_auth};
 use crate::api::middleware::rate_limiting::middleware::RateLimitType;
@@ -15,6 +14,7 @@ use crate::api::state::AppState;
 use crate::db::User;
 use crate::payments::payable::{Payable, Subscription, SubscriptionTarget};
 use crate::payments::ToPay;
+use crate::utils;
 
 pub fn get_router(app_state: Arc<AppState>) -> Router {
     Router::new()
@@ -41,7 +41,7 @@ async fn create_subscription(
         .try_into()
         .map_err(|_| StatusCode::BAD_REQUEST)?;
     let price = target.price_per_day()
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)? * request_data.days;
+        .map_err(utils::log_and_error)? * request_data.days;
     let until = (Utc::now() + Duration::days(request_data.days as i64)).naive_utc();
     let subscription = Subscription::new(target.clone(), until);
     let payable = Payable::create_subscription(subscription);
@@ -52,17 +52,11 @@ async fn create_subscription(
         payable
     )
         .await
-        .map_err(|err| {
-            warn!("Failed create ToPay: {:?}", err);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+        .map_err(utils::log_and_error)?;
 
     let payment_url = create_payment_url(&to_pay, &state.db, Some(user.id))
         .await
-        .map_err(|err| {
-            warn!("Failed create_payment_url: {:?}", err);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+        .map_err(utils::log_and_error)?;
 
     Ok(Redirect::to(&payment_url))
 }

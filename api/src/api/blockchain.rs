@@ -10,7 +10,6 @@ use axum::extract::{Path, State};
 use axum::routing::get;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use tracing::error;
 use crate::api::ping_pong::ping_pong;
 use crate::api::state::AppState;
 use crate::network::{Addresses, Network};
@@ -39,13 +38,17 @@ struct Info {
 async fn get_info(
     State(state): State<Arc<AppState>>
 ) -> Result<impl IntoResponse, StatusCode> {
-    let erc20_abi = load_json_from_file(utils::get_env_var("ERC20_ABI_PATH")
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?)
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let erc20_abi = load_json_from_file(
+        utils::get_env_var("ERC20_ABI_PATH")
+            .map_err(utils::log_and_error)?
+    )
+        .map_err(|err| utils::log_and_error(format!("{err:?}")))?;
 
-    let contract_abi = load_json_from_file(utils::get_env_var("CONTRACT_ABI_PATH")
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?)
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let contract_abi = load_json_from_file(
+        utils::get_env_var("CONTRACT_ABI_PATH")
+            .map_err(utils::log_and_error)?
+    )
+        .map_err(|err| utils::log_and_error(format!("{err:?}")))?;
 
     let response = Info {
         networks: state.networks
@@ -127,21 +130,17 @@ async fn get_suggested_gas_fees(
 
     let value = utils::get_suggested_gas_fees(&state.infura_token, network_id)
         .await
-        .map_err(|err| {
-            error!(err);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+        .map_err(utils::log_and_error)?;
 
     let response = serde_json::from_value::<GasPriceResponse>(value)
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|err| utils::log_and_error(format!("{err:?}")))?;
 
-    if let Err(err) = state.redis.set_suggested_gas_fees(
+    state.redis.set_suggested_gas_fees(
         &network_id, serde_json::to_string(&response.clone())
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?,
-    ).await {
-        error!(err);
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
-    }
+            .map_err(|err| utils::log_and_error(format!("{err:?}")))?,
+    ).
+        await
+        .map_err(utils::log_and_error)?;
 
     Ok(Json(json!({ "source": "api", "data": response })))
 }

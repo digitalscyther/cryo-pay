@@ -13,6 +13,7 @@ use crate::api::ping_pong::ping_pong;
 use crate::api::state::AppState;
 use crate::api::USER_BASE_PATH;
 use crate::db::User;
+use crate::utils;
 
 const ATTACH_TELEGRAM_PATH: &str = "/attach_telegram";
 
@@ -77,7 +78,7 @@ async fn update(
         .update_user(&user.id, payload.email_notification, payload.telegram_notification)
         // .update_user(&user.id, None, payload.telegram_notification)     // TODO notification_turned_off
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .map_err(utils::log_and_error)?
         .into();
 
     Ok(Json(response))
@@ -89,7 +90,7 @@ async fn attach_telegram(
 ) -> Result<impl IntoResponse, StatusCode> {
     let telegram_bot_name = state.telegram_client.get_bot_name()
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(utils::log_and_error)?;
 
     let telegram_redirect_url = format!(
         "https://t.me/{}?start={}",

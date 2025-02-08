@@ -49,7 +49,7 @@ async fn list(
     let api_keys = state.db
         .list_api_key(&user.id)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .map_err(utils::log_and_error)?
         .into_iter()
         .map(|i| i.into())
         .collect::<Vec<GetApiKeyResponse>>();
@@ -76,7 +76,7 @@ async fn create(
     let api_keys_number = state.db
         .count_api_keys_by_user_id(&user.id)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(utils::log_and_error)?;
 
     if api_keys_number >= API_KEY_LIMIT {
         return Err(StatusCode::CONFLICT)
@@ -87,7 +87,7 @@ async fn create(
     let instance: GetApiKeyResponse = state.db
         .create_api_key(&user.id, &api_key.hashed_value())
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .map_err(utils::log_and_error)?
         .into();
 
     Ok(Json(CreateResponse::new(&api_key.value, instance)))
@@ -101,7 +101,7 @@ async fn read(
     if let Some(api_key) = state.db
         .get_api_key(&api_key_id, &user.id)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)? {
+        .map_err(utils::log_and_error)? {
         let resp: GetApiKeyResponse = api_key.into();
         return Ok(Json(resp));
     }
@@ -113,10 +113,11 @@ async fn destroy(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<db::User>,
     Path(api_key_id): Path<Uuid>,
-) -> impl IntoResponse {
-    match state.db.delete_api_key(&api_key_id, &user.id).await {
-        Ok(true) => StatusCode::NO_CONTENT,
-        Ok(false) => StatusCode::NOT_FOUND,
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
-    }
+) -> Result<impl IntoResponse, StatusCode> {
+    Ok(match state.db.delete_api_key(&api_key_id, &user.id)
+        .await
+        .map_err(utils::log_and_error)? {
+        true => StatusCode::NO_CONTENT,
+        false => StatusCode::NOT_FOUND,
+    })
 }

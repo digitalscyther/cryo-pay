@@ -7,9 +7,10 @@ use axum::routing::{get, post};
 use axum_extra::extract::cookie::{Cookie, CookieJar, SameSite};
 use serde::Deserialize;
 use time::{Duration, OffsetDateTime};
-use tracing::{debug, warn};
+use tracing::debug;
 use crate::api::ping_pong::ping_pong;
 use crate::api::state::{AppState, VerifyError};
+use crate::utils;
 
 const JWT_EXPIRE_DAYS: i64 = 7;
 
@@ -38,10 +39,7 @@ async fn login(
                 debug!("Invalid token: {:?}", tve);
                 StatusCode::BAD_REQUEST
             }
-            VerifyError::Unexpected(err) => {
-                warn!("Failed check token: {:?}", err);
-                StatusCode::INTERNAL_SERVER_ERROR
-            }
+            VerifyError::Unexpected(err) => utils::log_and_error(err)
         })?;
 
     let user_id = token.critical_claims.sub;
@@ -51,10 +49,7 @@ async fn login(
         .map(|s| s.to_string());
 
     let jwt = state.jwt.generate(user_id, email)
-        .map_err(|err| {
-            warn!("Failed generate jwt: {:?}", err);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+        .map_err(|err| utils::log_and_error(format!("{err:?}")))?;
 
     let mut cookie = Cookie::new("jwt", jwt);
     cookie.set_expires(OffsetDateTime::now_utc() + Duration::days(JWT_EXPIRE_DAYS));

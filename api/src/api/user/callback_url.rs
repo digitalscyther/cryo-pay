@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::api::ping_pong::ping_pong;
 use crate::api::state::AppState;
-use crate::db;
+use crate::{db, utils};
 
 
 const CALLBACK_URLS_LIMIT: usize = 5;
@@ -48,7 +48,7 @@ async fn list(
     let callback_urls = state.db
         .list_callback_urls(&user.id)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .map_err(utils::log_and_error)?
         .into_iter()
         .map(|i| i.into())
         .collect::<Vec<GetCallbackUrlResponse>>();
@@ -69,7 +69,7 @@ async fn create(
     let callback_urls_number = state.db
         .count_callback_urls(&user.id)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(utils::log_and_error)?;
 
     if callback_urls_number >= CALLBACK_URLS_LIMIT {
         return Err(StatusCode::CONFLICT)
@@ -78,7 +78,7 @@ async fn create(
     let instance: GetCallbackUrlResponse = state.db
         .create_callback_url(&payload.url, &user.id)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .map_err(utils::log_and_error)?
         .into();
 
     Ok(Json(instance))
@@ -88,10 +88,11 @@ async fn destroy(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<db::User>,
     Path(callback_url_id): Path<Uuid>,
-) -> impl IntoResponse {
-    match state.db.delete_callback_url(&callback_url_id, &user.id).await {
-        Ok(true) => StatusCode::NO_CONTENT,
-        Ok(false) => StatusCode::NOT_FOUND,
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
-    }
+) -> Result<impl IntoResponse, StatusCode> {
+    Ok(match state.db.delete_callback_url(&callback_url_id, &user.id)
+        .await
+        .map_err(utils::log_and_error)? {
+        true => StatusCode::NO_CONTENT,
+        false => StatusCode::NOT_FOUND,
+    })
 }
