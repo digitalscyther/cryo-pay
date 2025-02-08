@@ -18,14 +18,6 @@ pub enum RateLimitType {
 }
 
 impl RateLimitType {
-    fn new_product_invoice() -> Self {
-        Self::CreateProductInvoice
-    }
-
-    fn new_user_invoice() -> Self {
-        Self::CreateUserInvoice
-    }
-
     async fn rate_limit(&self, app_user: &AppUser, db: &DB) -> Result<RateLimit, String> {
         match self {
             RateLimitType::CreateProductInvoice => CreateProductInvoiceRateLimitGetter::get(app_user, db).await,
@@ -35,7 +27,7 @@ impl RateLimitType {
 
     async fn check(
         &self,
-        state: Arc<AppState>,
+        state: &Arc<AppState>,
         app_user: &AppUser,
         req: Request,
         next: Next,
@@ -58,7 +50,7 @@ impl RateLimitType {
         req: Request,
         next: Next,
     ) -> Result<impl IntoResponse, StatusCode> {
-        Self::new_product_invoice().check(state, &app_user, req, next).await
+        Self::CreateProductInvoice.check(&state, &app_user, req, next).await
     }
 
     pub async fn user_invoice(
@@ -67,7 +59,7 @@ impl RateLimitType {
         req: Request,
         next: Next,
     ) -> Result<impl IntoResponse, StatusCode> {
-        Self::new_user_invoice().check(state, &app_user, req, next).await
+        Self::CreateUserInvoice.check(&state, &app_user, req, next).await
     }
 }
 
