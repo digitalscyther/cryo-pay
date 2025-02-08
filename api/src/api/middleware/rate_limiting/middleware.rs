@@ -3,12 +3,11 @@ use std::sync::Arc;
 use axum::Extension;
 use axum::middleware::Next;
 use axum::response::IntoResponse;
-use axum::http::StatusCode;
 use tracing::warn;
 use crate::api::middleware::auth::{AppUser, AuthType};
 use crate::api::middleware::rate_limiting::{Limit, Period, RateLimit, Target};
+use crate::api::response_error::ResponseError;
 use crate::api::state::{AppState, DB};
-use crate::api::utils;
 use crate::payments::payable::SubscriptionTarget;
 
 
@@ -31,16 +30,16 @@ impl RateLimitType {
         app_user: &AppUser,
         req: Request,
         next: Next,
-    ) -> Result<impl IntoResponse, StatusCode> {
+    ) -> Result<impl IntoResponse, ResponseError> {
         match self
             .rate_limit(app_user, &state.db)
             .await
-            .map_err(utils::log_and_error)?
+            .map_err(ResponseError::from_error)?
             .is_ok(&state.redis, app_user)
             .await
-            .map_err(utils::log_and_error)? {
+            .map_err(ResponseError::from_error)? {
             true => Ok(next.run(req).await),
-            false => Err(StatusCode::TOO_MANY_REQUESTS),
+            false => Err(ResponseError::TooManyRequests),
         }
     }
 
@@ -49,7 +48,7 @@ impl RateLimitType {
         Extension(app_user): Extension<AppUser>,
         req: Request,
         next: Next,
-    ) -> Result<impl IntoResponse, StatusCode> {
+    ) -> Result<impl IntoResponse, ResponseError> {
         Self::CreateProductInvoice.check(&state, &app_user, req, next).await
     }
 
@@ -58,7 +57,7 @@ impl RateLimitType {
         Extension(app_user): Extension<AppUser>,
         req: Request,
         next: Next,
-    ) -> Result<impl IntoResponse, StatusCode> {
+    ) -> Result<impl IntoResponse, ResponseError> {
         Self::CreateUserInvoice.check(&state, &app_user, req, next).await
     }
 }

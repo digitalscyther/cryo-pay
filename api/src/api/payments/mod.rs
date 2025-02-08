@@ -15,8 +15,8 @@ use crate::api::middleware::{extract_user, only_auth, only_bill_owner};
 use crate::api::middleware::auth::AppUser;
 use crate::api::middleware::rate_limiting::middleware::RateLimitType;
 use crate::api::ping_pong::ping_pong;
+use crate::api::response_error::ResponseError;
 use crate::api::state::AppState;
-use crate::utils;
 
 #[derive(Serialize)]
 struct InvoiceResponse {
@@ -115,13 +115,13 @@ async fn get_invoices_handler(
     Extension(app_user): Extension<AppUser>,
     Query(pagination): Query<Pagination>,
     Query(filter): Query<Filter>,
-) -> Result<Json<Vec<InvoiceResponse>>, StatusCode> {
+) -> Result<Json<Vec<InvoiceResponse>>, ResponseError> {
     let limit = pagination.limit;
     let offset = pagination.offset;
 
     let invoices = state.db.list_invoices(limit, offset, filter.user_id.to_user_id(app_user))
         .await
-        .map_err(utils::log_and_error)?
+        .map_err(ResponseError::from_error)?
         .into_iter()
         .map(|i| i.into())
         .collect();
@@ -141,7 +141,7 @@ async fn create_invoice_handler(
     State(state): State<Arc<AppState>>,
     Extension(app_user): Extension<AppUser>,
     Json(payload): Json<CreateInvoiceRequest>,
-) -> Result<Json<InvoiceResponse>, StatusCode> {
+) -> Result<Json<InvoiceResponse>, ResponseError> {
     let invoice = state.db.create_invoice(
         payload.amount,
         &payload.seller,
@@ -149,7 +149,7 @@ async fn create_invoice_handler(
         app_user.user_id(),
         payload.external_id)
         .await
-        .map_err(utils::log_and_error)?;
+        .map_err(ResponseError::from_error)?;
 
     Ok(Json(invoice.into()))
 }
@@ -158,13 +158,13 @@ async fn get_invoice_handler(
     State(state): State<Arc<AppState>>,
     Path(invoice_id): Path<Uuid>,
     Extension(app_user): Extension<AppUser>,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> Result<impl IntoResponse, ResponseError> {
     let (own, invoice) = state.db.get_own_invoice(invoice_id, app_user.user_id())
         .await
-        .map_err(utils::log_and_error)?;
+        .map_err(ResponseError::from_error)?;
 
     match invoice {
-        None => Err(StatusCode::NOT_FOUND),
+        None => Err(ResponseError::NotFound),
         Some(invoice) => Ok(Json(
             OwnInvoiceResponse { own, invoice: invoice.into() }
         ))
@@ -175,12 +175,12 @@ async fn delete_invoice_handler(
     State(state): State<Arc<AppState>>,
     Path(invoice_id): Path<Uuid>,
     Extension(user): Extension<User>,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> Result<impl IntoResponse, ResponseError> {
     Ok(match state.db.delete_own_invoice(&invoice_id, &user.id)
         .await
-        .map_err(utils::log_and_error)? {
+        .map_err(ResponseError::from_error)? {
         true => StatusCode::NO_CONTENT,
-        false => StatusCode::NOT_FOUND,
+        false => return Err(ResponseError::NotFound),
     })
 }
 
@@ -193,13 +193,13 @@ async fn redirect_invoice_handler(
     State(state): State<Arc<AppState>>,
     Path(invoice_id): Path<Uuid>,
     query: Query<RedirectInvoiceQuery>,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> Result<impl IntoResponse, ResponseError> {
     match &query.url {
-        None => Err(StatusCode::BAD_REQUEST),   // TODO message
+        None => Err(ResponseError::Bad("`url` query_param required")),
         Some(url) => match state.db.get_invoice(&invoice_id)
             .await
-            .map_err(utils::log_and_error)? {
-            None => Err(StatusCode::NOT_FOUND),
+            .map_err(ResponseError::from_error)? {
+            None => Err(ResponseError::NotFound),
             Some(invoice) => {
                 let was_paid = invoice.paid_at.is_some();
                 let get_success_response = || get_redirect_url(&url, &invoice_id, was_paid);
@@ -207,8 +207,8 @@ async fn redirect_invoice_handler(
                     None => get_success_response(),
                     Some(user_id) => match state.db.exists_callback_url(&url, &user_id)
                         .await
-                        .map_err(utils::log_and_error)? {
-                        false => Err(StatusCode::BAD_REQUEST),  // TODO message
+                        .map_err(ResponseError::from_error)? {
+                        false => Err(ResponseError::Bad("`url` not found in callback_urls")),
                         true => get_success_response(),
                     }
                 }
@@ -217,8 +217,8 @@ async fn redirect_invoice_handler(
     }
 }
 
-fn get_redirect_url(url: &str, invoice_id: &Uuid, was_paid: bool) -> Result<impl IntoResponse, StatusCode> {
-    let mut parsed_url = Url::parse(url).map_err(|err| utils::log_and_error(format!("{err:?}")))?;
+fn get_redirect_url(url: &str, invoice_id: &Uuid, was_paid: bool) -> Result<impl IntoResponse, ResponseError> {
+    let mut parsed_url = Url::parse(url).map_err(|err| ResponseError::from_error(format!("{err:?}")))?;
     parsed_url.query_pairs_mut().append_pair("invoice_id", &invoice_id.to_string());
     parsed_url.query_pairs_mut().append_pair("status", if was_paid { "SUCCESS" } else { "PENDING" });
 

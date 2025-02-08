@@ -4,13 +4,14 @@ pub mod rate_limiting;
 use std::sync::Arc;
 use axum::Extension;
 use axum::extract::{Path, Request, State};
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::HeaderMap;
 use axum::middleware::Next;
 use axum::response::IntoResponse;
 use axum_extra::extract::cookie::Cookie;
 use tracing::error;
 use uuid::Uuid;
 use auth::{AppUser, Auth, AuthType};
+use crate::api::response_error::ResponseError;
 use crate::api::state::AppState;
 use crate::db::User;
 use crate::utils;
@@ -114,10 +115,10 @@ pub async fn only_auth(
     Extension(app_user): Extension<AppUser>,
     req: Request,
     next: Next,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> Result<impl IntoResponse, ResponseError> {
     match app_user.auth {
         Some(auth) => only(auth.user, req, next).await,
-        _ => Err(StatusCode::UNAUTHORIZED)
+        _ => Err(ResponseError::Unauthorized)
     }
 }
 
@@ -125,7 +126,7 @@ async fn only(
     user: User,
     mut req: Request,
     next: Next,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> Result<impl IntoResponse, ResponseError> {
     req.extensions_mut().insert(user);
     Ok(next.run(req).await)
 }
@@ -134,10 +135,10 @@ pub async fn only_web(
     Extension(app_user): Extension<AppUser>,
     req: Request,
     next: Next,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> Result<impl IntoResponse, ResponseError> {
     match app_user.auth {
         Some(auth) if auth.auth_type.is_web() => only(auth.user, req, next).await,
-        _ => Err(StatusCode::UNAUTHORIZED)
+        _ => Err(ResponseError::Unauthorized)
     }
 }
 
@@ -147,12 +148,12 @@ pub async fn only_bill_owner(
     Extension(app_user): Extension<AppUser>,
     req: Request,
     next: Next,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> Result<impl IntoResponse, ResponseError> {
     if let Some(auth) = app_user.auth {
         if let Ok(true) = state.db.get_is_owner(invoice_id, auth.user.id).await {
             return Ok(next.run(req).await);
         }
     }
 
-    Err(StatusCode::NOT_FOUND)
+    Err(ResponseError::NotFound)
 }

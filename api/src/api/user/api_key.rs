@@ -10,6 +10,7 @@ use uuid::Uuid;
 use crate::api::ping_pong::ping_pong;
 use crate::api::state::AppState;
 use crate::{db, utils};
+use crate::api::response_error::ResponseError;
 
 
 const API_KEY_LIMIT: usize = 5;
@@ -45,11 +46,11 @@ impl From<db::ApiKey> for GetApiKeyResponse {
 async fn list(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<db::User>,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> Result<impl IntoResponse, ResponseError> {
     let api_keys = state.db
         .list_api_key(&user.id)
         .await
-        .map_err(utils::log_and_error)?
+        .map_err(ResponseError::from_error)?
         .into_iter()
         .map(|i| i.into())
         .collect::<Vec<GetApiKeyResponse>>();
@@ -72,14 +73,14 @@ impl CreateResponse {
 async fn create(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<db::User>,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> Result<impl IntoResponse, ResponseError> {
     let api_keys_number = state.db
         .count_api_keys_by_user_id(&user.id)
         .await
-        .map_err(utils::log_and_error)?;
+        .map_err(ResponseError::from_error)?;
 
     if api_keys_number >= API_KEY_LIMIT {
-        return Err(StatusCode::CONFLICT)
+        return Err(ResponseError::Bad("too many api keys"))
     }
 
     let api_key = utils::new_api_key(user.id);
@@ -87,7 +88,7 @@ async fn create(
     let instance: GetApiKeyResponse = state.db
         .create_api_key(&user.id, &api_key.hashed_value())
         .await
-        .map_err(utils::log_and_error)?
+        .map_err(ResponseError::from_error)?
         .into();
 
     Ok(Json(CreateResponse::new(&api_key.value, instance)))
@@ -97,27 +98,27 @@ async fn read(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<db::User>,
     Path(api_key_id): Path<Uuid>,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> Result<impl IntoResponse, ResponseError> {
     if let Some(api_key) = state.db
         .get_api_key(&api_key_id, &user.id)
         .await
-        .map_err(utils::log_and_error)? {
+        .map_err(ResponseError::from_error)? {
         let resp: GetApiKeyResponse = api_key.into();
         return Ok(Json(resp));
     }
 
-    Err(StatusCode::NOT_FOUND)
+    Err(ResponseError::NotFound)
 }
 
 async fn destroy(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<db::User>,
     Path(api_key_id): Path<Uuid>,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> Result<impl IntoResponse, ResponseError> {
     Ok(match state.db.delete_api_key(&api_key_id, &user.id)
         .await
-        .map_err(utils::log_and_error)? {
+        .map_err(ResponseError::from_error)? {
         true => StatusCode::NO_CONTENT,
-        false => StatusCode::NOT_FOUND,
+        false => return Err(ResponseError::NotFound),
     })
 }

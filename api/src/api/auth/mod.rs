@@ -9,8 +9,8 @@ use serde::Deserialize;
 use time::{Duration, OffsetDateTime};
 use tracing::debug;
 use crate::api::ping_pong::ping_pong;
+use crate::api::response_error::ResponseError;
 use crate::api::state::{AppState, VerifyError};
-use crate::utils;
 
 const JWT_EXPIRE_DAYS: i64 = 7;
 
@@ -31,15 +31,15 @@ async fn login(
     State(state): State<Arc<AppState>>,
     jar: CookieJar,
     Json(payload): Json<FirebaseTokenRequest>,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> Result<impl IntoResponse, ResponseError> {
     let token = state.gc.get_verified_token(&payload.token)
         .await
         .map_err(|err| match err {
             VerifyError::Verification(tve) => {
                 debug!("Invalid token: {:?}", tve);
-                StatusCode::BAD_REQUEST
+                ResponseError::Bad("Invalid token")
             }
-            VerifyError::Unexpected(err) => utils::log_and_error(err)
+            VerifyError::Unexpected(err) => ResponseError::from_error(err)
         })?;
 
     let user_id = token.critical_claims.sub;
@@ -49,7 +49,7 @@ async fn login(
         .map(|s| s.to_string());
 
     let jwt = state.jwt.generate(user_id, email)
-        .map_err(|err| utils::log_and_error(format!("{err:?}")))?;
+        .map_err(|err| ResponseError::from_error(format!("{err:?}")))?;
 
     let mut cookie = Cookie::new("jwt", jwt);
     cookie.set_expires(OffsetDateTime::now_utc() + Duration::days(JWT_EXPIRE_DAYS));

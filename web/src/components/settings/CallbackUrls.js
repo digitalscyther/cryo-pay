@@ -37,7 +37,7 @@ function CallbackUrls() {
             setCallbackUrls([response.data, ...callbackUrls]);
             setNewUrl('');
         } catch (err) {
-            if (err.response && err.response.status === 409) {
+            if (err.response && err.response.status === 400) {
                 setError('You have reached the maximum number of allowed callback URLs.');
             } else {
                 setError('Failed to create callback URL.');

@@ -66,11 +66,11 @@ impl CryoPayApi {
         price: &BigDecimal,
     ) -> Result<Uuid, String> {
         let email_data = json!({
-        "amount": price,
-        "seller": seller,
-        "networks": networks,
-        "external_id": custom_id,
-    });
+            "amount": price,
+            "seller": seller,
+            "networks": networks,
+            "external_id": custom_id,
+        });
 
         let mut request = Client::new().post(get_url(&get_invoice_full_path())?);
         if let Some(api_key) = &self.api_key {
