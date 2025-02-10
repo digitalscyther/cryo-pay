@@ -35,7 +35,7 @@ pub fn get_invoice_full_path() -> String {
 }
 
 pub fn get_target_invoice_path(id: &Uuid) -> String {
-    utils::combine_paths(&[&get_invoice_full_path(), &id.to_string()])
+    utils::combine_paths(&[&get_invoice_full_path(), "/", &id.to_string()])
 }
 
 pub fn get_cryo_pay_callback_full_path() -> String {

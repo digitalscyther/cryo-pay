@@ -28,11 +28,11 @@ pub enum SubscriptionTarget {
     UnlimitedInvoices
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Donation {
-    donor: Option<String>,
-    target: Option<String>,
-    amount: BigDecimal,
+    pub donor: Option<String>,
+    pub target: Option<String>,
+    pub amount: BigDecimal,
 }
 
 impl Payable {
@@ -93,7 +93,7 @@ impl SubscriptionTarget {
 }
 
 pub async fn apply(state: &Arc<AppState>, payment: &Payment) -> Result<(), String> {
-    info!("Payment #{} type={} got!", payment.id, payment.data);
+    info!("Payment #{} type={} got!", payment.id, payment.data);    // TODO set paid Payments in db
 
     let payable = serde_json::from_value::<Payable>(payment.data.clone())
         .map_err(|err| utils::make_err(Box::new(err), "parse payment"))?;

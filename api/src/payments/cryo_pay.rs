@@ -65,7 +65,7 @@ impl CryoPayApi {
         custom_id: Option<String>,
         price: &BigDecimal,
     ) -> Result<Uuid, String> {
-        let email_data = json!({
+        let invoice_data = json!({
             "amount": price,
             "seller": seller,
             "networks": networks,
@@ -80,7 +80,7 @@ impl CryoPayApi {
 
         let response = request
             .header("content-type", "application/json")
-            .json(&email_data)
+            .json(&invoice_data)
             .send()
             .await
             .map_err(|err| utils::make_err(Box::new(err), "create invoice"))?;
@@ -126,16 +126,13 @@ impl CryoPayApi {
                     .json()
                     .await
                     .map_err(|err| utils::make_err(Box::new(err), "parse response"))?;
-                match json_response.get("invoice") {
-                    None => Err("Failed to parse invoice".to_string()),
-                    Some(invoice) => match invoice.get("paid_at") {
+                match json_response.get("paid_at") {
                         None => Err("Failed to parse paid_at".to_string()),
                         Some(paid_at) => Ok(match paid_at {
                             Value::Null => false,
                             _ => true,
                         })
                     }
-                }
             }
         }
     }

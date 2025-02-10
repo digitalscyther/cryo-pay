@@ -8,6 +8,11 @@ add config to web/src/firebaseConfig.json
 docker compose build && NGINX_PORT=80 POSTGRES_PORT=6432 REDIS_PORT=6381 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
 
+run frontend local
+```bash
+REACT_APP_BASE_API_URL=http://127.0.0.1:3001 REACT_APP_PROJECT_NAME=LOCALTest REACT_APP_CONTACTS={"email":"foo@bar.baz","telegram":"foo","linkedin":"foo"} npm start
+```
+
 #### local
 
 ##### front

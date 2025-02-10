@@ -296,8 +296,8 @@ impl DB {
             .map_err(|err| utils::make_err(Box::new(err), "get payment"))
     }
 
-    pub async fn list_payment(&self, payment_type: &str) -> Result<Vec<Payment>, String> {
-        billing::list_payment(&self.pg_pool, payment_type)
+    pub async fn list_payment(&self, payment_type: &str, limit: i64, offset: i64) -> Result<Vec<Payment>, String> {
+        billing::list_payment(&self.pg_pool, payment_type, limit, offset)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "list payment"))
     }

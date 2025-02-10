@@ -17,15 +17,22 @@ pub struct Payment {
 pub async fn list_payment(
     pg_pool: &PgPool,
     payment_type: &str,
+    limit: i64,
+    offset: i64
 ) -> Result<Vec<Payment>, sqlx::Error> {
     sqlx::query_as!(
         Payment,
         r#"
         SELECT * FROM payments
-        WHERE data ? $1
-        ORDER BY created_at DESC
+        WHERE
+            paid_at IS NOT NULL
+            AND data ? $1
+        ORDER BY paid_at DESC
+        LIMIT $2 OFFSET $3
         "#,
-        payment_type
+        payment_type,
+        limit,
+        offset
     )
     .fetch_all(pg_pool)
     .await
