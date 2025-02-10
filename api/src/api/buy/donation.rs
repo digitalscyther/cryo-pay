@@ -36,7 +36,7 @@ struct DonateRequest {
 async fn donate_list(State(state): State<Arc<AppState>>) -> Result<impl IntoResponse, ResponseError> {
     let values = state.db.list_payment("donation")
         .await
-        .map_err(ResponseError::from_error)? // Convert error from DB call to ResponseError
+        .map_err(ResponseError::from_error)?
         .into_iter()
         .map(|p| {
             serde_json::to_value(p)
