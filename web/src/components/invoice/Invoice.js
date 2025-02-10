@@ -74,7 +74,7 @@ function Invoice() {
             }, updateIfNotPaidAfterSeconds * 1000);
             return () => clearInterval(interval);
         }
-    }, [invoice_id, invoice, navigate]);
+    }, [invoice_id, invoice, navigate, callbackUrl]);
 
     function waitPaymentSuccessful() {
         if (callbackUrl) {

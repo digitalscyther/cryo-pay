@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT * FROM payments\n        WHERE id = $1\n        ",
+  "query": "\n        SELECT * FROM payments\n        WHERE data ? $1\n        ORDER BY created_at DESC\n        ",
   "describe": {
     "columns": [
       {
@@ -31,7 +31,7 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Text"
       ]
     },
     "nullable": [
@@ -42,5 +42,5 @@
       true
     ]
   },
-  "hash": "161c05ff9dc8d9d52d197c461719502fe9e7ad4cb5da4c607159451fe78284f7"
+  "hash": "d05382772dba99082ef399b5a25420e3ff95724b77a8482b64a648ac873458ab"
 }

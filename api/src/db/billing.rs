@@ -14,27 +14,45 @@ pub struct Payment {
     pub paid_at: Option<NaiveDateTime>,
 }
 
+pub async fn list_payment(
+    pg_pool: &PgPool,
+    payment_type: &str,
+) -> Result<Vec<Payment>, sqlx::Error> {
+    sqlx::query_as!(
+        Payment,
+        r#"
+        SELECT * FROM payments
+        WHERE data ? $1
+        ORDER BY created_at DESC
+        "#,
+        payment_type
+    )
+    .fetch_all(pg_pool)
+    .await
+}
+
 pub async fn create_payment(
     pg_pool: &PgPool,
     id: &Uuid,
     user_id: Option<Uuid>,
     data: &Value,
-) -> Result<(), sqlx::Error> {
+) -> Result<Payment, sqlx::Error> {
     let data = serde_json::to_value(data)
         .map_err(|err| sqlx::Error::Encode(BoxDynError::from(err)))?;
-    let _ = sqlx::query!(
+
+    sqlx::query_as!(
+        Payment,
         r#"
         INSERT INTO payments (id, user_id, data)
         VALUES ($1, $2, $3)
+        RETURNING *
         "#,
         id,
         user_id,
         data
     )
-        .execute(pg_pool)
-        .await;
-
-    Ok(())
+        .fetch_one(pg_pool)
+        .await
 }
 
 pub async fn get_payment(pg_pool: &PgPool, id: &Uuid) -> Result<Option<Payment>, sqlx::Error> {

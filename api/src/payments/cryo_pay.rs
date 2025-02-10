@@ -72,7 +72,8 @@ impl CryoPayApi {
             "external_id": custom_id,
         });
 
-        let mut request = Client::new().post(get_url(&get_invoice_full_path())?);
+        let url = get_url(&get_invoice_full_path())?;
+        let mut request = Client::new().post(url);
         if let Some(api_key) = &self.api_key {
             request = request.header("Authorization", api_key)
         }
@@ -85,7 +86,14 @@ impl CryoPayApi {
             .map_err(|err| utils::make_err(Box::new(err), "create invoice"))?;
 
         match response.status().is_success() {
-            false => Err("Failed to create invoice: Non-200 response received".to_string()),
+            false => Err(
+                format!(
+                    "Failed to create invoice: Non-200 response received: text={:?}",
+                    response.text()
+                        .await
+                        .map_err(|err| utils::make_err(Box::new(err), "parse response text"))?
+                )
+            ),
             true => {
                 let json_response: Value = response
                     .json()
@@ -109,7 +117,7 @@ impl CryoPayApi {
         let response = request
             .send()
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "create invoice"))?;
+            .map_err(|err| utils::make_err(Box::new(err), "get invoice"))?;
 
         match response.status().is_success() {
             false => Err("Failed to get invoice: Non-200 response received".to_string()),

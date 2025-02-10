@@ -3,7 +3,7 @@ CREATE TABLE payments (
     data JSONB NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     paid_at TIMESTAMP,
-    user_id UUID NOT NULL,
+    user_id UUID,
     CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
