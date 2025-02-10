@@ -154,21 +154,36 @@ async fn create_invoice_handler(
     Ok(Json(invoice.into()))
 }
 
+#[derive(Deserialize)]
+struct GetInvoiceQueryParams {
+    with_own: Option<bool>
+}
+
 async fn get_invoice_handler(
     State(state): State<Arc<AppState>>,
     Path(invoice_id): Path<Uuid>,
+    Query(query_params): Query<GetInvoiceQueryParams>,
     Extension(app_user): Extension<AppUser>,
 ) -> Result<impl IntoResponse, ResponseError> {
-    let (own, invoice) = state.db.get_own_invoice(invoice_id, app_user.user_id())
+    let invoice = state.db.get_invoice(&invoice_id)
         .await
-        .map_err(ResponseError::from_error)?;
+        .map_err(ResponseError::from_error)?
+        .ok_or_else(|| ResponseError::NotFound)?;
 
-    match invoice {
-        None => Err(ResponseError::NotFound),
-        Some(invoice) => Ok(Json(
-            OwnInvoiceResponse { own, invoice: invoice.into() }
-        ))
-    }
+    let invoice: InvoiceResponse = invoice.into();
+
+    Ok(match query_params.with_own.unwrap_or(false) {
+        false => Json(invoice).into_response(),
+        true => Json( OwnInvoiceResponse {
+            invoice,
+            own: match app_user.user_id() {
+                None => false,
+                Some(user_id) => state.db.get_is_owner(&invoice_id, &user_id)
+                    .await
+                    .map_err(ResponseError::from_error)?
+            }
+        } ).into_response()
+    })
 }
 
 async fn delete_invoice_handler(

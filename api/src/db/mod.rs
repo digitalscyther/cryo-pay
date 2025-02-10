@@ -104,7 +104,7 @@ pub async fn get_invoice(db: &PgPool, id: &Uuid) -> Result<Option<Invoice>, sqlx
         .await
 }
 
-pub async fn get_is_owner(db: &PgPool, id: Uuid, user_id: Uuid) -> Result<bool, sqlx::Error> {
+pub async fn get_is_owner(db: &PgPool, id: &Uuid, user_id: &Uuid) -> Result<bool, sqlx::Error> {
     let result = sqlx::query!(
         r#"
         SELECT 1 AS some FROM invoice

@@ -49,7 +49,7 @@ export async function getBlockchainInfo() {
 
 export async function getInvoice(invoice_id) {
     return await axios.get(
-        apiUrl(`/payment/invoice/${invoice_id}`),
+        apiUrl(`/payment/invoice/${invoice_id}?with_own=true`),
         {withCredentials: true}
     );
 }

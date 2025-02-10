@@ -150,7 +150,7 @@ pub async fn only_bill_owner(
     next: Next,
 ) -> Result<impl IntoResponse, ResponseError> {
     if let Some(auth) = app_user.auth {
-        if let Ok(true) = state.db.get_is_owner(invoice_id, auth.user.id).await {
+        if let Ok(true) = state.db.get_is_owner(&invoice_id, &auth.user.id).await {
             return Ok(next.run(req).await);
         }
     }
