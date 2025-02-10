@@ -14,6 +14,7 @@ use crate::payments::payable::SubscriptionTarget;
 pub enum RateLimitType {
     CreateProductInvoice,
     CreateUserInvoice,
+    Login,
 }
 
 impl RateLimitType {
@@ -21,6 +22,7 @@ impl RateLimitType {
         match self {
             RateLimitType::CreateProductInvoice => CreateProductInvoiceRateLimitGetter::get(app_user, db).await,
             RateLimitType::CreateUserInvoice => CreateUserInvoiceRateLimitGetter::get(app_user, db).await,
+            RateLimitType::Login => LoginRateLimitGetter::get(app_user, db).await,
         }
     }
 
@@ -60,6 +62,15 @@ impl RateLimitType {
     ) -> Result<impl IntoResponse, ResponseError> {
         Self::CreateUserInvoice.check(&state, &app_user, req, next).await
     }
+
+    pub async fn login(
+        State(state): State<Arc<AppState>>,
+        Extension(app_user): Extension<AppUser>,
+        req: Request,
+        next: Next,
+    ) -> Result<impl IntoResponse, ResponseError> {
+        Self::Login.check(&state, &app_user, req, next).await
+    }
 }
 
 trait RateLimitGetter {
@@ -69,6 +80,7 @@ trait RateLimitGetter {
 struct CreateProductInvoiceRateLimitGetter {}
 
 struct CreateUserInvoiceRateLimitGetter {}
+struct LoginRateLimitGetter {}
 
 impl RateLimitGetter for CreateProductInvoiceRateLimitGetter {
     async fn get(app_user: &AppUser, db: &DB) -> Result<RateLimit, String> {
@@ -110,10 +122,12 @@ impl RateLimitGetter for CreateProductInvoiceRateLimitGetter {
 
 impl RateLimitGetter for CreateUserInvoiceRateLimitGetter {
     async fn get(_: &AppUser, _: &DB) -> Result<RateLimit, String> {
-        Ok(RateLimit {
-            target: Target::UserInvoice,
-            period: Period::Day,
-            limit: Limit::Limited(10),
-        })
+        Ok(RateLimit::create_10_times_per_day(Target::UserInvoice))
+    }
+}
+
+impl RateLimitGetter for LoginRateLimitGetter {
+    async fn get(_: &AppUser, _: &DB) -> Result<RateLimit, String> {
+        Ok(RateLimit::create_10_times_per_day(Target::Login))
     }
 }

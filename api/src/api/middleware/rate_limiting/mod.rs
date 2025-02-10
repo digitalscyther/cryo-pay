@@ -31,12 +31,21 @@ impl RateLimit {
                 .map(|done| times as u64 >= done)
         }
     }
+
+    pub fn create_10_times_per_day(target: Target) -> Self {
+        RateLimit {
+            target,
+            period: Period::Day,
+            limit: Limit::Limited(10),
+        }
+    }
 }
 
 #[derive(Debug)]
 pub enum Target {
     ProductInvoice,
     UserInvoice,
+    Login
 }
 
 pub enum Period {

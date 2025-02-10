@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use axum::{Json, Router};
+use axum::{Json, middleware, Router};
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -8,6 +8,8 @@ use axum_extra::extract::cookie::{Cookie, CookieJar, SameSite};
 use serde::Deserialize;
 use time::{Duration, OffsetDateTime};
 use tracing::debug;
+use crate::api::middleware::extract_user;
+use crate::api::middleware::rate_limiting::middleware::RateLimitType;
 use crate::api::ping_pong::ping_pong;
 use crate::api::response_error::ResponseError;
 use crate::api::state::{AppState, VerifyError};
@@ -17,7 +19,12 @@ const JWT_EXPIRE_DAYS: i64 = 7;
 pub fn get_router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route("/ping", get(ping_pong))
-        .route("/login", post(login))
+        .route(
+            "/login",
+            post(login)
+                .layer(middleware::from_fn_with_state(app_state.clone(), RateLimitType::login))
+                .layer(middleware::from_fn_with_state(app_state.clone(), extract_user)),
+        )
         .route("/logout", post(logout))
         .with_state(app_state)
 }
@@ -63,7 +70,6 @@ async fn login(
 async fn logout(
     jar: CookieJar,
 ) -> Result<impl IntoResponse, StatusCode> {
-
     let mut cookie = Cookie::new("jwt", "");
     cookie.set_max_age(Duration::seconds(0));
     cookie.set_path("/");
