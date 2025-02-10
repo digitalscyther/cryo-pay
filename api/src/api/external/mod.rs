@@ -5,7 +5,7 @@ use crate::api::CRYO_PAY_PATH;
 use crate::api::ping_pong::ping_pong;
 use crate::api::state::AppState;
 
-mod cryo_pay;
+pub mod cryo_pay;
 
 pub fn get_router(app_state: Arc<AppState>) -> Router {
     Router::new()

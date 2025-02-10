@@ -4,17 +4,17 @@ mod donation;
 
 use std::sync::Arc;
 use axum::extract::{Path, State};
-use axum::http::StatusCode;
-use axum::response::IntoResponse;
-use axum::Router;
+use axum::{Json, Router};
 use axum::routing::{get, post};
+use chrono::NaiveDateTime;
+use serde::Serialize;
+use serde_json::Value;
 use uuid::Uuid;
+use crate::api::external::cryo_pay::apply_paid_by_id;
 use crate::api::ping_pong::ping_pong;
 use crate::api::response_error::ResponseError;
 use crate::api::state::AppState;
 use crate::db::billing::Payment;
-use crate::payments::cryo_pay::{get_paid_payable, PaidPayableResult};
-use crate::payments::payable::apply;
 
 pub fn get_router(app_state: Arc<AppState>) -> Router {
     Router::new()
@@ -25,25 +25,31 @@ pub fn get_router(app_state: Arc<AppState>) -> Router {
         .nest("/donation", donation::get_router(app_state.clone()))
 }
 
+#[derive(Serialize)]
+struct PaymentResponse {
+    id: Uuid,
+    data: Value,
+    created_at: NaiveDateTime,
+    paid_at: Option<NaiveDateTime>,
+}
+
+
+impl From<Payment> for PaymentResponse {
+    fn from(value: Payment) -> Self {
+        Self {
+            id: value.id,
+            data: value.data,
+            created_at: value.created_at,
+            paid_at: value.paid_at
+        }
+    }
+}
+
 async fn recheck(
     State(state): State<Arc<AppState>>,
     Path(payment_id): Path<Uuid>,
-) -> Result<impl IntoResponse, ResponseError> {
+) -> Result<Json<PaymentResponse>, ResponseError> {
     apply_paid_by_id(&state, &payment_id)
         .await
-        .map(|_| StatusCode::OK)
-}
-
-pub async fn apply_paid_by_id(state: &Arc<AppState>, id: &Uuid) -> Result<Payment, ResponseError> {
-    match get_paid_payable(&state.db, id)
-        .await
-        .map_err(ResponseError::from_error)?
-    {
-        PaidPayableResult::NotPaid => Err(ResponseError::Bad("not paid")),
-        PaidPayableResult::NotFound => Err(ResponseError::NotFound),
-        PaidPayableResult::Payment(payment) => apply(&state, &payment)
-            .await
-            .map(|_| Ok(payment))
-            .map_err(ResponseError::from_error)?
-    }
+        .map(|p| Json(p.into()))
 }
