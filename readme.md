@@ -116,6 +116,7 @@ INFURA_TOKEN=<infura_token>
       - [x] Dummy Subscription
       - [ ] Frontend
     - [ ] Instant blockchain verification
+      - [ ] Add high priority queue to check
     - [ ] Anonymus invoices
     - [x] Limits
   - [ ] WaitList

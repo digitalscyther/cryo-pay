@@ -92,10 +92,10 @@ impl SubscriptionTarget {
     }
 }
 
-pub async fn apply(state: &Arc<AppState>, payment: Payment) -> Result<(), String> {
+pub async fn apply(state: &Arc<AppState>, payment: &Payment) -> Result<(), String> {
     info!("Payment #{} type={} got!", payment.id, payment.data);
 
-    let payable = serde_json::from_value::<Payable>(payment.data)
+    let payable = serde_json::from_value::<Payable>(payment.data.clone())
         .map_err(|err| utils::make_err(Box::new(err), "parse payment"))?;
 
     match payable {

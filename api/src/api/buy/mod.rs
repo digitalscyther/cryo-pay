@@ -12,6 +12,7 @@ use uuid::Uuid;
 use crate::api::ping_pong::ping_pong;
 use crate::api::response_error::ResponseError;
 use crate::api::state::AppState;
+use crate::db::billing::Payment;
 use crate::payments::cryo_pay::{get_paid_payable, PaidPayableResult};
 use crate::payments::payable::apply;
 
@@ -28,14 +29,21 @@ async fn recheck(
     State(state): State<Arc<AppState>>,
     Path(payment_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, ResponseError> {
-    match get_paid_payable(&state.db, &payment_id)
+    apply_paid_by_id(&state, &payment_id)
         .await
-        .map_err(ResponseError::from_error)? {
+        .map(|_| StatusCode::OK)
+}
+
+pub async fn apply_paid_by_id(state: &Arc<AppState>, id: &Uuid) -> Result<Payment, ResponseError> {
+    match get_paid_payable(&state.db, id)
+        .await
+        .map_err(ResponseError::from_error)?
+    {
         PaidPayableResult::NotPaid => Err(ResponseError::Bad("not paid")),
         PaidPayableResult::NotFound => Err(ResponseError::NotFound),
-        PaidPayableResult::Payment(payment) => apply(&state, payment)
+        PaidPayableResult::Payment(payment) => apply(&state, &payment)
             .await
-            .map(|_| Ok(StatusCode::OK))
+            .map(|_| Ok(payment))
             .map_err(ResponseError::from_error)?
     }
 }

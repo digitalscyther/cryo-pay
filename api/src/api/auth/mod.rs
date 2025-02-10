@@ -27,6 +27,7 @@ struct FirebaseTokenRequest {
     token: String,
 }
 
+// TODO add rate-limit
 async fn login(
     State(state): State<Arc<AppState>>,
     jar: CookieJar,
