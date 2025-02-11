@@ -38,7 +38,7 @@ async fn create_subscription(
 ) -> Result<impl IntoResponse, ResponseError> {
     let target: SubscriptionTarget = request_data.target
         .try_into()
-        .map_err(|_| ResponseError::Bad("Unknown target"))?;
+        .map_err(|_| ResponseError::Bad("Unknown target".to_string()))?;
     let price = target.price_per_day()
         .map_err(ResponseError::from_error)? * request_data.days;
     let until = (Utc::now() + Duration::days(request_data.days as i64)).naive_utc();

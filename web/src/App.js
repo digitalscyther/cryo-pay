@@ -9,6 +9,7 @@ import About from './components/About';
 import Contact from './components/Contact';
 import DonationPage from './components/donate/DonationPage';
 import Invoice from './components/invoice/Invoice';
+import Payment from './components/payment/Payment';
 import Auth from './components/Auth';
 import Account from './components/settings/Account';
 import NotFound from './components/NotFound';
@@ -113,6 +114,7 @@ function App() {
                     <Route path="/login" element={<Auth onLogin={handleLogin}/>}/>
                     <Route path="/settings" element={<Account/>}/>
                     <Route path="/donate" element={<DonationPage/>}/>
+                    <Route path="/payment/:payment_id" element={<Payment/>}/>
                     <Route path="*" element={<NotFound/>}/>
                 </Routes>
             </Container>

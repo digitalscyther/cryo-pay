@@ -44,7 +44,7 @@ async fn login(
         .map_err(|err| match err {
             VerifyError::Verification(tve) => {
                 debug!("Invalid token: {:?}", tve);
-                ResponseError::Bad("Invalid token")
+                ResponseError::Bad("Invalid token".to_string())
             }
             VerifyError::Unexpected(err) => ResponseError::from_error(err)
         })?;

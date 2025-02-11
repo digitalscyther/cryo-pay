@@ -14,6 +14,28 @@ pub struct Payment {
     pub paid_at: Option<NaiveDateTime>,
 }
 
+pub async fn user_list_payment(
+    pg_pool: &PgPool,
+    user_id: &Uuid,
+    limit: i64,
+    offset: i64
+) -> Result<Vec<Payment>, sqlx::Error> {
+    sqlx::query_as!(
+        Payment,
+        r#"
+        SELECT * FROM payments
+        WHERE user_id = $1
+        ORDER BY paid_at DESC
+        LIMIT $2 OFFSET $3
+        "#,
+        user_id,
+        limit,
+        offset
+    )
+    .fetch_all(pg_pool)
+    .await
+}
+
 pub async fn list_payment(
     pg_pool: &PgPool,
     payment_type: &str,

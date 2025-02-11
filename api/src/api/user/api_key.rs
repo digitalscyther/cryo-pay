@@ -80,7 +80,7 @@ async fn create(
         .map_err(ResponseError::from_error)?;
 
     if api_keys_number >= API_KEY_LIMIT {
-        return Err(ResponseError::Bad("too many api keys"))
+        return Err(ResponseError::Bad("too many api keys".to_string()))
     }
 
     let api_key = utils::new_api_key(user.id);

@@ -33,7 +33,7 @@ async fn callback(
     State(state): State<Arc<AppState>>,
 ) -> Result<impl IntoResponse, ResponseError> {
     match payment_query.status == "SUCCESS" {
-        false => Err(ResponseError::Bad("wrong status")),
+        false => Err(ResponseError::Bad("wrong status".to_string())),
         true => apply_paid_by_id(&state, &payment_query.invoice_id)
             .await
             .map(|_| StatusCode::OK),   // TODO redirect to front payment page
@@ -45,7 +45,7 @@ pub async fn apply_paid_by_id(state: &Arc<AppState>, id: &Uuid) -> Result<Paymen
         .await
         .map_err(ResponseError::from_error)?
     {
-        PaidPayableResult::NotPaid => Err(ResponseError::Bad("not paid")),
+        PaidPayableResult::NotPaid => Err(ResponseError::Bad("not paid".to_string())),
         PaidPayableResult::NotFound => Err(ResponseError::NotFound),
         PaidPayableResult::Payment(payment) => apply(&state, &payment)
             .await

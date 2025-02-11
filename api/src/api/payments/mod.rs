@@ -17,6 +17,7 @@ use crate::api::middleware::rate_limiting::middleware::RateLimitType;
 use crate::api::ping_pong::ping_pong;
 use crate::api::response_error::ResponseError;
 use crate::api::state::AppState;
+use crate::api::utils::Pagination;
 
 #[derive(Serialize)]
 struct InvoiceResponse {
@@ -69,22 +70,6 @@ pub fn get_router(app_state: Arc<AppState>) -> Router {
 }
 
 #[derive(Deserialize)]
-struct Pagination {
-    #[serde(default = "default_limit")]
-    limit: i64,
-    #[serde(default = "default_offset")]
-    offset: i64,
-}
-
-fn default_limit() -> i64 {
-    10
-}
-
-fn default_offset() -> i64 {
-    0
-}
-
-#[derive(Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum UserIdFilter {
     All,
@@ -116,8 +101,7 @@ async fn get_invoices_handler(
     Query(pagination): Query<Pagination>,
     Query(filter): Query<Filter>,
 ) -> Result<Json<Vec<InvoiceResponse>>, ResponseError> {
-    let limit = pagination.limit;
-    let offset = pagination.offset;
+    let (limit, offset) = pagination.get_valid(100)?;
 
     let invoices = state.db.list_invoices(limit, offset, filter.user_id.to_user_id(app_user))
         .await
@@ -210,7 +194,7 @@ async fn redirect_invoice_handler(
     query: Query<RedirectInvoiceQuery>,
 ) -> Result<impl IntoResponse, ResponseError> {
     match &query.url {
-        None => Err(ResponseError::Bad("`url` query_param required")),
+        None => Err(ResponseError::Bad("`url` query_param required".to_string())),
         Some(url) => match state.db.get_invoice(&invoice_id)
             .await
             .map_err(ResponseError::from_error)? {
@@ -223,7 +207,7 @@ async fn redirect_invoice_handler(
                     Some(user_id) => match state.db.exists_callback_url(&url, &user_id)
                         .await
                         .map_err(ResponseError::from_error)? {
-                        false => Err(ResponseError::Bad("`url` not found in callback_urls")),
+                        false => Err(ResponseError::Bad("`url` not found in callback_urls".to_string())),
                         true => get_success_response(),
                     }
                 }

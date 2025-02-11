@@ -5,7 +5,7 @@ use serde_json::{json, Value};
 use tracing::error;
 
 pub enum ResponseError {
-    Bad(&'static str),
+    Bad(String),
     InternalServerError(String),
     NotFound,
     Unauthorized,

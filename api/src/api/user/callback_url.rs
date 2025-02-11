@@ -73,7 +73,7 @@ async fn create(
         .map_err(ResponseError::from_error)?;
 
     if callback_urls_number >= CALLBACK_URLS_LIMIT {
-        return Err(ResponseError::Bad("too many callback urls"))
+        return Err(ResponseError::Bad("too many callback urls".to_string()))
     }
 
     let instance: GetCallbackUrlResponse = state.db

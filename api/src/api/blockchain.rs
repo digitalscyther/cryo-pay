@@ -119,7 +119,7 @@ async fn get_suggested_gas_fees(
         .map(|n| n.id)
         .collect::<Vec<i64>>();
     if !allowed_ids.contains(&network_id) {
-        return Err(ResponseError::Bad("Unknown network_id"));
+        return Err(ResponseError::Bad("Unknown network_id".to_string()));
     }
 
     if let Ok(Some(value)) = state.redis.get_suggested_gas_fees(&network_id).await {
