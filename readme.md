@@ -120,6 +120,13 @@ INFURA_TOKEN=<infura_token>
       - [x] Checkout endpoint
       - [x] Dummy Subscription
       - [ ] Frontend
+        - [x] Donation wall
+        - [ ] Payment page
+          - [x] Donation
+          - [ ] Subscription
+        - [ ] Settings
+          - [ ] Subscriptions
+        - [ ] Buy subscriptions page
     - [ ] Instant blockchain verification
       - [ ] Add high priority queue to check
     - [ ] Anonymus invoices
