@@ -121,9 +121,9 @@ INFURA_TOKEN=<infura_token>
       - [x] Dummy Subscription
       - [ ] Frontend
         - [x] Donation wall
-        - [ ] Payment page
+        - [x] Payment page
           - [x] Donation
-          - [ ] Subscription
+          - [x] Subscription
         - [ ] Settings
           - [ ] Subscriptions
         - [ ] Buy subscriptions page
