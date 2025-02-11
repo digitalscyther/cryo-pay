@@ -43,10 +43,9 @@ impl ToPay {
     }
 
     pub fn payment_url(&self) -> Result<String, String> {
-        let web_base_url = utils::web_base_url()?;
-        let web_api_path = utils::get_env_or("WEB_API_PATH", "/api".to_string())?;
+        let global_api_url = utils::ApiGlobalUrl::get()?.url()?;
         let callback_path = get_cryo_pay_callback_full_path();
-        let callback_url = utils::combine_paths(&[&web_base_url, &web_api_path, &callback_path]);
+        let callback_url = utils::combine_paths(&[&global_api_url, &callback_path]);
 
         let payment_path = match self.id {
             ToPayId::CryoPay(id) => get_payment_path(&id, Some(callback_url))?
