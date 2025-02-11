@@ -58,8 +58,8 @@ function Account() {
 
     return (
         <Container>
-            <>
-                <h3>Notification Settings</h3>
+            <Container>
+                <h3>Notifications</h3>
 
                 <Form className="my-4 mx-3">
                     <div className="d-flex">
@@ -94,10 +94,11 @@ function Account() {
                         <Button onClick={handleActivateBot} variant="outline-primary" size="sm">Activate Bot</Button>
                     </Alert>
                 )}
-            </>
+            </Container>
             <hr/>
             {/* Callback Urls Section */}
             <CallbackUrls/>
+            <hr/>
             {/* API Keys Section */}
             <ApiKeys/>
         </Container>

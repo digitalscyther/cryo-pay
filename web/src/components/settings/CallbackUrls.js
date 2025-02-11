@@ -89,7 +89,7 @@ function CallbackUrls() {
             </Form>
 
             {callbackUrls.length === 0 ? (
-                <div>No callback URLs available.</div>
+                <div>No callback URLs available. Any links are allowed.</div>
             ) : (
                 <ul className="list-unstyled">
                     {callbackUrls.map((url) => (
