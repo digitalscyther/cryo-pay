@@ -325,6 +325,12 @@ impl DB {
             .await
             .map_err(|err| utils::make_err(Box::new(err), "create or update subscription"))
     }
+
+    pub async fn set_payment_paid(&self, id: &Uuid) -> Result<(), String> {
+        billing::set_payment_paid(&self.pg_pool, id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "set payment paid"))
+    }
 }
 
 impl GC {

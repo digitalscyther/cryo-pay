@@ -149,3 +149,17 @@ pub async fn get_active_subscription(
         .fetch_optional(pg_pool)
         .await
 }
+
+pub async fn set_payment_paid(pg_pool: &PgPool, id: &Uuid) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        UPDATE payments
+        SET paid_at = NOW()
+        WHERE id = $1
+        "#,
+        id
+    )
+        .execute(pg_pool)
+        .await
+        .map(|_| ())
+}
