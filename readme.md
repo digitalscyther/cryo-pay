@@ -115,26 +115,26 @@ INFURA_TOKEN=<infura_token>
   - [x] Notification
     - [x] Beautify exists telegram messages
   - [ ] Subscriptions
-    - [ ] Payment
+    - [x] Payment
       - [x] Create
       - [x] Checkout endpoint
       - [x] Dummy Subscription
-      - [ ] Frontend
+      - [x] Frontend
         - [x] Donation wall
         - [x] Payment page
           - [x] Donation
           - [x] Subscription
-        - [ ] Settings
-          - [ ] Subscriptions
-        - [ ] Buy subscriptions page
-    - [ ] Instant blockchain verification
-      - [ ] Add high priority queue to check
+        - [x] Settings
+          - [x] Subscriptions
+        - [x] Buy subscriptions page
     - [ ] Anonymus invoices
     - [x] Limits
-  - [ ] WaitList
-    - [ ] Custom tokens \ blockchains
-    - [ ] Advanced Sales Analytics
-    - [ ] White-label
+- [ ] WaitList
+  - [ ] Custom tokens \ blockchains
+  - [ ] Advanced Sales Analytics
+  - [ ] White-label
+- [ ] Instant blockchain verification
+  - [ ] Add high priority queue to check
 - [ ] Redirect on pay - if subscription - check blockchain instantly
 - [ ] Add basic statistics for sellers (number of transactions, total amounts for a period)
 - [ ] Automate QR code generation for invoices

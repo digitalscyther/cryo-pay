@@ -76,7 +76,7 @@ function Account() {
                             onChange={handleChange}
                             disabled    // TODO notification_turned_off
                         />
-                        <div className="ms-5 text-warning">Available only by subscription</div>
+                        <div className="ms-5 text-warning">Temporary Unavailable (contact if need)</div>
                     </div>
                     <Form.Check
                         type="switch"

@@ -67,7 +67,7 @@ async fn create_subscription(
     Extension(user): Extension<User>,
     Json(request_data): Json<CreateSubscriptionRequest>,
 ) -> Result<impl IntoResponse, ResponseError> {
-    request_data.validate(45)?;
+    request_data.validate(70)?;
     let target= request_data.subscription_target()
         .map_err(ResponseError::from_error)?;
     let price = calculate_price(&target, request_data.days);
@@ -97,7 +97,7 @@ fn calculate_price(subscription_target: &SubscriptionTarget, days: u64) -> BigDe
 async fn get_price(
     Query(request_data): Query<CreateSubscriptionRequest>
 ) -> Result<impl IntoResponse, ResponseError> {
-    request_data.validate(45)?;
+    request_data.validate(70)?;
     let price = request_data.get_price()?;
     Ok(Json(json!({"price": price})).into_response())
 }

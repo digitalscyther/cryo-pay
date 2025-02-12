@@ -85,8 +85,8 @@ function Subscriptions({subscriptions}) {
                 </Modal.Header>
                 <Modal.Body>
                     <Form.Group>
-                        <Form.Label>Days (1-45)</Form.Label>
-                        <Form.Control type="number" min="1" max="45" value={days}
+                        <Form.Label>Days (1-70)</Form.Label>
+                        <Form.Control type="number" min="1" max="70" value={days}
                                       onChange={(e) => setDays(parseInt(e.target.value))}/>
                     </Form.Group>
                     <Button variant="dark" className="mt-2" onClick={fetchPrice} disabled={loadingPrice}>
@@ -97,7 +97,7 @@ function Subscriptions({subscriptions}) {
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="outline-dark" onClick={() => setShowModal(false)}>Close</Button>
-                    <Button variant="dark" onClick={handleSubscribe} disabled={!price}>Subscribe</Button>
+                    <Button variant="dark" onClick={handleSubscribe}>Subscribe</Button>
                 </Modal.Footer>
             </Modal>
         </Container>
