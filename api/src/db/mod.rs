@@ -44,16 +44,43 @@ pub async fn list_invoices(
     limit: i64,
     offset: i64,
     user_id: Option<Uuid>,
+    anyway_user: Option<Uuid>,
 ) -> Result<Vec<Invoice>, sqlx::Error> {
     match user_id {
-        None => sqlx::query_as!(
-            Invoice,
-            "SELECT * FROM invoice ORDER BY created_at DESC LIMIT $1 OFFSET $2",
-            limit,
-            offset
-        )
-            .fetch_all(pg_pool)
-            .await,
+        None => match anyway_user {
+            None => sqlx::query_as!(
+                Invoice,
+                r#"
+                SELECT invoice.* FROM invoice
+                LEFT JOIN subscriptions ON invoice.user_id = subscriptions.user_id
+                    AND subscriptions.target = 'private_invoices'
+                    AND subscriptions.until > NOW()
+                WHERE subscriptions.user_id IS NULL
+                ORDER BY created_at DESC
+                LIMIT $1 OFFSET $2"#,
+                limit,
+                offset
+            )
+                .fetch_all(pg_pool)
+                .await,
+            Some(anyway_user_id) => sqlx::query_as!(
+                Invoice,
+                r#"
+                SELECT invoice.* FROM invoice
+                LEFT JOIN subscriptions ON invoice.user_id = subscriptions.user_id
+                    AND subscriptions.target = 'private_invoices'
+                    AND subscriptions.until > NOW()
+                    AND subscriptions.user_id != $1
+                WHERE subscriptions.user_id IS NULL
+                ORDER BY created_at DESC
+                LIMIT $2 OFFSET $3"#,
+                anyway_user_id,
+                limit,
+                offset
+            )
+                .fetch_all(pg_pool)
+                .await
+        },
         Some(uid) => sqlx::query_as!(
             Invoice,
             "SELECT * FROM invoice WHERE user_id = $3 ORDER BY created_at DESC LIMIT $1 OFFSET $2",
@@ -513,7 +540,7 @@ pub async fn exists_callback_url(pg_pool: &PgPool, url: &str, user_id: &Uuid) ->
         .fetch_one(pg_pool)
         .await?
         .exists {
-        Some(exists) if !exists => return Ok(false),
+        Some(exists) if !exists => return Ok(true),
         _ => {}
     }
 

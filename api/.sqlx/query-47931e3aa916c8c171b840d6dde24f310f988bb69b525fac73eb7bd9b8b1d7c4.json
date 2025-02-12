@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT * FROM invoice ORDER BY created_at DESC LIMIT $1 OFFSET $2",
+  "query": "\n                SELECT invoice.* FROM invoice\n                LEFT JOIN subscriptions ON invoice.user_id = subscriptions.user_id\n                    AND subscriptions.target = 'private_invoices'\n                    AND subscriptions.until > NOW()\n                WHERE subscriptions.user_id IS NULL\n                ORDER BY created_at DESC\n                LIMIT $1 OFFSET $2",
   "describe": {
     "columns": [
       {
@@ -67,5 +67,5 @@
       true
     ]
   },
-  "hash": "b09f69cdc98efb71dfc83519960d3ae12358e57e9f1f5323bcea5803f217e45a"
+  "hash": "47931e3aa916c8c171b840d6dde24f310f988bb69b525fac73eb7bd9b8b1d7c4"
 }

@@ -18,6 +18,7 @@ use crate::api::ping_pong::ping_pong;
 use crate::api::response_error::ResponseError;
 use crate::api::state::AppState;
 use crate::api::utils::Pagination;
+use crate::payments::payable::SubscriptionTarget;
 
 #[derive(Serialize)]
 struct InvoiceResponse {
@@ -103,7 +104,24 @@ async fn get_invoices_handler(
 ) -> Result<Json<Vec<InvoiceResponse>>, ResponseError> {
     let (limit, offset) = pagination.get_valid(100)?;
 
-    let invoices = state.db.list_invoices(limit, offset, filter.user_id.to_user_id(app_user))
+    let anyway_user = match app_user.user_id() {
+        None => None,
+        Some(user_id) => {
+            let target: String = SubscriptionTarget::PrivateInvoices
+                .try_into()
+                .map_err(|_| ResponseError::InternalServerError("Failed get active sub".to_string()))?;
+            match state.db.get_user_active_subscription(&user_id, &target)
+                .await
+                .map_err(ResponseError::from_error)? {
+                None => None,
+                Some(_) => Some(user_id),
+            }
+        }
+    };
+
+    let invoices = state.db.list_invoices(
+        limit, offset, filter.user_id.to_user_id(app_user), anyway_user
+    )
         .await
         .map_err(ResponseError::from_error)?
         .into_iter()

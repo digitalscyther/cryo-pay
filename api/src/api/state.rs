@@ -114,8 +114,8 @@ impl DB {
             .await
     }
 
-    pub async fn list_invoices(&self, limit: i64, offset: i64, user_id: Option<Uuid>) -> Result<Vec<Invoice>, String> {
-        db::list_invoices(&self.pg_pool, limit, offset, user_id)
+    pub async fn list_invoices(&self, limit: i64, offset: i64, user_id: Option<Uuid>, anyway_user: Option<Uuid>) -> Result<Vec<Invoice>, String> {
+        db::list_invoices(&self.pg_pool, limit, offset, user_id, anyway_user)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "get invoices"))
     }

@@ -111,10 +111,10 @@ INFURA_TOKEN=<infura_token>
     - [x] On paid - redirect
     - [x] Documentation
     - [x] Add some ~~loaders~~ modal or info that need stay on page (for payer)
-- [ ] Add monetization
+- [x] Add monetization
   - [x] Notification
     - [x] Beautify exists telegram messages
-  - [ ] Subscriptions
+  - [x] Subscriptions
     - [x] Payment
       - [x] Create
       - [x] Checkout endpoint
@@ -127,7 +127,7 @@ INFURA_TOKEN=<infura_token>
         - [x] Settings
           - [x] Subscriptions
         - [x] Buy subscriptions page
-    - [ ] Anonymus invoices
+    - [x] Anonymus invoices
     - [x] Limits
 - [ ] WaitList
   - [ ] Custom tokens \ blockchains
