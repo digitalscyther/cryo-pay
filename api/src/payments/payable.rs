@@ -15,8 +15,8 @@ pub enum Payable {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Subscription {
-    target: SubscriptionTarget,
-    until: NaiveDateTime,
+    pub target: SubscriptionTarget,
+    pub until: NaiveDateTime,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

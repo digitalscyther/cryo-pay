@@ -314,6 +314,12 @@ impl DB {
             .map_err(|err| utils::make_err(Box::new(err), "create payment"))
     }
 
+    pub async fn list_user_subscriptions(&self, user_id: &Uuid) -> Result<Vec<Subscription>, String> {
+        billing::list_subscriptions(&self.pg_pool, user_id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "list user subscription"))
+    }
+
     pub async fn get_user_active_subscription(&self, user_id: &Uuid, target: &str) -> Result<Option<Subscription>, String> {
         billing::get_active_subscription(&self.pg_pool, user_id, target)
             .await

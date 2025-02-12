@@ -101,10 +101,10 @@ pub async fn get_payment(pg_pool: &PgPool, id: &Uuid) -> Result<Option<Payment>,
 pub struct Subscription {
     id: Uuid,
     user_id: Uuid,
-    target: String,
+    pub target: String,
     data: Value,
     created_at: NaiveDateTime,
-    until: NaiveDateTime,
+    pub until: NaiveDateTime,
 }
 
 pub async fn create_or_update_subscription(
@@ -130,6 +130,23 @@ pub async fn create_or_update_subscription(
         .await?;
 
     Ok(())
+}
+
+pub async fn list_subscriptions(
+    pg_pool: &PgPool,
+    user_id: &Uuid,
+) -> Result<Vec<Subscription>, sqlx::Error> {
+    sqlx::query_as!(
+        Subscription,
+        r#"
+        SELECT * FROM subscriptions
+        WHERE user_id = $1 AND until IS NOT NULL
+        ORDER BY target
+        "#,
+        user_id,
+    )
+        .fetch_all(pg_pool)
+        .await
 }
 
 pub async fn get_active_subscription(
