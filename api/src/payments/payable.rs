@@ -19,7 +19,7 @@ pub struct Subscription {
     pub until: NaiveDateTime,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum SubscriptionTarget {
     HighPriorityBlockchainChecking,     // high_priority_blockchain_checking
@@ -91,7 +91,7 @@ impl SubscriptionTarget {
 
     pub fn iterator() -> Vec<Self> {
         vec![
-            Self::HighPriorityBlockchainChecking,
+            // Self::HighPriorityBlockchainChecking,
             Self::UnlimitedInvoices,
             Self::PrivateInvoices,
         ]

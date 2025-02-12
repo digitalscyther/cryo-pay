@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use axum::{Extension, Json, middleware, Router};
 use axum::extract::{Query, State};
-use axum::response::{IntoResponse, Redirect};
+use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use bigdecimal::BigDecimal;
 use chrono::{Duration, Utc};
@@ -36,6 +36,12 @@ struct CreateSubscriptionRequest {
 
 impl CreateSubscriptionRequest {
     fn validate(&self, max_days: u64) -> Result<(), ResponseError> {
+        let invalid_target = ResponseError::Bad("Invalid target".to_string());
+        let target: SubscriptionTarget = self.target.clone().try_into().map_err(|_| invalid_target.clone())?;
+        if !SubscriptionTarget::iterator().contains(&target) {
+            return Err(invalid_target)
+        }
+
         if self.days > max_days {
             return Err(ResponseError::Bad(format!("Max days: {}", max_days)))
         };
@@ -81,7 +87,7 @@ async fn create_subscription(
         .await
         .map_err(ResponseError::from_error)?;
 
-    Ok(Redirect::to(&payment_url))
+    Ok(Json(json!({"payment_url": payment_url})))
 }
 
 fn calculate_price(subscription_target: &SubscriptionTarget, days: u64) -> BigDecimal {

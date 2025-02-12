@@ -3,6 +3,7 @@ import { Container, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import axios from 'axios';
 import ApiKeys from "./ApiKeys";
 import CallbackUrls from "./CallbackUrls";
+import Subscriptions from "./Subscriptions";
 import { apiUrl } from '../../utils';
 
 function Account() {
@@ -58,6 +59,8 @@ function Account() {
 
     return (
         <Container>
+            <Subscriptions subscriptions={settings.subscriptions} />
+
             <Container>
                 <h3>Notifications</h3>
 

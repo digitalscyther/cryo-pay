@@ -81,7 +81,7 @@ function CallbackUrls() {
                         />
                     </Col>
                     <Col xs={3}>
-                        <Button type="submit" variant="outline-dark" disabled={creating} block>
+                        <Button type="submit" variant="outline-dark" disabled={creating}>
                             {creating ? 'Adding...' : 'Add'}
                         </Button>
                     </Col>

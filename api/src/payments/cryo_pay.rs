@@ -75,7 +75,7 @@ impl CryoPayApi {
         let url = get_url(&get_invoice_full_path())?;
         let mut request = Client::new().post(url);
         if let Some(api_key) = &self.api_key {
-            request = request.header("Authorization", api_key)
+            request = request.header("Authorization", format!("Bearer {api_key}"))
         }
 
         let response = request
@@ -111,7 +111,7 @@ impl CryoPayApi {
     pub async fn is_invoice_paid(&self, id: &Uuid) -> Result<bool, String> {
         let mut request = Client::new().get(get_url(&get_target_invoice_path(id))?);
         if let Some(api_key) = &self.api_key {
-            request = request.header("Authorization", api_key)
+            request = request.header("Authorization", format!("Bearer {api_key}"))
         }
 
         let response = request
