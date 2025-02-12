@@ -1,11 +1,13 @@
 mod api_key;
 mod callback_url;
 
+use std::collections::HashMap;
 use std::sync::Arc;
 use axum::extract::State;
 use axum::{Extension, Json, middleware, Router};
 use axum::response::{IntoResponse, Redirect};
 use axum::routing::{get, patch};
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use crate::api::middleware::{extract_user, only_web};
 use crate::api::ping_pong::ping_pong;
@@ -13,7 +15,7 @@ use crate::api::response_error::ResponseError;
 use crate::api::state::AppState;
 use crate::api::USER_BASE_PATH;
 use crate::db::{billing, User};
-use crate::payments::payable::Subscription;
+use crate::payments::payable::{Subscription, SubscriptionTarget};
 
 const ATTACH_TELEGRAM_PATH: &str = "/attach_telegram";
 
@@ -45,11 +47,23 @@ pub struct UserResponse {
     pub attach_telegram_path: Option<String>,
     pub email_notification: bool,
     pub telegram_notification: bool,
-    pub subscriptions: Vec<Subscription>,
+    pub subscriptions: HashMap<String, Option<NaiveDateTime>>,
 }
 
 impl UserResponse {
     fn with_subscriptions(self, subscriptions: Vec<Subscription>) -> Self {
+        let mut subscriptions: HashMap<String, Option<NaiveDateTime>> = subscriptions
+            .into_iter()
+            .map(|s| (s.target.into(), Some(s.until)))
+            .collect();
+
+        for target in SubscriptionTarget::iterator() {
+            let key: String = target.into();
+            if !subscriptions.contains_key(&key) {
+                subscriptions.insert(key, None);
+            }
+        }
+
         Self {
             subscriptions,
             ..self
@@ -69,7 +83,7 @@ impl From<User> for UserResponse {
             attach_telegram_path,
             email_notification: value.email_notification,
             telegram_notification: value.telegram_notification,
-            subscriptions: vec![],
+            subscriptions: HashMap::new(),
         }
     }
 }

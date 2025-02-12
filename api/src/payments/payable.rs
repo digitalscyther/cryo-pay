@@ -66,7 +66,8 @@ impl Donation {
 
 impl From<SubscriptionTarget> for String {
     fn from(value: SubscriptionTarget) -> Self {
-        serde_json::to_string(&value).unwrap_or_default()
+        let as_value = serde_json::to_value(value).unwrap_or_default();
+        serde_json::from_value(as_value).unwrap_or_default()
     }
 }
 
@@ -86,6 +87,14 @@ impl SubscriptionTarget {
             SubscriptionTarget::PrivateInvoices => 16,
             SubscriptionTarget::UnlimitedInvoices => 1
         }) / 100
+    }
+
+    pub fn iterator() -> Vec<Self> {
+        vec![
+            Self::HighPriorityBlockchainChecking,
+            Self::UnlimitedInvoices,
+            Self::PrivateInvoices,
+        ]
     }
 }
 
