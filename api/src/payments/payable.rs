@@ -22,9 +22,9 @@ pub struct Subscription {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SubscriptionTarget {
-    InstantBlockchainChecking,
-    PrivateInvoices,
-    UnlimitedInvoices
+    HighPriorityBlockchainChecking,     // high_priority_blockchain_checking
+    PrivateInvoices,                    // private_invoices
+    UnlimitedInvoices                   // unlimited_invoices
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -82,7 +82,7 @@ impl TryInto<SubscriptionTarget> for String {
 impl SubscriptionTarget {
     pub fn price_per_day(&self) -> BigDecimal {
         BigDecimal::from(match self {
-            SubscriptionTarget::InstantBlockchainChecking => 100,
+            SubscriptionTarget::HighPriorityBlockchainChecking => 100,
             SubscriptionTarget::PrivateInvoices => 16,
             SubscriptionTarget::UnlimitedInvoices => 1
         }) / 100
