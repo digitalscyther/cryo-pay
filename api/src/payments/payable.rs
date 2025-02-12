@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use bigdecimal::{BigDecimal, FromPrimitive};
+use bigdecimal::BigDecimal;
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use crate::api::state::AppState;
@@ -74,20 +74,18 @@ impl TryInto<SubscriptionTarget> for String {
     type Error = ();
 
     fn try_into(self) -> Result<SubscriptionTarget, Self::Error> {
-        serde_json::from_str(&self).map_err(|_| ())
+        let as_value = serde_json::to_value(self).map_err(|_| ())?;
+        serde_json::from_value(as_value).map_err(|_| ())
     }
 }
 
 impl SubscriptionTarget {
-    pub fn price_per_day(&self) -> Result<BigDecimal, String> {
-        match BigDecimal::from_f32(match self {
-            SubscriptionTarget::InstantBlockchainChecking => 1.0,
-            SubscriptionTarget::PrivateInvoices => 0.16,
-            SubscriptionTarget::UnlimitedInvoices => 0.01
-        }) {
-            None => Err("Failed match price for sub".to_string()),
-            Some(dec) => Ok(dec),
-        }
+    pub fn price_per_day(&self) -> BigDecimal {
+        BigDecimal::from(match self {
+            SubscriptionTarget::InstantBlockchainChecking => 100,
+            SubscriptionTarget::PrivateInvoices => 16,
+            SubscriptionTarget::UnlimitedInvoices => 1
+        }) / 100
     }
 }
 
