@@ -77,15 +77,6 @@ pub enum UserIdFilter {
     My,
 }
 
-impl UserIdFilter {
-    fn to_user_id(&self, app_user: AppUser) -> Option<Uuid> {
-        match self {
-            UserIdFilter::All => None,
-            UserIdFilter::My => app_user.user_id()
-        }
-    }
-}
-
 #[derive(Deserialize)]
 struct Filter {
     #[serde(default = "default_user_id")]
@@ -104,25 +95,15 @@ async fn get_invoices_handler(
 ) -> Result<Json<Vec<InvoiceResponse>>, ResponseError> {
     let (limit, offset) = pagination.get_valid(100)?;
 
-    let anyway_user = match app_user.user_id() {
-        None => None,
-        Some(user_id) => {
-            let target: String = SubscriptionTarget::PrivateInvoices
-                .try_into()
-                .map_err(|_| ResponseError::InternalServerError("Failed get active sub".to_string()))?;
-            match state.db.get_user_active_subscription(&user_id, &target)
-                .await
-                .map_err(ResponseError::from_error)? {
-                None => None,
-                Some(_) => Some(user_id),
-            }
+    let invoices = match filter.user_id {
+        UserIdFilter::All => state.db.list_invoices(limit, offset, app_user.user_id()).await,
+        UserIdFilter::My => match app_user.user_id() {
+            None => return Err(
+                ResponseError::Bad("\"my\" filter allowed only for authorized users".to_string())
+            ),
+            Some(user_id) => state.db.user_own_invoices(limit, offset, &user_id).await
         }
-    };
-
-    let invoices = state.db.list_invoices(
-        limit, offset, filter.user_id.to_user_id(app_user), anyway_user
-    )
-        .await
+    }
         .map_err(ResponseError::from_error)?
         .into_iter()
         .map(|i| i.into())
@@ -144,12 +125,28 @@ async fn create_invoice_handler(
     Extension(app_user): Extension<AppUser>,
     Json(payload): Json<CreateInvoiceRequest>,
 ) -> Result<Json<InvoiceResponse>, ResponseError> {
+    let is_private = match app_user.user_id() {
+        None => false,
+        Some(user_id) => {
+            let target: String = SubscriptionTarget::PrivateInvoices.into();
+            state.db.get_user_active_subscription(
+                &user_id,
+                &target,
+            )
+                .await
+                .map_err(ResponseError::from_error)?
+                .is_some()
+        },
+    };
+
     let invoice = state.db.create_invoice(
         payload.amount,
         &payload.seller,
         &payload.networks,
         app_user.user_id(),
-        payload.external_id)
+        payload.external_id,
+        is_private,
+    )
         .await
         .map_err(ResponseError::from_error)?;
 

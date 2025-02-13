@@ -47,6 +47,11 @@
         "ordinal": 8,
         "name": "external_id",
         "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "is_private",
+        "type_info": "Bool"
       }
     ],
     "parameters": {
@@ -63,7 +68,8 @@
       true,
       false,
       true,
-      true
+      true,
+      false
     ]
   },
   "hash": "480d5551efe9a3e676c6837e450d538cb8835da36822f3b7ed6f323b0c87e6cc"

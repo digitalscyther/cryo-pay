@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n                SELECT invoice.* FROM invoice\n                LEFT JOIN subscriptions ON invoice.user_id = subscriptions.user_id\n                    AND subscriptions.target = 'private_invoices'\n                    AND subscriptions.until > NOW()\n                    AND subscriptions.user_id != $1\n                WHERE subscriptions.user_id IS NULL\n                ORDER BY created_at DESC\n                LIMIT $2 OFFSET $3",
+  "query": "\n            SELECT invoice.* FROM invoice\n            WHERE is_private = false OR user_id = $1\n            ORDER BY created_at DESC\n            LIMIT $2 OFFSET $3",
   "describe": {
     "columns": [
       {
@@ -47,6 +47,11 @@
         "ordinal": 8,
         "name": "external_id",
         "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "is_private",
+        "type_info": "Bool"
       }
     ],
     "parameters": {
@@ -65,8 +70,9 @@
       true,
       false,
       true,
-      true
+      true,
+      false
     ]
   },
-  "hash": "a7d9c17730f05c0929d3004bc42f8e971ba917247c51335547095cdbaa176d06"
+  "hash": "b1ba7298224539caf65aa501c7865ff615d67819e1b9fe0d907b6eca1d94f38e"
 }

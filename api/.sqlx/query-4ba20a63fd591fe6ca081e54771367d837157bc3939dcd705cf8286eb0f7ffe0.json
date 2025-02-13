@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO invoice (amount, seller, networks, user_id, external_id)\n        VALUES ($1, $2, $3, $4, $5)\n        RETURNING *\n        ",
+  "query": "\n            SELECT * FROM invoice\n            WHERE is_private = false\n            ORDER BY created_at DESC\n            LIMIT $1 OFFSET $2",
   "describe": {
     "columns": [
       {
@@ -47,15 +47,17 @@
         "ordinal": 8,
         "name": "external_id",
         "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "is_private",
+        "type_info": "Bool"
       }
     ],
     "parameters": {
       "Left": [
-        "Numeric",
-        "Varchar",
-        "Int4Array",
-        "Uuid",
-        "Varchar"
+        "Int8",
+        "Int8"
       ]
     },
     "nullable": [
@@ -67,8 +69,9 @@
       true,
       false,
       true,
-      true
+      true,
+      false
     ]
   },
-  "hash": "8a4b136dff8acb790af76948b6fc4683c375e4081db9be3829e895dff2193b11"
+  "hash": "4ba20a63fd591fe6ca081e54771367d837157bc3939dcd705cf8286eb0f7ffe0"
 }

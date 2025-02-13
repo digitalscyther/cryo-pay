@@ -114,8 +114,14 @@ impl DB {
             .await
     }
 
-    pub async fn list_invoices(&self, limit: i64, offset: i64, user_id: Option<Uuid>, anyway_user: Option<Uuid>) -> Result<Vec<Invoice>, String> {
-        db::list_invoices(&self.pg_pool, limit, offset, user_id, anyway_user)
+    pub async fn list_invoices(&self, limit: i64, offset: i64, user_id: Option<Uuid>) -> Result<Vec<Invoice>, String> {
+        db::list_invoices(&self.pg_pool, limit, offset, user_id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "get invoices"))
+    }
+
+    pub async fn user_own_invoices(&self, limit: i64, offset: i64, user_id: &Uuid) -> Result<Vec<Invoice>, String> {
+        db::user_own_invoices(&self.pg_pool, limit, offset, user_id)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "get invoices"))
     }
@@ -127,8 +133,9 @@ impl DB {
         networks: &Vec<i32>,
         user_id: Option<Uuid>,
         external_id: Option<String>,
+        is_private: bool,
     ) -> Result<Invoice, String> {
-        db::create_invoice(&self.pg_pool, amount, seller, networks, user_id, external_id)
+        db::create_invoice(&self.pg_pool, amount, seller, networks, user_id, external_id, is_private)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "create invoice"))
     }

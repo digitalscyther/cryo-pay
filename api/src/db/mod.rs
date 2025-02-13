@@ -31,6 +31,7 @@ pub struct Invoice {
     pub networks: Vec<i32>,
     pub user_id: Option<Uuid>,
     pub external_id: Option<String>,
+    is_private: bool,
 }
 
 impl Invoice {
@@ -39,57 +40,59 @@ impl Invoice {
     }
 }
 
+pub async fn user_own_invoices(
+    pg_pool: &PgPool,
+    limit: i64,
+    offset: i64,
+    user_id: &Uuid,
+) -> Result<Vec<Invoice>, sqlx::Error> {
+    sqlx::query_as!(
+        Invoice,
+        r#"
+        SELECT * FROM invoice
+        WHERE user_id = $1
+        ORDER BY created_at DESC
+        LIMIT $2 OFFSET $3"#,
+        user_id,
+        limit,
+        offset,
+    )
+        .fetch_all(pg_pool)
+        .await
+}
+
 pub async fn list_invoices(
     pg_pool: &PgPool,
     limit: i64,
     offset: i64,
     user_id: Option<Uuid>,
-    anyway_user: Option<Uuid>,
 ) -> Result<Vec<Invoice>, sqlx::Error> {
     match user_id {
-        None => match anyway_user {
-            None => sqlx::query_as!(
-                Invoice,
-                r#"
-                SELECT invoice.* FROM invoice
-                LEFT JOIN subscriptions ON invoice.user_id = subscriptions.user_id
-                    AND subscriptions.target = 'private_invoices'
-                    AND subscriptions.until > NOW()
-                WHERE subscriptions.user_id IS NULL
-                ORDER BY created_at DESC
-                LIMIT $1 OFFSET $2"#,
-                limit,
-                offset
-            )
-                .fetch_all(pg_pool)
-                .await,
-            Some(anyway_user_id) => sqlx::query_as!(
-                Invoice,
-                r#"
-                SELECT invoice.* FROM invoice
-                LEFT JOIN subscriptions ON invoice.user_id = subscriptions.user_id
-                    AND subscriptions.target = 'private_invoices'
-                    AND subscriptions.until > NOW()
-                    AND subscriptions.user_id != $1
-                WHERE subscriptions.user_id IS NULL
-                ORDER BY created_at DESC
-                LIMIT $2 OFFSET $3"#,
-                anyway_user_id,
-                limit,
-                offset
-            )
-                .fetch_all(pg_pool)
-                .await
-        },
-        Some(uid) => sqlx::query_as!(
+        None => sqlx::query_as!(
             Invoice,
-            "SELECT * FROM invoice WHERE user_id = $3 ORDER BY created_at DESC LIMIT $1 OFFSET $2",
+            r#"
+            SELECT * FROM invoice
+            WHERE is_private = false
+            ORDER BY created_at DESC
+            LIMIT $1 OFFSET $2"#,
             limit,
             offset,
-            uid
         )
             .fetch_all(pg_pool)
             .await,
+        Some(user_id) => sqlx::query_as!(
+            Invoice,
+            r#"
+            SELECT invoice.* FROM invoice
+            WHERE is_private = false OR user_id = $1
+            ORDER BY created_at DESC
+            LIMIT $2 OFFSET $3"#,
+            user_id,
+            limit,
+            offset
+        )
+            .fetch_all(pg_pool)
+            .await
     }
 }
 
@@ -100,12 +103,13 @@ pub async fn create_invoice(
     networks: &Vec<i32>,
     user_id: Option<Uuid>,
     external_id: Option<String>,
+    is_private: bool,
 ) -> Result<Invoice, sqlx::Error> {
     sqlx::query_as!(
         Invoice,
         r#"
-        INSERT INTO invoice (amount, seller, networks, user_id, external_id)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO invoice (amount, seller, networks, user_id, external_id, is_private)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING *
         "#,
         amount,
@@ -113,6 +117,7 @@ pub async fn create_invoice(
         networks,
         user_id,
         external_id,
+        is_private,
     )
         .fetch_one(pg_pool)
         .await

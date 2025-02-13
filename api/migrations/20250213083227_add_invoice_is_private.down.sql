@@ -1,0 +1,2 @@
+ALTER TABLE invoice
+DROP COLUMN IF EXISTS is_private;
