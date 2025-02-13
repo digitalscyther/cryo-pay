@@ -55,6 +55,26 @@ export async function getInvoice(invoice_id) {
 }
 
 export const getFullUrl = (path = '') => {
-  const baseUrl = window.location.origin;
-  return path ? new URL(path, baseUrl).href : baseUrl;
+    const baseUrl = window.location.origin;
+    return path ? new URL(path, baseUrl).href : baseUrl;
+};
+
+export const getAvailableNetworks = async () => {
+    try {
+        let response = await getBlockchainInfo();
+        return response.data.networks.map((item) => item.name )
+
+    } catch (err) {
+        console.error(err);
+        return [];
+    }
+}
+
+export const getBlockchainIconPath = (blockchain) => {
+    const iconMap = {
+        'arbitrum-one': '/files/arbitrum-arb-logo.svg',
+        'optimism': '/files/optimism-ethereum-op-logo.svg'
+    };
+
+    return iconMap[blockchain.toLowerCase()] || '/files/optimism-sepolia.svg';
 };

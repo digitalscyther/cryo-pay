@@ -4,6 +4,7 @@ import {apiUrl, getBlockchainInfo, NETWORKS} from "../../utils";
 import React, {useEffect, useState} from "react";
 import {useNavigate} from "react-router-dom";
 import axios from "axios";
+import NetworkIcon from "../NetworkIcon";
 
 const ExternalIdInfo = ({id, children, title}) => (
     <OverlayTrigger overlay={<Tooltip id={id}>{title}</Tooltip>}>
@@ -189,9 +190,13 @@ function CreateInvoice() {
                                     .map((network) => (
                                         <Form.Check
                                             key={network.id}
-                                            type="checkbox"
-                                            label={network.name}
                                             id={`invoice-network-${network.id}`}
+                                            type="checkbox"
+                                            label={(
+                                                <div className="my-2 mx-4">
+                                                    <NetworkIcon size={30} networkName={network.name} cursor={'pointer'} />
+                                                </div>
+                                            )}
                                             value={network.id}
                                             checked={newInvoice.networks.includes(network.id)}
                                             disabled={!networks.includes(network.id)}
@@ -207,6 +212,7 @@ function CreateInvoice() {
                                                     };
                                                 });
                                             }}
+                                            className="d-flex align-items-center m-0"
                                         />
                                     ))}
                             </div>

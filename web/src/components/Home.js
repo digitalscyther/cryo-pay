@@ -1,9 +1,15 @@
-import React from "react";
-import { Container, Row, Col, Button, Card } from "react-bootstrap";
-import {getProjectName} from "../utils";
+import React, {useEffect, useState} from "react";
+import {Container, Row, Col, Button, Card} from "react-bootstrap";
+import NetworkIcon from "./NetworkIcon";
+import {getAvailableNetworks, getProjectName} from "../utils";
 
-const Home = ({ isLoggedIn }) => {
+const Home = ({isLoggedIn}) => {
     const projectName = getProjectName();
+    const [availableNetworks, setAvailableNetworks] = useState([]);
+
+    useEffect(() => {
+        getAvailableNetworks().then((networks) => setAvailableNetworks(networks))
+    }, [])
 
     return (
         <>
@@ -12,6 +18,13 @@ const Home = ({ isLoggedIn }) => {
                 <Row>
                     <Col>
                         <h1 className="display-4">Simplifying Payments for Sellers with Blockchain</h1>
+                        <Row className="justify-content-center mb-4">
+                            {availableNetworks.map((network) => (
+                                <Col key={network} xs="auto" className="mx-2">
+                                    <NetworkIcon size={40} networkName={network}/>
+                                </Col>
+                            ))}
+                        </Row>
                         <p className="lead">
                             Fast, secure, and low-cost invoicing powered by decentralized networks.
                         </p>
@@ -29,7 +42,7 @@ const Home = ({ isLoggedIn }) => {
 
             {/* Features Section */}
             <Container className="mt-5">
-                <h2 className="text-center">Why Choose { projectName }?</h2>
+                <h2 className="text-center">Why Choose {projectName}?</h2>
                 <Row className="mt-4">
                     <Col md={4} className="mb-3">
                         <Card>
@@ -72,7 +85,8 @@ const Home = ({ isLoggedIn }) => {
                         <Card>
                             <Card.Body>
                                 <Card.Text>
-                                    "{ projectName } has streamlined my invoicing process. The low gas fees are a game-changer!"
+                                    "{projectName} has streamlined my invoicing process. The low gas fees are a
+                                    game-changer!"
                                 </Card.Text>
                                 <Card.Footer className="text-end">- Alex R.</Card.Footer>
                             </Card.Body>
@@ -106,6 +120,6 @@ const Home = ({ isLoggedIn }) => {
             </Container>
         </>
     );
-};
+}
 
 export default Home;

@@ -3,6 +3,7 @@ import AmountDisplay from "../common/AmountDisplay";
 import {getNetwork} from "../../utils";
 import LocalDate from "../common/LocalDate";
 import React from "react";
+import NetworkIcon from "../NetworkIcon";
 
 function Info({invoice}) {
     return (
@@ -20,15 +21,15 @@ function Info({invoice}) {
             </ListGroup.Item>
             <ListGroup.Item>
                 <strong>Networks:</strong>
-                <div className="mt-2">
+                <div className="mt-2 d-flex">
                     {invoice.networks.length > 0 ? (
-                        <ListGroup variant="flush">
+                        <>
                             {invoice.networks.map((n) => (
-                                <ListGroup.Item key={n} className="border-0 ps-3">
-                                    – {getNetwork(n).name}
-                                </ListGroup.Item>
+                                <div key={n} className="m-3">
+                                    <NetworkIcon size={40} networkName={getNetwork(n).name} />
+                                </div>
                             ))}
-                        </ListGroup>
+                        </>
                     ) : (
                         <span className="ps-3">No networks available</span>
                     )}

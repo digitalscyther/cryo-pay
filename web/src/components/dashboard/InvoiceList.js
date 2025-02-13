@@ -2,9 +2,10 @@ import React, {useEffect, useState} from 'react';
 import {Alert, Button, Spinner, Table, Form} from 'react-bootstrap';
 import axios from 'axios';
 import {useSearchParams} from 'react-router-dom';
-import {apiUrl} from "../../utils";
+import {apiUrl, getNetwork} from "../../utils";
 import AmountDisplay from "../common/AmountDisplay";
 import LocalDate from '../common/LocalDate';
+import NetworkIcon from "../NetworkIcon";
 
 const PAGE_SIZE = 10;
 
@@ -115,6 +116,7 @@ const InvoiceList = ({isLoggedIn}) => {
                     <thead>
                     <tr>
                         <th>ID</th>
+                        <th>Networks</th>
                         <th>Amount</th>
                         <th>Created At</th>
                         <th>Paid At</th>
@@ -132,6 +134,21 @@ const InvoiceList = ({isLoggedIn}) => {
                                 >
                                     {invoice.id}
                                 </Button>
+                            </td>
+                            <td>
+                                <div className="d-flex">
+                                    {invoice.networks.length > 0 ? (
+                                        <>
+                                            {invoice.networks.map((n) => (
+                                                <div key={n} className="mx-1">
+                                                    <NetworkIcon size={30} networkName={getNetwork(n).name}/>
+                                                </div>
+                                            ))}
+                                        </>
+                                    ) : (
+                                        <span className="ps-3">No networks available</span>
+                                    )}
+                                </div>
                             </td>
                             <td>
                                 <AmountDisplay amount={invoice.amount} size={1.0}/>
