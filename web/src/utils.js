@@ -78,3 +78,11 @@ export const getBlockchainIconPath = (blockchain) => {
 
     return iconMap[blockchain.toLowerCase()] || '/files/optimism-sepolia.svg';
 };
+
+export const getSubscriptionInfo = (key) => {
+    const info = {
+        'private_invoices': 'Enables the creation of private invoices that are excluded from the public invoice list. Only the creator can view these invoices within the interface, but they remain accessible to anyone with a direct link.',
+        'unlimited_invoices': 'Removes the invoice creation limit, allowing users to generate an unlimited number of invoices. This feature is particularly beneficial for high-volume users who exceed the restrictions imposed on free accounts.',
+    };
+    return info[key] || 'No information available for this subscription.';
+}
