@@ -95,13 +95,7 @@ function Invoice() {
         <Container className="mt-5" style={{maxWidth: '600px'}}>
             <h2 className="mb-4">Pay Invoice</h2>
 
-            {showWait && (
-                <Alert variant="danger" className="text-center">
-                    Please wait while the transaction is being verified.
-                    <br />
-                    Do not leave the page or close your browser
-                </Alert>
-            )}
+            {showWait && ( <AlertWaitConfirmation cycle={60} change={2} />)}
 
             <Info invoice={invoice}/>
 
@@ -148,6 +142,53 @@ function PaymentInProcess({showModal, setShowModal}) {
             </Modal.Footer>
         </Modal>
     )
+}
+
+function AlertWaitConfirmation({cycle, change}) {
+    const cd_time = cycle;
+    const l_time = change;
+    const [phase, setPhase] = useState('countdown1');
+    const [timeLeft, setTimeLeft] = useState(cd_time);
+
+    useEffect(() => {
+        if (timeLeft > 0) {
+            const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+            return () => clearTimeout(timer);
+        } else if (phase === 'countdown1' && timeLeft === 0) {
+            setPhase('loading');
+            setTimeLeft(l_time);
+        } else if (phase === 'loading' && timeLeft === 0) {
+            setPhase('countdown2');
+            setTimeLeft(cd_time);
+        }
+    }, [phase, timeLeft, cd_time, l_time]);
+
+    const renderContent = () => {
+        switch (phase) {
+            case 'countdown1':
+            case 'countdown2':
+                return (
+                    <Alert variant="danger" className="text-center">
+                        Please wait while the transaction is being verified.
+                        <br />
+                        Do not leave the page or close your browser.
+                        <br />
+                        <strong>Time left{phase === 'countdown2' && " (one more time)"}: {timeLeft}s</strong>
+                    </Alert>
+                );
+            case 'loading':
+                return (
+                    <div className="text-center">
+                        <Spinner animation="border" variant="primary" />
+                        <p>Loading, please wait...</p>
+                    </div>
+                );
+            default:
+                return null;
+        }
+    };
+
+    return <div className="mt-4">{renderContent()}</div>;
 }
 
 export default Invoice;
