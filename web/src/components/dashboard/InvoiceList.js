@@ -139,9 +139,9 @@ const InvoiceList = ({isLoggedIn}) => {
                                 <div className="d-flex">
                                     {invoice.networks.length > 0 ? (
                                         <>
-                                            {invoice.networks.map((n) => (
+                                            {invoice.networks.map(getNetwork).map((n) => n.name).sort().map((n) => (
                                                 <div key={n} className="mx-1">
-                                                    <NetworkIcon size={30} networkName={getNetwork(n).name}/>
+                                                    <NetworkIcon size={30} networkName={n}/>
                                                 </div>
                                             ))}
                                         </>

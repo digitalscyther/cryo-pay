@@ -1,6 +1,6 @@
 import {Badge, Button, Collapse, Form, Modal, OverlayTrigger, Tooltip} from "react-bootstrap";
 import MetaMaskButton from "./MetaMaskButton";
-import {apiUrl, getBlockchainInfo, NETWORKS} from "../../utils";
+import {apiUrl, getBlockchainInfo, NETWORKS, sortNetworkItems} from "../../utils";
 import React, {useEffect, useState} from "react";
 import {useNavigate} from "react-router-dom";
 import axios from "axios";
@@ -27,7 +27,7 @@ function CreateInvoice() {
             try {
                 const response = await getBlockchainInfo();
                 const {networks} = response.data;
-                const toSetNetworks = networks.map((item) => item.id);
+                const toSetNetworks = networks.sort(sortNetworkItems).map((item) => item.id);
 
                 setNetworks(toSetNetworks);
             } catch (err) {

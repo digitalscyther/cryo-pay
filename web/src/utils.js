@@ -62,7 +62,7 @@ export const getFullUrl = (path = '') => {
 export const getAvailableNetworks = async () => {
     try {
         let response = await getBlockchainInfo();
-        return response.data.networks.map((item) => item.name )
+        return response.data.networks.map((item) => item.name ).sort()
 
     } catch (err) {
         console.error(err);
@@ -85,4 +85,8 @@ export const getSubscriptionInfo = (key) => {
         'unlimited_invoices': 'Removes the invoice creation limit, allowing users to generate an unlimited number of invoices. This feature is particularly beneficial for high-volume users who exceed the restrictions imposed on free accounts.',
     };
     return info[key] || 'No information available for this subscription.';
+}
+
+export const sortNetworkItems = (a, b) => {
+    return (a, b) => a.name.localeCompare(b.name)
 }

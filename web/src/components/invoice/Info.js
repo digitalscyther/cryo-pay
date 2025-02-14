@@ -24,9 +24,9 @@ function Info({invoice}) {
                 <div className="mt-2 d-flex">
                     {invoice.networks.length > 0 ? (
                         <>
-                            {invoice.networks.map((n) => (
+                            {invoice.networks.map(getNetwork).map((n) => n.name).sort().map((n) => (
                                 <div key={n} className="m-3">
-                                    <NetworkIcon size={40} networkName={getNetwork(n).name} />
+                                    <NetworkIcon size={40} networkName={n} />
                                 </div>
                             ))}
                         </>
