@@ -1,5 +1,6 @@
 use tgbot::api::Client;
 use tgbot::types::{ChatId, GetBot, InlineKeyboardButton, InlineKeyboardMarkup, SendMessage};
+use crate::db::Invoice;
 use crate::utils;
 
 pub async fn get_client() -> Result<Client, String> {
@@ -8,15 +9,25 @@ pub async fn get_client() -> Result<Client, String> {
         .map_err(|err| utils::make_err(Box::new(err), "create telegram client"))
 }
 
-pub async fn send_invoice_paid(client: &Client, chat_id: ChatId, invoice_url: &str) -> Result<(), String> {
+pub async fn send_invoice_paid(client: &Client, chat_id: ChatId, invoice: &Invoice) -> Result<(), String> {
     let mut reply_markup = InlineKeyboardMarkup::default();
     reply_markup = reply_markup.add_row(
-        vec![InlineKeyboardButton::for_url("Check", invoice_url)]
+        vec![InlineKeyboardButton::for_url("Check", &invoice.web_url()?)]
     );
+
+    let mut lines = vec![
+        "Invoice".to_string(),
+        format!("ID: {}", &invoice.id.to_string()),
+        "Paid".to_string(),
+    ];
+    if let Some(external_id) = &invoice.external_id {
+        lines.insert(2, format!("External ID: {}", external_id))
+    }
+    let message = lines.join("\n");
 
     client
         .execute(SendMessage::new(
-            chat_id, "Invoice paid")
+            chat_id, &message)
                 .with_reply_markup(reply_markup))
         .await
         .map_err(|err| utils::make_err(Box::new(err), "send telegram message"))?;

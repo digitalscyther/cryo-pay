@@ -4,10 +4,12 @@ use jsonwebtoken::{Algorithm, decode, DecodingKey, encode, EncodingKey, Header, 
 use redis::{aio::MultiplexedConnection, AsyncCommands, ConnectionLike, RedisResult};
 use rs_firebase_admin_sdk::{credentials_provider, App, GcpCredentials, auth::token::{error::TokenVerificationError, jwt::JWToken, TokenVerifier}};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use sqlx::migrate::MigrateError;
 use sqlx::PgPool;
 use uuid::Uuid;
 use crate::db::{self, ApiKey, CallbackUrl, Invoice, User};
+use crate::db::billing::{self, Payment, Subscription};
 use crate::network::Network;
 use crate::telegram::TelegramClient;
 use crate::utils;
@@ -118,8 +120,22 @@ impl DB {
             .map_err(|err| utils::make_err(Box::new(err), "get invoices"))
     }
 
-    pub async fn create_invoice(&self, amount: BigDecimal, seller: &str, networks: &Vec<i32>, user_id: Option<Uuid>) -> Result<Invoice, String> {
-        db::create_invoice(&self.pg_pool, amount, seller, networks, user_id)
+    pub async fn user_own_invoices(&self, limit: i64, offset: i64, user_id: &Uuid) -> Result<Vec<Invoice>, String> {
+        db::user_own_invoices(&self.pg_pool, limit, offset, user_id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "get invoices"))
+    }
+
+    pub async fn create_invoice(
+        &self,
+        amount: BigDecimal,
+        seller: &str,
+        networks: &Vec<i32>,
+        user_id: Option<Uuid>,
+        external_id: Option<String>,
+        is_private: bool,
+    ) -> Result<Invoice, String> {
+        db::create_invoice(&self.pg_pool, amount, seller, networks, user_id, external_id, is_private)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "create invoice"))
     }
@@ -130,18 +146,7 @@ impl DB {
             .map_err(|err| utils::make_err(Box::new(err), "get invoice"))
     }
 
-    pub async fn get_own_invoice(&self, id: Uuid, user_id: Option<Uuid>) -> Result<(bool, Option<Invoice>), String> {
-        let invoice = self.get_invoice(&id).await?;
-
-        let own = invoice.is_some() && match user_id {
-            None => false,
-            Some(user_id) => self.get_is_owner(id, user_id).await?
-        };
-
-        Ok((own, invoice))
-    }
-
-    pub async fn get_is_owner(&self, id: Uuid, user_id: Uuid) -> Result<bool, String> {
+    pub async fn get_is_owner(&self, id: &Uuid, user_id: &Uuid) -> Result<bool, String> {
         db::get_is_owner(&self.pg_pool, id, user_id)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "get is owner"))
@@ -290,6 +295,54 @@ impl DB {
         db::exists_callback_url(&self.pg_pool, url, user_id)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "exists callback url"))
+    }
+
+    pub async fn get_payment(&self, id: &Uuid) -> Result<Option<Payment>, String> {
+        billing::get_payment(&self.pg_pool, id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "get payment"))
+    }
+
+    pub async fn user_list_payment(&self, user_id: &Uuid, limit: i64, offset: i64) -> Result<Vec<Payment>, String> {
+        billing::user_list_payment(&self.pg_pool, user_id, limit, offset)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "user list payment"))
+    }
+
+    pub async fn list_payment(&self, payment_type: &str, limit: i64, offset: i64) -> Result<Vec<Payment>, String> {
+        billing::list_payment(&self.pg_pool, payment_type, limit, offset)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "list payment"))
+    }
+
+    pub async fn create_payment(&self, id: &Uuid, user_id: Option<Uuid>, data: &Value) -> Result<Payment, String> {
+        billing::create_payment(&self.pg_pool, id, user_id, data)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "create payment"))
+    }
+
+    pub async fn list_user_subscriptions(&self, user_id: &Uuid) -> Result<Vec<Subscription>, String> {
+        billing::list_subscriptions(&self.pg_pool, user_id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "list user subscription"))
+    }
+
+    pub async fn get_user_active_subscription(&self, user_id: &Uuid, target: &str) -> Result<Option<Subscription>, String> {
+        billing::get_active_subscription(&self.pg_pool, user_id, target)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "get user active subscription"))
+    }
+
+    pub async fn create_or_update_subscription(&self, user_id: &Uuid, target: &str, data: Option<Value>, until: NaiveDateTime) -> Result<(), String> {
+        billing::create_or_update_subscription(&self.pg_pool, user_id, target, data, until)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "create or update subscription"))
+    }
+
+    pub async fn set_payment_paid(&self, id: &Uuid) -> Result<(), String> {
+        billing::set_payment_paid(&self.pg_pool, id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "set payment paid"))
     }
 }
 

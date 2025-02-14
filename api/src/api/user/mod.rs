@@ -1,18 +1,21 @@
 mod api_key;
 mod callback_url;
 
+use std::collections::HashMap;
 use std::sync::Arc;
 use axum::extract::State;
 use axum::{Extension, Json, middleware, Router};
-use axum::http::StatusCode;
 use axum::response::{IntoResponse, Redirect};
 use axum::routing::{get, patch};
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use crate::api::middleware::{extract_user, only_web};
 use crate::api::ping_pong::ping_pong;
+use crate::api::response_error::ResponseError;
 use crate::api::state::AppState;
 use crate::api::USER_BASE_PATH;
-use crate::db::User;
+use crate::db::{billing, User};
+use crate::payments::payable::{Subscription, SubscriptionTarget};
 
 const ATTACH_TELEGRAM_PATH: &str = "/attach_telegram";
 
@@ -23,8 +26,8 @@ fn get_attach_telegram_full_path() -> String {
 pub fn get_router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route("/ping", get(ping_pong))
-        .route("/", get(read))
-        .route("/", patch(update))
+        .route("/", get(get_user))
+        .route("/", patch(update_user))
         .route(ATTACH_TELEGRAM_PATH, get(attach_telegram))
         .nest("/api_key", api_key::get_router(app_state.clone()))
         .nest("/callback_url", callback_url::get_router(app_state.clone()))
@@ -44,6 +47,28 @@ pub struct UserResponse {
     pub attach_telegram_path: Option<String>,
     pub email_notification: bool,
     pub telegram_notification: bool,
+    pub subscriptions: HashMap<String, Option<NaiveDateTime>>,
+}
+
+impl UserResponse {
+    fn with_subscriptions(self, subscriptions: Vec<Subscription>) -> Self {
+        let mut subscriptions: HashMap<String, Option<NaiveDateTime>> = subscriptions
+            .into_iter()
+            .map(|s| (s.target.into(), Some(s.until)))
+            .collect();
+
+        for target in SubscriptionTarget::iterator() {
+            let key: String = target.into();
+            if !subscriptions.contains_key(&key) {
+                subscriptions.insert(key, None);
+            }
+        }
+
+        Self {
+            subscriptions,
+            ..self
+        }
+    }
 }
 
 impl From<User> for UserResponse {
@@ -57,27 +82,55 @@ impl From<User> for UserResponse {
         UserResponse {
             attach_telegram_path,
             email_notification: value.email_notification,
-            telegram_notification: value.telegram_notification
+            telegram_notification: value.telegram_notification,
+            subscriptions: HashMap::new(),
         }
     }
 }
 
-async fn read(Extension(user): Extension<User>) -> Result<impl IntoResponse, StatusCode> {
-    let response: UserResponse = user.into();
+impl TryFrom<billing::Subscription> for Subscription {
+    type Error = ();
+
+    fn try_from(value: billing::Subscription) -> Result<Self, Self::Error> {
+        Ok(Self {
+            target: value.target
+                .try_into()
+                .map_err(|_| ())?,
+            until: value.until,
+        })
+    }
+}
+
+async fn get_user(
+    State(state): State<Arc<AppState>>,
+    Extension(user): Extension<User>,
+) -> Result<impl IntoResponse, ResponseError> {
+    let response: UserResponse = user.clone().into();
+
+    let subscriptions: Result<Vec<_>, _> = state.db.list_user_subscriptions(&user.id)
+        .await
+        .map_err(ResponseError::from_error)?
+        .into_iter()
+        .map(|s| s.try_into().map_err(|_| "Failed to parse subscription"))
+        .collect();
+
+    let subscriptions = subscriptions.map_err(|e| ResponseError::from_error(e.to_string()))?;
+
+    let response = response.with_subscriptions(subscriptions);
 
     Ok(Json(response))
 }
 
-async fn update(
+async fn update_user(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<User>,
     Json(payload): Json<UserRequest>,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> Result<impl IntoResponse, ResponseError> {
     let response: UserResponse = state.db
         .update_user(&user.id, payload.email_notification, payload.telegram_notification)
-        // .update_user(&user.id, None, payload.telegram_notification)     // TODO 123
+        // .update_user(&user.id, None, payload.telegram_notification)     // TODO notification_turned_off
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .map_err(ResponseError::from_error)?
         .into();
 
     Ok(Json(response))
@@ -85,11 +138,11 @@ async fn update(
 
 async fn attach_telegram(
     State(state): State<Arc<AppState>>,
-    Extension(user): Extension<User>
-) -> Result<impl IntoResponse, StatusCode> {
+    Extension(user): Extension<User>,
+) -> Result<impl IntoResponse, ResponseError> {
     let telegram_bot_name = state.telegram_client.get_bot_name()
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(ResponseError::from_error)?;
 
     let telegram_redirect_url = format!(
         "https://t.me/{}?start={}",

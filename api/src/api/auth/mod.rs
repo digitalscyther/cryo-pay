@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use axum::{Json, Router};
+use axum::{Json, middleware, Router};
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -7,8 +7,11 @@ use axum::routing::{get, post};
 use axum_extra::extract::cookie::{Cookie, CookieJar, SameSite};
 use serde::Deserialize;
 use time::{Duration, OffsetDateTime};
-use tracing::{debug, warn};
+use tracing::debug;
+use crate::api::middleware::extract_user;
+use crate::api::middleware::rate_limiting::middleware::RateLimitType;
 use crate::api::ping_pong::ping_pong;
+use crate::api::response_error::ResponseError;
 use crate::api::state::{AppState, VerifyError};
 
 const JWT_EXPIRE_DAYS: i64 = 7;
@@ -16,7 +19,12 @@ const JWT_EXPIRE_DAYS: i64 = 7;
 pub fn get_router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route("/ping", get(ping_pong))
-        .route("/login", post(login))
+        .route(
+            "/login",
+            post(login)
+                .layer(middleware::from_fn_with_state(app_state.clone(), RateLimitType::login))
+                .layer(middleware::from_fn_with_state(app_state.clone(), extract_user)),
+        )
         .route("/logout", post(logout))
         .with_state(app_state)
 }
@@ -30,18 +38,15 @@ async fn login(
     State(state): State<Arc<AppState>>,
     jar: CookieJar,
     Json(payload): Json<FirebaseTokenRequest>,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> Result<impl IntoResponse, ResponseError> {
     let token = state.gc.get_verified_token(&payload.token)
         .await
         .map_err(|err| match err {
             VerifyError::Verification(tve) => {
                 debug!("Invalid token: {:?}", tve);
-                StatusCode::BAD_REQUEST
+                ResponseError::Bad("Invalid token".to_string())
             }
-            VerifyError::Unexpected(err) => {
-                warn!("Failed check token: {:?}", err);
-                StatusCode::INTERNAL_SERVER_ERROR
-            }
+            VerifyError::Unexpected(err) => ResponseError::from_error(err)
         })?;
 
     let user_id = token.critical_claims.sub;
@@ -51,10 +56,7 @@ async fn login(
         .map(|s| s.to_string());
 
     let jwt = state.jwt.generate(user_id, email)
-        .map_err(|err| {
-            warn!("Failed generate jwt: {:?}", err);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+        .map_err(|err| ResponseError::from_error(format!("{err:?}")))?;
 
     let mut cookie = Cookie::new("jwt", jwt);
     cookie.set_expires(OffsetDateTime::now_utc() + Duration::days(JWT_EXPIRE_DAYS));
@@ -67,7 +69,6 @@ async fn login(
 async fn logout(
     jar: CookieJar,
 ) -> Result<impl IntoResponse, StatusCode> {
-
     let mut cookie = Cookie::new("jwt", "");
     cookie.set_max_age(Duration::seconds(0));
     cookie.set_path("/");

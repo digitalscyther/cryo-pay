@@ -1,0 +1,2 @@
+ALTER TABLE Invoice
+ADD COLUMN external_id VARCHAR(255);

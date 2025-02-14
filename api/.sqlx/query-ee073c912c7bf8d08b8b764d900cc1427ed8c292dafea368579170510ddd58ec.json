@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO subscriptions (user_id, target, data, until)\n        VALUES ($1, $2, $3, $4)\n        ON CONFLICT (user_id, target)\n        DO UPDATE SET data = EXCLUDED.data, until = EXCLUDED.until\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Jsonb",
+        "Timestamp"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "ee073c912c7bf8d08b8b764d900cc1427ed8c292dafea368579170510ddd58ec"
+}

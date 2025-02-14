@@ -8,6 +8,11 @@ add config to web/src/firebaseConfig.json
 docker compose build && NGINX_PORT=80 POSTGRES_PORT=6432 REDIS_PORT=6381 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 ```
 
+run frontend local
+```bash
+REACT_APP_BASE_API_URL=http://127.0.0.1:3001 REACT_APP_PROJECT_NAME=LOCALTest REACT_APP_CONTACTS={"email":"foo@bar.baz","telegram":"foo","linkedin":"foo"} npm start
+```
+
 #### local
 
 ##### front
@@ -106,17 +111,30 @@ INFURA_TOKEN=<infura_token>
     - [x] On paid - redirect
     - [x] Documentation
     - [x] Add some ~~loaders~~ modal or info that need stay on page (for payer)
-- [ ] Add monetization
-  - [ ] Notification
-    - [ ] Beautify exists telegram messages
-  - [ ] Subscriptions
-    - [ ] Instant blockchain verification
-    - [ ] Anonymus invoices
-    - [ ] Limits
-  - [ ] WaitList
-    - [ ] Custom tokens \ blockchains
-    - [ ] Advanced Sales Analytics
-    - [ ] White-label
+- [x] Add monetization
+  - [x] Notification
+    - [x] Beautify exists telegram messages
+  - [x] Subscriptions
+    - [x] Payment
+      - [x] Create
+      - [x] Checkout endpoint
+      - [x] Dummy Subscription
+      - [x] Frontend
+        - [x] Donation wall
+        - [x] Payment page
+          - [x] Donation
+          - [x] Subscription
+        - [x] Settings
+          - [x] Subscriptions
+        - [x] Buy subscriptions page
+    - [x] Anonymus invoices
+    - [x] Limits
+- [ ] WaitList
+  - [ ] Custom tokens \ blockchains
+  - [ ] Advanced Sales Analytics
+  - [ ] White-label
+- [ ] Instant blockchain verification
+  - [ ] Add high priority queue to check
 - [ ] Redirect on pay - if subscription - check blockchain instantly
 - [ ] Add basic statistics for sellers (number of transactions, total amounts for a period)
 - [ ] Automate QR code generation for invoices

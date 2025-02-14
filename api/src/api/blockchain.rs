@@ -3,15 +3,14 @@ use std::io;
 use std::io::Read;
 use std::path::Path as StdPath;
 use std::sync::Arc;
-use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{Json, Router};
 use axum::extract::{Path, State};
 use axum::routing::get;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use tracing::error;
 use crate::api::ping_pong::ping_pong;
+use crate::api::response_error::ResponseError;
 use crate::api::state::AppState;
 use crate::network::{Addresses, Network};
 use crate::utils;
@@ -38,14 +37,18 @@ struct Info {
 
 async fn get_info(
     State(state): State<Arc<AppState>>
-) -> Result<impl IntoResponse, StatusCode> {
-    let erc20_abi = load_json_from_file(utils::get_env_var("ERC20_ABI_PATH")
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?)
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+) -> Result<impl IntoResponse, ResponseError> {
+    let erc20_abi = load_json_from_file(
+        utils::get_env_var("ERC20_ABI_PATH")
+            .map_err(ResponseError::from_error)?
+    )
+        .map_err(|err| ResponseError::from_error(format!("{err:?}")))?;
 
-    let contract_abi = load_json_from_file(utils::get_env_var("CONTRACT_ABI_PATH")
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?)
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let contract_abi = load_json_from_file(
+        utils::get_env_var("CONTRACT_ABI_PATH")
+            .map_err(ResponseError::from_error)?
+    )
+        .map_err(|err| ResponseError::from_error(format!("{err:?}")))?;
 
     let response = Info {
         networks: state.networks
@@ -109,14 +112,14 @@ struct GasFeeDetails {
 async fn get_suggested_gas_fees(
     State(state): State<Arc<AppState>>,
     Path(network_id): Path<i64>,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> Result<impl IntoResponse, ResponseError> {
     let allowed_ids = state
         .networks
         .iter()
         .map(|n| n.id)
         .collect::<Vec<i64>>();
     if !allowed_ids.contains(&network_id) {
-        return Err(StatusCode::BAD_REQUEST);
+        return Err(ResponseError::Bad("Unknown network_id".to_string()));
     }
 
     if let Ok(Some(value)) = state.redis.get_suggested_gas_fees(&network_id).await {
@@ -127,21 +130,17 @@ async fn get_suggested_gas_fees(
 
     let value = utils::get_suggested_gas_fees(&state.infura_token, network_id)
         .await
-        .map_err(|err| {
-            error!(err);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+        .map_err(ResponseError::from_error)?;
 
     let response = serde_json::from_value::<GasPriceResponse>(value)
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(|err| ResponseError::from_error(format!("{err:?}")))?;
 
-    if let Err(err) = state.redis.set_suggested_gas_fees(
+    state.redis.set_suggested_gas_fees(
         &network_id, serde_json::to_string(&response.clone())
-            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?,
-    ).await {
-        error!(err);
-        return Err(StatusCode::INTERNAL_SERVER_ERROR);
-    }
+            .map_err(|err| ResponseError::from_error(format!("{err:?}")))?,
+    ).
+        await
+        .map_err(ResponseError::from_error)?;
 
     Ok(Json(json!({ "source": "api", "data": response })))
 }

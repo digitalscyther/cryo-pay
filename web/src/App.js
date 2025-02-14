@@ -7,7 +7,9 @@ import Cookies from "js-cookie";
 import Home from './components/Home';
 import About from './components/About';
 import Contact from './components/Contact';
+import DonationPage from './components/donate/DonationPage';
 import Invoice from './components/invoice/Invoice';
+import Payment from './components/payment/Payment';
 import Auth from './components/Auth';
 import Account from './components/settings/Account';
 import NotFound from './components/NotFound';
@@ -85,6 +87,7 @@ function App() {
                             <Nav.Link href="/dashboard" active={isActive("/dashboard")}>Dashboard</Nav.Link>
                             <Nav.Link href="/docs" active={isActive("/docs")}>Documentation</Nav.Link>
                             <Nav.Link href="/about" active={isActive("/about")}>About</Nav.Link>
+                            <Nav.Link href="/donate" active={isActive("/donate")}>Donate</Nav.Link>
                             <Nav.Link href="/contact" active={isActive("/contact")}>Contact</Nav.Link>
                             <div className="ms-lg-auto d-lg-flex">
                                 {!isLoggedIn ?
@@ -110,6 +113,8 @@ function App() {
                     <Route path="/docs" element={<Documentation/>}/>
                     <Route path="/login" element={<Auth onLogin={handleLogin}/>}/>
                     <Route path="/settings" element={<Account/>}/>
+                    <Route path="/donate" element={<DonationPage/>}/>
+                    <Route path="/payment/:payment_id" element={<Payment/>}/>
                     <Route path="*" element={<NotFound/>}/>
                 </Routes>
             </Container>

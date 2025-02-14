@@ -1,3 +1,5 @@
+pub mod billing;
+
 use bigdecimal::BigDecimal;
 use serde::Serialize;
 use sqlx::{PgPool, types::{chrono::NaiveDateTime, Uuid}};
@@ -28,12 +30,35 @@ pub struct Invoice {
     pub paid_at: Option<NaiveDateTime>,
     pub networks: Vec<i32>,
     pub user_id: Option<Uuid>,
+    pub external_id: Option<String>,
+    is_private: bool,
 }
 
 impl Invoice {
     pub fn web_url(&self) -> Result<String, String> {
-        utils::get_invoice_url(self.id)
+        utils::get_invoice_url(&self.id)
     }
+}
+
+pub async fn user_own_invoices(
+    pg_pool: &PgPool,
+    limit: i64,
+    offset: i64,
+    user_id: &Uuid,
+) -> Result<Vec<Invoice>, sqlx::Error> {
+    sqlx::query_as!(
+        Invoice,
+        r#"
+        SELECT * FROM invoice
+        WHERE user_id = $1
+        ORDER BY created_at DESC
+        LIMIT $2 OFFSET $3"#,
+        user_id,
+        limit,
+        offset,
+    )
+        .fetch_all(pg_pool)
+        .await
 }
 
 pub async fn list_invoices(
@@ -44,37 +69,55 @@ pub async fn list_invoices(
 ) -> Result<Vec<Invoice>, sqlx::Error> {
     match user_id {
         None => sqlx::query_as!(
-                Invoice,
-            "SELECT * FROM invoice ORDER BY created_at DESC LIMIT $1 OFFSET $2",
+            Invoice,
+            r#"
+            SELECT * FROM invoice
+            WHERE is_private = false
+            ORDER BY created_at DESC
+            LIMIT $1 OFFSET $2"#,
+            limit,
+            offset,
+        )
+            .fetch_all(pg_pool)
+            .await,
+        Some(user_id) => sqlx::query_as!(
+            Invoice,
+            r#"
+            SELECT invoice.* FROM invoice
+            WHERE is_private = false OR user_id = $1
+            ORDER BY created_at DESC
+            LIMIT $2 OFFSET $3"#,
+            user_id,
             limit,
             offset
         )
             .fetch_all(pg_pool)
-            .await,
-        Some(uid) => sqlx::query_as!(
-            Invoice,
-            "SELECT * FROM invoice WHERE user_id = $3 ORDER BY created_at DESC LIMIT $1 OFFSET $2",
-            limit,
-            offset,
-            uid
-        )
-            .fetch_all(pg_pool)
-            .await,
+            .await
     }
 }
 
-pub async fn create_invoice(pg_pool: &PgPool, amount: BigDecimal, seller: &str, networks: &Vec<i32>, user_id: Option<Uuid>) -> Result<Invoice, sqlx::Error> {
+pub async fn create_invoice(
+    pg_pool: &PgPool,
+    amount: BigDecimal,
+    seller: &str,
+    networks: &Vec<i32>,
+    user_id: Option<Uuid>,
+    external_id: Option<String>,
+    is_private: bool,
+) -> Result<Invoice, sqlx::Error> {
     sqlx::query_as!(
         Invoice,
         r#"
-        INSERT INTO invoice (amount, seller, networks, user_id)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO invoice (amount, seller, networks, user_id, external_id, is_private)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING *
         "#,
         amount,
         seller.to_lowercase(),
         networks,
-        user_id
+        user_id,
+        external_id,
+        is_private,
     )
         .fetch_one(pg_pool)
         .await
@@ -93,7 +136,7 @@ pub async fn get_invoice(db: &PgPool, id: &Uuid) -> Result<Option<Invoice>, sqlx
         .await
 }
 
-pub async fn get_is_owner(db: &PgPool, id: Uuid, user_id: Uuid) -> Result<bool, sqlx::Error> {
+pub async fn get_is_owner(db: &PgPool, id: &Uuid, user_id: &Uuid) -> Result<bool, sqlx::Error> {
     let result = sqlx::query!(
         r#"
         SELECT 1 AS some FROM invoice
@@ -502,7 +545,7 @@ pub async fn exists_callback_url(pg_pool: &PgPool, url: &str, user_id: &Uuid) ->
         .fetch_one(pg_pool)
         .await?
         .exists {
-        Some(exists) if !exists => return Ok(false),
+        Some(exists) if !exists => return Ok(true),
         _ => {}
     }
 

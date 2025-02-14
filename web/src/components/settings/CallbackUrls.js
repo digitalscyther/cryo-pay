@@ -37,7 +37,7 @@ function CallbackUrls() {
             setCallbackUrls([response.data, ...callbackUrls]);
             setNewUrl('');
         } catch (err) {
-            if (err.response && err.response.status === 409) {
+            if (err.response && err.response.status === 400) {
                 setError('You have reached the maximum number of allowed callback URLs.');
             } else {
                 setError('Failed to create callback URL.');
@@ -81,7 +81,7 @@ function CallbackUrls() {
                         />
                     </Col>
                     <Col xs={3}>
-                        <Button type="submit" variant="outline-dark" disabled={creating} block>
+                        <Button type="submit" variant="outline-dark" disabled={creating}>
                             {creating ? 'Adding...' : 'Add'}
                         </Button>
                     </Col>
@@ -89,7 +89,7 @@ function CallbackUrls() {
             </Form>
 
             {callbackUrls.length === 0 ? (
-                <div>No callback URLs available.</div>
+                <div>No callback URLs available. Any links are allowed.</div>
             ) : (
                 <ul className="list-unstyled">
                     {callbackUrls.map((url) => (

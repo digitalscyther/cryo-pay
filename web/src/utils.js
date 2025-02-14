@@ -49,12 +49,40 @@ export async function getBlockchainInfo() {
 
 export async function getInvoice(invoice_id) {
     return await axios.get(
-        apiUrl(`/payment/invoice/${invoice_id}`),
+        apiUrl(`/payment/invoice/${invoice_id}?with_own=true`),
         {withCredentials: true}
     );
 }
 
 export const getFullUrl = (path = '') => {
-  const baseUrl = window.location.origin;
-  return path ? new URL(path, baseUrl).href : baseUrl;
+    const baseUrl = window.location.origin;
+    return path ? new URL(path, baseUrl).href : baseUrl;
 };
+
+export const getAvailableNetworks = async () => {
+    try {
+        let response = await getBlockchainInfo();
+        return response.data.networks.map((item) => item.name )
+
+    } catch (err) {
+        console.error(err);
+        return [];
+    }
+}
+
+export const getBlockchainIconPath = (blockchain) => {
+    const iconMap = {
+        'arbitrum-one': '/files/arbitrum-arb-logo.svg',
+        'optimism': '/files/optimism-ethereum-op-logo.svg'
+    };
+
+    return iconMap[blockchain.toLowerCase()] || '/files/optimism-sepolia.svg';
+};
+
+export const getSubscriptionInfo = (key) => {
+    const info = {
+        'private_invoices': 'Enables the creation of private invoices that are excluded from the public invoice list. Only the creator can view these invoices within the interface, but they remain accessible to anyone with a direct link.',
+        'unlimited_invoices': 'Removes the invoice creation limit, allowing users to generate an unlimited number of invoices. This feature is particularly beneficial for high-volume users who exceed the restrictions imposed on free accounts.',
+    };
+    return info[key] || 'No information available for this subscription.';
+}

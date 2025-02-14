@@ -10,6 +10,7 @@ use uuid::Uuid;
 use crate::api::ping_pong::ping_pong;
 use crate::api::state::AppState;
 use crate::db;
+use crate::api::response_error::ResponseError;
 
 
 const CALLBACK_URLS_LIMIT: usize = 5;
@@ -44,11 +45,11 @@ impl From<db::CallbackUrl> for GetCallbackUrlResponse {
 async fn list(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<db::User>,
-) -> Result<impl IntoResponse, StatusCode> {
+) -> Result<impl IntoResponse, ResponseError> {
     let callback_urls = state.db
         .list_callback_urls(&user.id)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .map_err(ResponseError::from_error)?
         .into_iter()
         .map(|i| i.into())
         .collect::<Vec<GetCallbackUrlResponse>>();
@@ -65,20 +66,20 @@ async fn create(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<db::User>,
     Json(payload): Json<CreateCallbackUrlRequest>
-) -> Result<impl IntoResponse, StatusCode> {
+) -> Result<impl IntoResponse, ResponseError> {
     let callback_urls_number = state.db
         .count_callback_urls(&user.id)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+        .map_err(ResponseError::from_error)?;
 
     if callback_urls_number >= CALLBACK_URLS_LIMIT {
-        return Err(StatusCode::CONFLICT)
+        return Err(ResponseError::Bad("too many callback urls".to_string()))
     }
 
     let instance: GetCallbackUrlResponse = state.db
         .create_callback_url(&payload.url, &user.id)
         .await
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .map_err(ResponseError::from_error)?
         .into();
 
     Ok(Json(instance))
@@ -88,10 +89,11 @@ async fn destroy(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<db::User>,
     Path(callback_url_id): Path<Uuid>,
-) -> impl IntoResponse {
-    match state.db.delete_callback_url(&callback_url_id, &user.id).await {
-        Ok(true) => StatusCode::NO_CONTENT,
-        Ok(false) => StatusCode::NOT_FOUND,
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
-    }
+) -> Result<impl IntoResponse, ResponseError> {
+    Ok(match state.db.delete_callback_url(&callback_url_id, &user.id)
+        .await
+        .map_err(ResponseError::from_error)? {
+        true => StatusCode::NO_CONTENT,
+        false => return Err(ResponseError::NotFound),
+    })
 }

@@ -3,11 +3,12 @@ import { Container, Form, Button, Alert, Spinner } from 'react-bootstrap';
 import axios from 'axios';
 import ApiKeys from "./ApiKeys";
 import CallbackUrls from "./CallbackUrls";
+import Subscriptions from "./Subscriptions";
 import { apiUrl } from '../../utils';
 
 function Account() {
     const [settings, setSettings] = useState({
-        // email_notification: false,   // TODO 123
+        // email_notification: false,   // TODO notification_turned_off
         telegram_notification: false,
     });
     const [loading, setLoading] = useState(true);
@@ -58,8 +59,10 @@ function Account() {
 
     return (
         <Container>
-            <>
-                <h3>Notification Settings</h3>
+            <Subscriptions subscriptions={settings.subscriptions} />
+
+            <Container>
+                <h3>Notifications</h3>
 
                 <Form className="my-4 mx-3">
                     <div className="d-flex">
@@ -68,12 +71,12 @@ function Account() {
                             id="email-notification"
                             label="Email"
                             name="email_notification"
-                            // checked={settings.email_notification}    // TODO 123
+                            // checked={settings.email_notification}    // TODO notification_turned_off
                             checked={false}
                             onChange={handleChange}
-                            disabled    // TODO 123
+                            disabled    // TODO notification_turned_off
                         />
-                        <div className="ms-5 text-warning">Available only by subscription</div>
+                        <div className="ms-5 text-warning">Temporary Unavailable (contact if need)</div>
                     </div>
                     <Form.Check
                         type="switch"
@@ -94,10 +97,11 @@ function Account() {
                         <Button onClick={handleActivateBot} variant="outline-primary" size="sm">Activate Bot</Button>
                     </Alert>
                 )}
-            </>
+            </Container>
             <hr/>
             {/* Callback Urls Section */}
             <CallbackUrls/>
+            <hr/>
             {/* API Keys Section */}
             <ApiKeys/>
         </Container>

@@ -35,7 +35,7 @@ function ApiKeys() {
             setNewApiKey(response.data.key);
             setApiKeys([response.data.instance, ...apiKeys]);
         } catch (err) {
-            if (err.response && err.response.status === 409) {
+            if (err.response && err.response.status === 400) {
                 setError('You have exceeded the maximum number of API keys.');
             } else {
                 setError('Failed to create API key.');

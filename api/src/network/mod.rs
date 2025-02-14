@@ -16,6 +16,9 @@ pub struct Addresses {
 }
 
 impl Network {
+    pub fn default_vec() -> Result<Vec<Self>, String> {
+        Self::vec_from_env("NETWORKS")
+    }
     pub fn vec_from_env(env_name: &str) -> Result<Vec<Self>, String> {
         let env_val = utils::get_env_var(env_name)?;
 
