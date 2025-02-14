@@ -123,7 +123,7 @@ function SubscribeWindow({startDays, selectedSub, showModal, closeModal}) {
     }
 
     const handleSubscribe = async () => {
-        axios.post(apiUrl('/buy/subscription'), {days, target}, {withCredentials: true})
+        axios.post(apiUrl('/buy/subscription'), {days: parseInt(days), target}, {withCredentials: true})
             .then(response => {
                 window.location.href = response.data.payment_url;
             })
