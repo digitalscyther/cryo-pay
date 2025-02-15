@@ -3,7 +3,6 @@ import {Row, Col} from "react-bootstrap";
 import ApiEndpoints from "./ApiEndpoints";
 import Section from "./Section";
 import Sidebar from "./Sidebar";
-import {apiUrl} from "../../utils";
 
 const OverviewContent = () => (
     <>
@@ -175,9 +174,6 @@ const Documentation = () => {
         }
     }, []);
 
-    const urlInvoices = apiUrl("/payment/invoice");
-    const urlInvoicesInstance = apiUrl("/payment/invoice/:invoice_id");
-
     const sections = [
         {id: "overview", title: "Overview", content: (<OverviewContent/>)},
         {id: "limits", title: "Limits", content: (<LimitsContent/>)},
@@ -188,7 +184,7 @@ const Documentation = () => {
         {
             id: "api-endpoints",
             title: "API Endpoints",
-            content: (<ApiEndpoints urlInvoices={urlInvoices} urlInvoicesInstance={urlInvoicesInstance}/>),
+            content: (<ApiEndpoints/>),
         }
     ];
 

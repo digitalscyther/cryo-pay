@@ -1,6 +1,16 @@
 import {Alert, Table, Row, Col} from "react-bootstrap";
 import {apiUrl, getFullUrl, NETWORKS} from "../../utils";
 
+function getFullApiUrl(path) {
+    path = apiUrl(path);
+
+    if (path.startsWith("http")) {
+        return path;
+    }
+
+    return getFullUrl(path);
+}
+
 class Optional {
     constructor(value, type = null) {
         this.value = value;
@@ -207,7 +217,7 @@ const Endpoints = () => {
                         <td>
                             <Row className="d-flex flex-column">
                                 <Col>{m.request.method.toUpperCase()}</Col>
-                                <Col><code>{apiUrl(ep.path)}</code></Col>
+                                <Col><code>{getFullApiUrl(ep.path)}</code></Col>
                                 {m.request.query_params && (
                                     <Col>
                                         Query Params
@@ -241,7 +251,8 @@ const Endpoints = () => {
     )
 }
 
-function ApiEndpoints({urlInvoices, urlInvoicesInstance}) {
+function ApiEndpoints() {
+    let url_api_invoices = getFullApiUrl("/payment/invoice");
     let invoice_id = "3d9de564-c1b9-4e81-b98d-58160d163002";
     let invoice_url = getFullUrl("/invoices/:invoice_id");
     let invoice_url_example = getFullUrl(`/invoices/${invoice_id}`);
@@ -275,7 +286,7 @@ function ApiEndpoints({urlInvoices, urlInvoicesInstance}) {
         <h6>📜 Request Payload for Creating an Invoice</h6>
         <p>Here’s how the payload for creating a new invoice looks:</p>
         <pre>
-        {`POST ${urlInvoices} HTTP/1.1
+        {`POST ${url_api_invoices} HTTP/1.1
   Authorization: Bearer YOUR_API_KEY
   Content-Type: application/json
   
@@ -345,7 +356,7 @@ function ApiEndpoints({urlInvoices, urlInvoicesInstance}) {
 
         <h6>🎯 Pagination and Filtering</h6>
         <p>
-            The <code>GET {urlInvoices}</code> endpoint supports the following query
+            The <code>GET {url_api_invoices}</code> endpoint supports the following query
             parameters:
         </p>
         <ul>
