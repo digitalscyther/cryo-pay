@@ -15,7 +15,7 @@ import Account from './components/settings/Account';
 import NotFound from './components/NotFound';
 import Dashboard from './components/dashboard/Dashboard';
 import {apiUrl, getProjectName} from "./utils";
-import Documentation from "./components/Documentation";
+import Documentation from "./components/documentation/Documentation";
 
 function App() {
     const navigate = useNavigate();

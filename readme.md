@@ -133,6 +133,7 @@ INFURA_TOKEN=<infura_token>
   - [ ] Custom tokens \ blockchains
   - [ ] Advanced Sales Analytics
   - [ ] White-label
+- [ ] Api Documentation (Rapid | OpenApi)
 - [ ] Instant blockchain verification
   - [ ] Add high priority queue to check
 - [ ] Redirect on pay - if subscription - check blockchain instantly
