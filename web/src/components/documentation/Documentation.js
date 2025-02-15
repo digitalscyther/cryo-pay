@@ -31,15 +31,15 @@ const LimitsContent = () => (
         </p>
         <ul>
             <li>
-                <strong>Web Users:</strong> Up to 100 invoices per day.
+                <strong>Web Users:</strong> Up to 3 invoices per day.
             </li>
             <li>
-                <strong>API Users:</strong> Up to 1,000 invoices per day.
+                <strong>API Users:</strong> Up to 10 invoices per day.
             </li>
         </ul>
         <p>
-            If you need higher limits, please contact our support team to explore
-            available options.
+            If you need higher limits, please go to your user settings
+            (available for authorized users only) and select a subscription plan.
         </p>
     </>
 )
@@ -116,12 +116,12 @@ const MakingPaymentsContent = () => (
             </li>
             <li>Click "Pay Invoice" and confirm the payment in MetaMask.</li>
             <li>
-                Wait for the transaction to be confirmed on the blockchain (1–5
+                Wait for the transaction to be confirmed on the blockchain (30 seconds – 2
                 minutes on average).
             </li>
             <li>
                 Payment status will update automatically. Notifications will be
-                sent to both the buyer and seller upon completion.
+                sent to seller upon completion.
             </li>
         </ol>
         <p>
@@ -154,7 +154,7 @@ const FaqContent = () => (
             <li>
                 <strong>How can I receive notifications?</strong>
                 <p>
-                    Enable email notifications by verifying your email address in
+                    Enable email notifications in
                     "Settings." Link your Telegram account to activate bot
                     notifications.
                 </p>

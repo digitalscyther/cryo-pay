@@ -1,5 +1,5 @@
 import {Alert, Table, Row, Col} from "react-bootstrap";
-import {apiUrl, getFullUrl, NETWORKS} from "../../utils";
+import {apiUrl, exampleEthereumAddressHere, getFullUrl, NETWORKS} from "../../utils";
 
 function getFullApiUrl(path) {
     path = apiUrl(path);
@@ -44,6 +44,11 @@ const ENDPOINTS = [
                             "name": "offset",
                             "description": "The number of invoices to skip before starting to return results (default: 0).",
                             "value": new Optional(0)
+                        },
+                        {
+                            "name": "user_id",
+                            "description": "Filter invoices based on ownership. Use 'all' for all invoices or 'my' for only the authenticated user’s invoices (default: 'all').",
+                            "value": new Optional("my")
                         }
                     ]
                 },
@@ -55,7 +60,7 @@ const ENDPOINTS = [
                                 "id": "90ac15d3-58f8-4bf8-a899-61c64ba8693e",
                                 "created_at": "2025-02-14T23:05:16.272317",
                                 "amount": "1",
-                                "seller": "0xYourEthereumAddressHere",
+                                "seller": exampleEthereumAddressHere,
                                 "paid_at": "2025-02-14T23:05:38",
                                 "networks": [
                                     11155420,
@@ -68,7 +73,7 @@ const ENDPOINTS = [
                                 "id": "fd0c6d66-b06d-49a1-87f7-8a3d8234220c",
                                 "created_at": "2025-02-14T20:19:54.078568",
                                 "amount": "111",
-                                "seller": "0xYourEthereumAddressHere",
+                                "seller": exampleEthereumAddressHere,
                                 "paid_at": null,
                                 "networks": [
                                     11155420
@@ -95,7 +100,7 @@ const ENDPOINTS = [
                         {
                             "name": "seller",
                             "description": "The Ethereum address of the seller receiving the payment.",
-                            "value": "0xYourEthereumAddressHere"
+                            "value": exampleEthereumAddressHere
                         },
                         {
                             "name": "networks",
@@ -116,7 +121,7 @@ const ENDPOINTS = [
                             "id": "b92d6367-6bf1-49b8-8180-d7fb79d7c75b",
                             "created_at": "2025-02-15T17:18:54.976321",
                             "amount": "9.12",
-                            "seller": "0xYourEthereumAddressHere",
+                            "seller": exampleEthereumAddressHere,
                             "paid_at": null,
                             "networks": [
                                 10,
@@ -125,13 +130,17 @@ const ENDPOINTS = [
                             "external_id": "Foo"
                         }
                     },
-                    {"status": 400}
+                    {"status": 400},
+                    {
+                        "status": 429,
+                        "json": {"error": "too_many_requests"}
+                    },
                 ]
             },
         ]
     },
     {
-        "path": "/payment/invoice/<invoice_id>",
+        "path": "/payment/invoice/:invoice_id",
         "methods": [
             {
                 "info": {
@@ -148,7 +157,7 @@ const ENDPOINTS = [
                             "id": "b92d6367-6bf1-49b8-8180-d7fb79d7c75b",
                             "created_at": "2025-02-15T17:18:54.976321",
                             "amount": "9.12",
-                            "seller": "0xYourEthereumAddressHere",
+                            "seller": exampleEthereumAddressHere,
                             "paid_at": null,
                             "networks": [
                                 10,
@@ -292,7 +301,7 @@ function ApiEndpoints() {
   
   {
       "amount": "150.00",
-      "seller": "0xYourEthereumAddressHere",
+      "seller": "${exampleEthereumAddressHere}",
       "networks": [10, 42161]
   }`}
       </pre>
@@ -304,9 +313,7 @@ function ApiEndpoints() {
         {/* New Section: Accessing and Sharing Invoices */}
         <h6>🔗 Accessing and Sharing Invoices</h6>
         <p>
-            Once an invoice is created, it becomes available at a unique, shareable URL. You can find this URL in
-            the
-            invoice details.
+            Once an invoice is created, it becomes available at a unique, shareable URL.
             The format of the URL is:
         </p>
         <p><code>{invoice_url}</code></p>
@@ -353,48 +360,6 @@ function ApiEndpoints() {
             </tr>))}
             </tbody>
         </Table>
-
-        <h6>🎯 Pagination and Filtering</h6>
-        <p>
-            The <code>GET {url_api_invoices}</code> endpoint supports the following query
-            parameters:
-        </p>
-        <ul>
-            <li>
-                <strong>limit:</strong> The maximum number of invoices to retrieve
-                (default: 10).
-            </li>
-            <li>
-                <strong>offset:</strong> The number of invoices to skip before starting
-                retrieval (default: 0).
-            </li>
-            <li>
-                <strong>user_id:</strong> Filter invoices based on ownership. Use{" "}
-                <code>all</code> for all invoices or <code>my</code> for only the
-                authenticated user’s invoices (default: all).
-            </li>
-        </ul>
-
-        <h6>🚦 Response Codes</h6>
-        <p>Here are some common response codes and their meanings:</p>
-        <ul>
-            <li>
-                <strong>200 OK:</strong> The request was successful.
-            </li>
-            <li>
-                <strong>201 Created:</strong> The invoice was successfully created.
-            </li>
-            <li>
-                <strong>404 Not Found:</strong> The requested invoice does not exist.
-            </li>
-            <li>
-                <strong>401 Unauthorized:</strong> Invalid or missing API key.
-            </li>
-            <li>
-                <strong>429 Too Many Requests:</strong> You’ve exceeded the API rate
-                limit.
-            </li>
-        </ul>
     </>);
 }
 

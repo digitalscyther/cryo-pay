@@ -1,6 +1,6 @@
 import {Badge, Button, Collapse, Form, Modal, OverlayTrigger, Tooltip} from "react-bootstrap";
 import MetaMaskButton from "./MetaMaskButton";
-import {apiUrl, getBlockchainInfo, NETWORKS, sortNetworkItems} from "../../utils";
+import {apiUrl, exampleEthereumAddressHere, getBlockchainInfo, NETWORKS, sortNetworkItems} from "../../utils";
 import React, {useEffect, useState} from "react";
 import {useNavigate} from "react-router-dom";
 import axios from "axios";
@@ -50,7 +50,7 @@ function CreateInvoice() {
         if (!isValidEthereumAddress(newInvoice.seller)) {
             setValidationError(
                 <>
-                    Seller address must be a valid Ethereum address like (e.g., <code>0xYourEthereumAddressHere</code>).
+                    Seller address must be a valid Ethereum address like (e.g., <code>{exampleEthereumAddressHere}</code>).
                 </>
             );
             return;
