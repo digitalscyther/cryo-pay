@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Route, Routes, useLocation, useNavigate} from 'react-router-dom';
+import {Route, Routes, useLocation, useNavigate, useSearchParams} from 'react-router-dom';
 import {Container, Navbar, Nav} from 'react-bootstrap';
 import axios from "axios";
 import {jwtDecode} from "jwt-decode";
@@ -21,6 +21,8 @@ function App() {
     const navigate = useNavigate();
     const location = useLocation();
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [searchParams] = useSearchParams();
+    const noNavBar = searchParams.get("nnb") === "1";
 
     useEffect(() => {
         const checkAuth = () => {
@@ -78,30 +80,32 @@ function App() {
 
     return (
         <>
-            <Navbar bg="dark" variant="dark" expand="lg">
-                <Container>
-                    <Navbar.Brand href="/">{projectName}</Navbar.Brand>
-                    <Navbar.Toggle aria-controls="basic-navbar-nav"/>
-                    <Navbar.Collapse id="basic-navbar-nav">
-                        <Nav className="d-flex w-100">
-                            <Nav.Link href="/dashboard" active={isActive("/dashboard")}>Dashboard</Nav.Link>
-                            <Nav.Link href="/docs" active={isActive("/docs")}>Documentation</Nav.Link>
-                            <Nav.Link href="/about" active={isActive("/about")}>About</Nav.Link>
-                            <Nav.Link href="/donate" active={isActive("/donate")}>Donate</Nav.Link>
-                            <Nav.Link href="/contact" active={isActive("/contact")}>Contact</Nav.Link>
-                            <div className="ms-lg-auto d-lg-flex">
-                                {!isLoggedIn ?
-                                    <Nav.Link href="/login" active={isActive("/login")}>Login</Nav.Link>
-                                    : <>
-                                        <Nav.Link className="mx-lg-2" href="/settings"
-                                                  active={isActive("/settings")}>Settings</Nav.Link>
-                                        <Nav.Link className="mx-lg-2" onClick={handleLogout}>Logout</Nav.Link>
-                                    </>}
-                            </div>
-                        </Nav>
-                    </Navbar.Collapse>
-                </Container>
-            </Navbar>
+            {!noNavBar && (
+                <Navbar bg="dark" variant="dark" expand="lg">
+                    <Container>
+                        <Navbar.Brand href="/">{projectName}</Navbar.Brand>
+                        <Navbar.Toggle aria-controls="basic-navbar-nav"/>
+                        <Navbar.Collapse id="basic-navbar-nav">
+                            <Nav className="d-flex w-100">
+                                <Nav.Link href="/dashboard" active={isActive("/dashboard")}>Dashboard</Nav.Link>
+                                <Nav.Link href="/docs" active={isActive("/docs")}>Documentation</Nav.Link>
+                                <Nav.Link href="/about" active={isActive("/about")}>About</Nav.Link>
+                                <Nav.Link href="/donate" active={isActive("/donate")}>Donate</Nav.Link>
+                                <Nav.Link href="/contact" active={isActive("/contact")}>Contact</Nav.Link>
+                                <div className="ms-lg-auto d-lg-flex">
+                                    {!isLoggedIn ?
+                                        <Nav.Link href="/login" active={isActive("/login")}>Login</Nav.Link>
+                                        : <>
+                                            <Nav.Link className="mx-lg-2" href="/settings"
+                                                      active={isActive("/settings")}>Settings</Nav.Link>
+                                            <Nav.Link className="mx-lg-2" onClick={handleLogout}>Logout</Nav.Link>
+                                        </>}
+                                </div>
+                            </Nav>
+                        </Navbar.Collapse>
+                    </Container>
+                </Navbar>
+            )}
 
             <Container className="mt-3">
                 <Routes>

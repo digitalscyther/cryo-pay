@@ -265,8 +265,9 @@ function ApiEndpoints() {
     let invoice_id = "3d9de564-c1b9-4e81-b98d-58160d163002";
     let invoice_url = getFullUrl("/invoices/:invoice_id");
     let invoice_url_example = getFullUrl(`/invoices/${invoice_id}`);
+    let invoice_url_example_no_nav_bar = getFullUrl(`/invoices/${invoice_id}?nnb=1`);
     let callback_url = "https://foo.bar/baz";
-    let invoice_url_with_callback_url = getFullUrl(`/invoices/${invoice_id}?callback_url=${callback_url}`);
+    let invoice_url_with_callback_url = getFullUrl(`/invoices/${invoice_id}?nnb=1&callback_url=${callback_url}`);
     let redirect_url = `${callback_url}?invoice_id=${invoice_id}&status=SUCCESS`;
 
     return (<>
@@ -323,6 +324,11 @@ function ApiEndpoints() {
         <p><code>{invoice_url_example}</code></p>
         <p>
             You can share this URL directly with your clients for payment.
+        </p>
+        <p><code>{invoice_url_example_no_nav_bar}</code></p>
+        <p>
+            To hide the navigation bar for the client (recommended) — ensuring they focus solely on the payment process
+            — add the query parameter <code>nnb=1</code> to the URL.
         </p>
 
         {/* New Section: Callback URL for Post-Payment Redirection */}
