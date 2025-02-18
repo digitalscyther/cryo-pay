@@ -109,7 +109,7 @@ function App() {
 
             <Container className="mt-3">
                 <Routes>
-                    <Route path="/" element={<Home isLoggedIn={isLoggedIn}/>}/>
+                    <Route path="/" element={<Home/>}/>
                     <Route path="/invoices/:invoice_id" element={<Invoice/>}/>
                     <Route path="/dashboard" element={<Dashboard isLoggedIn={isLoggedIn}/>}/>
                     <Route path="/about" element={<About/>}/>

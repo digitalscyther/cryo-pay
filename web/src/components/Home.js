@@ -1,125 +1,200 @@
 import React, {useEffect, useState} from "react";
-import {Container, Row, Col, Button, Card} from "react-bootstrap";
+import {Container, Row, Col, Button, Card, ListGroup} from "react-bootstrap";
 import NetworkIcon from "./NetworkIcon";
+import ThumbnailWithZoom from "./ThumbnailWithZoom";
 import {getAvailableNetworks, getProjectName} from "../utils";
+import {Link} from "react-router-dom";
 
-const Home = ({isLoggedIn}) => {
-    const projectName = getProjectName();
+const projectName = getProjectName();
+
+const chooseReasons = [
+    {
+        title: "💎 Instant Crypto Payments",
+        text: "Get paid directly with no middlemen."
+    },
+    {
+        title: "🌐 Multi-Chain Support",
+        text: "Accept payments via Optimism, Arbitrum, and more."
+    },
+    {
+        title: "💻 Free API for Developers",
+        text: "Build your integrations without limits."
+    },
+    {
+        title: "🛡️ No Fees on Invoices",
+        text: "Pay only gas fees—no platform charges."
+    },
+    {
+        title: "📲 Real-Time Notifications",
+        text: "Get instant payment alerts via Telegram or email."
+    }
+];
+
+const reviews = [
+    {
+        text: `As a freelancer, ${projectName} has simplified my invoicing process. Fast and reliable!`,
+        author: "Alex R., Freelancer"
+    },
+    {
+        text: "Our business loves the multi-chain support and zero fees!",
+        author: "Jamie L., Business Owner"
+    },
+    {
+        text: "The real-time notifications and easy API integration are game-changers for our operations.",
+        author: "Taylor M., Tech Lead"
+    },
+    {
+        text: `No account needed, no hidden fees. ${projectName} is perfect for quick payments.`,
+        author: "Jordan S., Consultant"
+    }
+];
+
+const schemas = [
+    {
+        src: "/files/payment-scheme.svg",
+        title: (
+            <>
+                Payment Process:<br/>From Creation to Notification
+            </>
+        ),
+        description: "Visual representation of how payments are processed and notifications sent."
+    },
+    {
+        src: "/files/buy-scheme.svg",
+        title: "How It Works on the Blockchain",
+        description: "Understanding the decentralized nature of transactions with no middlemen."
+    },
+]
+
+const Home = () => {
     const [availableNetworks, setAvailableNetworks] = useState([]);
 
     useEffect(() => {
-        getAvailableNetworks().then((networks) => setAvailableNetworks(networks))
-    }, [])
+        getAvailableNetworks().then(setAvailableNetworks);
+    }, []);
 
     return (
-        <>
+        <Container fluid>
             {/* Hero Section */}
-            <Container fluid className="bg-dark text-white text-center py-5">
+            <div className="bg-dark text-white text-center py-5">
                 <Row>
                     <Col>
-                        <h1 className="display-4">Simplifying Payments for Sellers with Blockchain</h1>
+                        <h1 className="display-5">Create Crypto Invoices Instantly</h1>
+                        <h2 className="display-3 p-3">No Fees • No Sign-Up • Just a Link</h2>
+                        <p className="lead">Fast, secure, and free invoicing with decentralized networks.</p>
                         <Row className="justify-content-center mb-4">
-                            {availableNetworks.map((network) => (
+                            {availableNetworks.map(network => (
                                 <Col key={network} xs="auto" className="mx-2">
                                     <NetworkIcon size={40} networkName={network}/>
                                 </Col>
                             ))}
                         </Row>
-                        <p className="lead">
-                            Fast, secure, and low-cost invoicing powered by decentralized networks.
-                        </p>
-                        <div className="mt-4">
+                        <div className="mb-4">
                             <Button className="m-2" variant="light" size="lg" href="/dashboard">
-                                {isLoggedIn ? "Go to Dashboard" : "Get Started"}
+                                🚀 Create Invoice – It’s Free
                             </Button>
-                            <Button className="m-2" variant="outline-light" size="lg" href="/about">
-                                Learn More
+                            <Button className="m-2" variant="outline-light" size="lg" href="#how-it-works">
+                                🔍 Watch Demo
                             </Button>
                         </div>
                     </Col>
                 </Row>
-            </Container>
+            </div>
 
-            {/* Features Section */}
-            <Container className="mt-5">
-                <h2 className="text-center">Why Choose {projectName}?</h2>
-                <Row className="mt-4">
-                    <Col md={4} className="mb-3">
-                        <Card>
-                            <Card.Body>
-                                <Card.Title>Multiple Network Support</Card.Title>
-                                <Card.Text>
-                                    Seamlessly connect to Optimism, Arbitrum, and other blockchain networks.
-                                </Card.Text>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-                    <Col md={4} className="mb-3">
-                        <Card>
-                            <Card.Body>
-                                <Card.Title>Low Gas Fees</Card.Title>
-                                <Card.Text>
-                                    Our platform ensures minimal transaction costs with competitive gas prices.
-                                </Card.Text>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-                    <Col md={4} className="mb-3">
-                        <Card>
-                            <Card.Body>
-                                <Card.Title>Real-Time Notifications</Card.Title>
-                                <Card.Text>
-                                    Stay updated with instant notifications via email or Telegram.
-                                </Card.Text>
-                            </Card.Body>
-                        </Card>
-                    </Col>
+            <section className="my-5 text-center">
+                <h2>Explore Our Schemas</h2>
+                <Row className="justify-content-center d-flex">
+                    {schemas.map(({title, description, src}) => (
+                        <Col key={title} md={4} sm={6} xs={12} className="mb-4 d-flex">
+                            <Card className="shadow-lg border-0 rounded-2 d-flex flex-column h-100">
+                                <Card.Body className="d-flex flex-column">
+                                    <Card.Title className="fs-5">{title}</Card.Title>
+                                    <Card.Text className="text-muted small flex-grow-1 d-flex flex-column">
+                                        <p>{description}</p>
+                                        <div className="m-auto">
+                                            <ThumbnailWithZoom
+                                                src={src}
+                                                altText={title}
+                                                thumbnailWidthSize="250px"
+                                            />
+                                        </div>
+                                    </Card.Text>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                    ))}
                 </Row>
-            </Container>
+            </section>
 
-            {/* Testimonials Section */}
-            <Container className="my-5">
-                <h2 className="text-center">What Our Users Say</h2>
-                <Row className="mt-4">
-                    <Col md={6} className="mb-3">
-                        <Card>
-                            <Card.Body>
-                                <Card.Text>
-                                    "{projectName} has streamlined my invoicing process. The low gas fees are a
-                                    game-changer!"
-                                </Card.Text>
-                                <Card.Footer className="text-end">- Alex R.</Card.Footer>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-                    <Col md={6} className="mb-3">
-                        <Card>
-                            <Card.Body>
-                                <Card.Text>
-                                    "I love the multi-network support. Switching between chains has never been easier!"
-                                </Card.Text>
-                                <Card.Footer className="text-end">- Jamie L.</Card.Footer>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-                </Row>
-            </Container>
 
-            {/* Call-to-Action Section */}
-            <Container fluid className="bg-light text-center py-5">
-                <h2>Ready to Simplify Your Billing?</h2>
-                <p className="lead">Create invoices effortlessly and manage payments with ease.</p>
-                <div>
-                    <Button className="m-2" variant="dark" size="lg" href="/dashboard">
-                        Create an Invoice
-                    </Button>
-                    <Button className="m-2" variant="outline-dark" size="lg" href="/about">
-                        Learn More
-                    </Button>
+            {/* How It Works Section */}
+            <section id="how-it-works" className="my-5 text-center">
+                <h2>See How It Works (30 seconds)</h2>
+                <div className="d-flex justify-content-center my-4">
+                    <iframe
+                        width="560" height="315"
+                        src="https://www.youtube.com/embed/F7jpBl3cYXM"
+                        title="Demo video"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                    />
                 </div>
-            </Container>
-        </>
+                <h4>Create Your First Invoice in 3 Steps:</h4>
+                <ListGroup className="mx-auto my-3 d-flex">
+                    <div className="m-auto">
+                        <ListGroup.Item>1️⃣ Enter Amount and Description</ListGroup.Item>
+                        <ListGroup.Item>2️⃣ Share the Link with Your Client</ListGroup.Item>
+                        <ListGroup.Item>3️⃣ Get Paid in Crypto — Instantly!</ListGroup.Item>
+                    </div>
+                </ListGroup>
+            </section>
+
+            {/* Why Choose Section */}
+            <section className="my-5 text-center">
+                <h2>Why Choose {projectName}?</h2>
+                <Row className="justify-content-center">
+                    {chooseReasons.map(({title, text}) => (
+                        <Col key={title} md={3} className="mb-3">
+                            <Card>
+                                <Card.Body>
+                                    <Card.Title>{title}</Card.Title>
+                                    <Card.Text>{text}</Card.Text>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                    ))}
+                </Row>
+            </section>
+
+            {/* Reviews Section */}
+            <section className="my-5 text-center">
+                <h2>What Our Users Say</h2>
+                <Row className="justify-content-center">
+                    {reviews.map(({text, author}) => (
+                        <Col key={author} md={4} className="mb-3">
+                            <Card>
+                                <Card.Body>
+                                    <Card.Text>"{text}"</Card.Text>
+                                    <Card.Footer className="text-end">- {author}</Card.Footer>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                    ))}
+                </Row>
+            </section>
+
+            {/* Developer Section */}
+            <section className="my-5 text-center">
+                <h3>💻 For Developers</h3>
+                <p>
+                    Integrate <Link to="/docs#api-endpoints">our API</Link> and start accepting crypto payments today.
+                    Enjoy a free plan with up to 10 invoices/day.
+                </p>
+            </section>
+        </Container>
     );
-}
+};
 
 export default Home;
+
