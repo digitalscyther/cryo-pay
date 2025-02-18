@@ -66,6 +66,12 @@ const schemas = [
     },
 ]
 
+const steps = [
+    "1️⃣ Enter amount and invoice details — it takes seconds.",
+    "2️⃣ Share your unique payment link with your client instantly.",
+    "3️⃣ Receive crypto payments directly, with real-time notifications."
+]
+
 const Home = () => {
     const [availableNetworks, setAvailableNetworks] = useState([]);
 
@@ -80,7 +86,7 @@ const Home = () => {
                 <Row>
                     <Col>
                         <h1 className="display-5">Create Crypto Invoices Instantly</h1>
-                        <h2 className="display-3 p-3">No Fees • No Sign-Up • Just a Link</h2>
+                        <h2 className="display-3 p-3">No Fees, No Sign-Up, Just a Link</h2>
                         <p className="lead">Fast, secure, and free invoicing with decentralized networks.</p>
                         <Row className="justify-content-center mb-4">
                             {availableNetworks.map(network => (
@@ -102,7 +108,7 @@ const Home = () => {
             </div>
 
             <section className="my-5 text-center">
-                <h2>Explore Our Schemas</h2>
+                <h2>Explore how our platform works</h2>
                 <Row className="justify-content-center d-flex">
                     {schemas.map(({title, description, src}) => (
                         <Col key={title} md={4} sm={6} xs={12} className="mb-4 d-flex">
@@ -140,12 +146,13 @@ const Home = () => {
                         allowFullScreen
                     />
                 </div>
+                <p><i>Create and share your invoice in under 30 seconds — it's that easy!</i></p>
                 <h4>Create Your First Invoice in 3 Steps:</h4>
-                <ListGroup className="mx-auto my-3 d-flex">
+                <ListGroup className="mx-auto my-3 d-flex text-start">
                     <div className="m-auto">
-                        <ListGroup.Item>1️⃣ Enter Amount and Description</ListGroup.Item>
-                        <ListGroup.Item>2️⃣ Share the Link with Your Client</ListGroup.Item>
-                        <ListGroup.Item>3️⃣ Get Paid in Crypto — Instantly!</ListGroup.Item>
+                        {steps.map((text) => (
+                            <ListGroup.Item>{text}</ListGroup.Item>
+                        ))}
                     </div>
                 </ListGroup>
             </section>
