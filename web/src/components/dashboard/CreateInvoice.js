@@ -2,7 +2,7 @@ import {Badge, Button, Collapse, Form, Modal, OverlayTrigger, Tooltip} from "rea
 import MetaMaskButton from "./MetaMaskButton";
 import {apiUrl, exampleEthereumAddressHere, getBlockchainInfo, NETWORKS, sortNetworkItems} from "../../utils";
 import React, {useEffect, useState} from "react";
-import {useNavigate} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 import axios from "axios";
 import NetworkIcon from "../NetworkIcon";
 
@@ -12,7 +12,21 @@ const ExternalIdInfo = ({id, children, title}) => (
     </OverlayTrigger>
 );
 
-function CreateInvoice() {
+const externalIdInfoText = "This ID will be visible to the payer. You can use it as a name or for any other purpose.";
+
+const CreateInvoice = (
+    {
+        createBtn,
+        showExternalBlock = true,
+        promoFeature = (
+            <p className="mb-0">
+                Need API or custom settings?
+                <br/>
+                <Link to="/docs#api-endpoints">Explore more features →</Link>
+            </p>
+        )
+    }
+) => {
     const navigate = useNavigate();
     const [showModal, setShowModal] = useState(false);
     const [newInvoice, setNewInvoice] = useState({amount: '', seller: '', networks: [], external_id: ''});
@@ -23,22 +37,15 @@ function CreateInvoice() {
     const [showExternalId, setShowExternalId] = useState(false);
 
     useEffect(() => {
-        const fetchBlockchainInfo = async () => {
-            try {
-                const response = await getBlockchainInfo();
+        getBlockchainInfo()
+            .then((response) => {
                 const {networks} = response.data;
                 const toSetNetworks = networks.sort(sortNetworkItems).map((item) => item.id);
-
                 setNetworks(toSetNetworks);
-            } catch (err) {
-                console.error('Failed to fetch blockchain info');
-            }
-        };
-
-        fetchBlockchainInfo();
+            })
+            .catch((err) => console.error('Failed to fetch blockchain info:', err))
     }, []);
 
-    // Validation helper functions
     const isValidEthereumAddress = (address) => /^0x[a-fA-F0-9]{40}$/.test(address);
     const isValidAmount = (amount) => parseFloat(amount) > 0;
 
@@ -46,11 +53,11 @@ function CreateInvoice() {
         setValidationError(null);
         setError(null);
 
-        // Validation checks
         if (!isValidEthereumAddress(newInvoice.seller)) {
             setValidationError(
                 <>
-                    Seller address must be a valid Ethereum address like (e.g., <code>{exampleEthereumAddressHere}</code>).
+                    Seller address must be a valid Ethereum address like
+                    (e.g., <code>{exampleEthereumAddressHere}</code>).
                 </>
             );
             return;
@@ -71,7 +78,6 @@ function CreateInvoice() {
             return;
         }
 
-        // Prepare data for API call
         const data = {
             amount: newInvoice.amount,
             seller: newInvoice.seller,
@@ -83,7 +89,6 @@ function CreateInvoice() {
             data.external_id = newInvoice.external_id;
         }
 
-        // If validations pass, proceed with API call
         setCreating(true);
         axios
             .post(apiUrl('/payment/invoice'), data, {withCredentials: true})
@@ -113,28 +118,27 @@ function CreateInvoice() {
     };
 
     const handleUseMetaMaskAddress = async () => {
-        if (window.ethereum) {
-            try {
-                const accounts = await window.ethereum.request({method: 'eth_requestAccounts'});
+        if (!window.ethereum) {
+            console.error('MetaMask is not installed.');
+            return;
+        }
+        window.ethereum.request({method: 'eth_requestAccounts'})
+            .then((accounts) => {
                 const address = accounts[0];
                 setNewInvoice({...newInvoice, seller: address});
-            } catch (error) {
-                console.error('Error fetching MetaMask address:', error);
-            }
-        } else {
-            console.error('MetaMask is not installed.');
-        }
+            })
+            .catch((err) => console.error('Error fetching MetaMask address:', err));
     };
 
-    let externalIdInfoText = (
-        "This ID will be visible to the payer. You can use it as a name or for any other purpose."
-    );
+    const openModal = () => setShowModal(true)
 
     return (
         <>
-            <Button variant="primary" onClick={() => setShowModal(true)} className="mb-3">
-                Create Invoice
-            </Button>
+            {createBtn ? createBtn(openModal) : (
+                <Button variant="primary" onClick={openModal} className="mb-3">
+                    Create Invoice
+                </Button>
+            )}
 
             <Modal show={showModal} onHide={() => setShowModal(false)}>
                 <Modal.Header closeButton>
@@ -186,7 +190,7 @@ function CreateInvoice() {
                             <Form.Label>Select Network(s)</Form.Label>
                             <div>
                                 {Object.values(NETWORKS)
-                                    .sort((a, b) => a.order - b.order)
+                                    .sort((a, b) => a.name.localeCompare(b.name))
                                     .map((network) => (
                                         <Form.Check
                                             key={network.id}
@@ -194,7 +198,12 @@ function CreateInvoice() {
                                             type="checkbox"
                                             label={(
                                                 <div className="my-2 mx-4">
-                                                    <NetworkIcon size={30} networkName={network.name} cursor={'pointer'} />
+                                                    <NetworkIcon
+                                                        size={30}
+                                                        networkName={network.name}
+                                                        cursor={'pointer'}
+                                                        helperSide='right'
+                                                    />
                                                 </div>
                                             )}
                                             value={network.id}
@@ -217,36 +226,42 @@ function CreateInvoice() {
                                     ))}
                             </div>
                         </Form.Group>
-                        <Form.Group controlId="formExternalId" className="mt-3">
-                            <Button
-                                variant="outline-primary"
-                                onClick={() => setShowExternalId(!showExternalId)}
-                                aria-controls="external-id-collapse"
-                                aria-expanded={showExternalId}
-                            >
-                                Add External ID
-                            </Button>
-                            <Collapse in={showExternalId}>
-                                <div id="external-id-collapse">
-                                    <Form.Label>
-                                        External ID (Optional){" "}<ExternalIdInfo
-                                        title={externalIdInfoText}
-                                        id="external-id-link"
-                                    ><Badge pill bg="secondary"> ? </Badge></ExternalIdInfo>
-                                    </Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        placeholder="Enter external ID"
-                                        value={newInvoice.external_id}
-                                        onChange={(e) => setNewInvoice({
-                                            ...newInvoice,
-                                            external_id: e.target.value
-                                        })}
-                                    />
-                                </div>
-                            </Collapse>
-                        </Form.Group>
-                    </Form>
+                        {showExternalBlock && (
+                            <Form.Group controlId="formExternalId" className="mt-3">
+                                <Button
+                                    variant="outline-primary"
+                                    onClick={() => setShowExternalId(!showExternalId)}
+                                    aria-controls="external-id-collapse"
+                                    aria-expanded={showExternalId}
+                                >
+                                    Add External ID
+                                </Button>
+                                <Collapse in={showExternalId}>
+                                    <div id="external-id-collapse">
+                                        <Form.Label>
+                                            External ID (Optional){" "}<ExternalIdInfo
+                                            title={externalIdInfoText}
+                                            id="external-id-link"
+                                        ><Badge pill bg="secondary"> ? </Badge></ExternalIdInfo>
+                                        </Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            placeholder="Enter external ID"
+                                            value={newInvoice.external_id}
+                                            onChange={(e) => setNewInvoice({
+                                                ...newInvoice,
+                                                external_id: e.target.value
+                                            })}
+                                        />
+                                    </div>
+                                </Collapse>
+                            </Form.Group>
+                        )
+                        }
+                    < /Form>
+                    <div className="mt-3">
+                        {promoFeature}
+                    </div>
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" onClick={() => setShowModal(false)}>

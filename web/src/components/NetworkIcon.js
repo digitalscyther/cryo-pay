@@ -22,7 +22,7 @@ const BaseImage = ({size, networkName, cursor}) => {
     )
 }
 
-const NetworkIcon = ({size, networkName, noTooltip, cursor}) => {
+const NetworkIcon = ({size, networkName, noTooltip, cursor, helperSide= 'top'}) => {
     if (noTooltip) {
         return (
             <BaseImage size={size} networkName={networkName} cursor={cursor} />
@@ -31,7 +31,7 @@ const NetworkIcon = ({size, networkName, noTooltip, cursor}) => {
 
     return (
         <OverlayTrigger
-            placement="top"
+            placement={helperSide}
             overlay={<Tooltip>{capitalizeWords(networkName)}</Tooltip>}
         >
             <div><BaseImage size={size} networkName={networkName} cursor={cursor} /></div>

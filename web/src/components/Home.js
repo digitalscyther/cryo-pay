@@ -2,6 +2,7 @@ import React, {useEffect, useState} from "react";
 import {Container, Row, Col, Button, Card, ListGroup} from "react-bootstrap";
 import NetworkIcon from "./NetworkIcon";
 import ThumbnailWithZoom from "./ThumbnailWithZoom";
+import CreateInvoice from "./dashboard/CreateInvoice";
 import {getAvailableNetworks, getProjectName} from "../utils";
 import {Link} from "react-router-dom";
 
@@ -96,9 +97,21 @@ const Home = () => {
                             ))}
                         </Row>
                         <div className="mb-4">
-                            <Button className="m-2" variant="light" size="lg" href="/dashboard">
-                                🚀 Create Invoice – It’s Free
-                            </Button>
+                            <CreateInvoice
+                                createBtn={(onClick) => (
+                                    <Button className="m-2" variant="light" size="lg" onClick={onClick}>
+                                        🚀 Create Invoice – It’s Free
+                                    </Button>
+                                )}
+                                showExternalBlock={false}
+                                promoFeature={(
+                                    <p className="mb-0">
+                                        Want more features?
+                                        <br/>
+                                        <Link to="/dashboard">Explore your Dashboard with all your invoices →</Link>
+                                    </p>
+                                )}
+                            />
                             <Button className="m-2" variant="outline-light" size="lg" href="#how-it-works">
                                 🔍 Watch Demo
                             </Button>
@@ -191,11 +204,22 @@ const Home = () => {
                 </Row>
             </section>
 
+            {/* Join Section - Enhanced */}
+            <section className="my-5 text-center bg-light p-4 rounded shadow">
+                <h2 className="fw-bold">🚀 Be Part of Something Big — Over 100 Invoices Created!</h2>
+                <p className="mt-2 fs-5 text-muted">Join a growing community simplifying payments and invoicing
+                    effortlessly.</p>
+                <Button className="m-2" variant="dark" size="lg" href="/dashboard">
+                    Get Started for Free
+                </Button>
+            </section>
+
             {/* Developer Section */}
             <section className="my-5 text-center">
                 <h3>💻 For Developers</h3>
                 <p>
-                    Integrate <Link to="/docs#api-endpoints">our API</Link> and start accepting crypto payments today.
+                    Integrate <Link to="/docs#api-endpoints">our API</Link> and start accepting crypto payments
+                    today.
                     Enjoy a free plan with up to 10 invoices/day.
                 </p>
             </section>
