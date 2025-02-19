@@ -12,6 +12,7 @@ function Controller({ invoice, own, erc20Abi, contractAbi, networks, waitPayment
     const [paymentSuccessful, setPaymentSuccessful] = useState(false);
     const [processingDelete, setDeleteProcessing] = useState(false);
     const [error, setError] = useState(null);
+    const isMetaMask = !!(window.ethereum || {}).isMetaMask;
 
     const handlePayment = async () => {
         const web3 = new Web3(window.ethereum);
@@ -132,11 +133,13 @@ function Controller({ invoice, own, erc20Abi, contractAbi, networks, waitPayment
             <Row className="align-items-center">
                 <Col className="text-start">
                     <Button
-                        variant={paymentSuccessful ? "success" : "primary"}
+                        variant={!isMetaMask ? "danger" : paymentSuccessful ? "success" : "primary"}
                         onClick={handlePayment}
-                        disabled={processingPayment || paymentSuccessful}
+                        disabled={processingPayment || paymentSuccessful || !isMetaMask}
                     >
-                        {paymentSuccessful
+                        {!isMetaMask
+                            ? 'Need install MetaMask'
+                            : paymentSuccessful
                             ? 'Checking...'
                             : processingPayment
                             ? 'Processing Payment...'
