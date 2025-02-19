@@ -1,35 +1,57 @@
-import React, {useState} from "react";
-import {Image, Modal} from "react-bootstrap";
+import React, {useEffect, useState} from "react";
+import {useSearchParams} from "react-router-dom";
+import {Button, Image, Modal} from "react-bootstrap";
 
-const ThumbnailWithZoom = ({ src, altText, thumbnailWidthSize}) => {
-  const [show, setShow] = useState(false);
+const ThumbnailWithZoom = ({src, altText, thumbnailWidthSize, uniqueId}) => {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [show, setShow] = useState(false);
 
-  return (
-    <>
-      {/* Small SVG */}
-      <img
-        src={src}
-        alt={altText}
-        style={{ width: `${thumbnailWidthSize}`, cursor: 'zoom-in' }}
-        onClick={() => setShow(true)}
-      />
+    useEffect(() => {
+        setShow(searchParams.get("zoom") === uniqueId);
+    }, [searchParams, uniqueId]);
 
-      {/* Modal with Full-Size SVG */}
-      <Modal show={show} onHide={() => setShow(false)} centered>
-        <Modal.Header closeButton>
-        </Modal.Header>
-        <Modal.Body className="d-flex justify-content-center">
-          <Image
-            src={src}
-            alt={altText}
-            fluid
-            onClick={() => setShow(false)}
-            style={{ cursor: 'zoom-out' }}
-          />
-        </Modal.Body>
-      </Modal>
-    </>
-  );
-}
+    const handleShow = () => {
+        const newParams = new URLSearchParams(searchParams);
+        newParams.set("zoom", uniqueId);
+        setSearchParams(newParams);
+    };
+
+    const handleClose = () => {
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete("zoom");
+        setSearchParams(newParams);
+    };
+
+    return (
+        <>
+            {/* Thumbnail */}
+            <img
+                src={src}
+                alt={altText}
+                style={{width: `${thumbnailWidthSize}`, cursor: "zoom-in"}}
+                onClick={handleShow}
+            />
+
+            {/* Modal */}
+            <Modal show={show} onHide={handleClose} centered>
+                <Modal.Header closeButton/>
+                <Modal.Body className="d-flex justify-content-center">
+                    <Image
+                        src={src}
+                        alt={altText}
+                        fluid
+                        onClick={handleClose}
+                        style={{cursor: "zoom-out"}}
+                    />
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={handleClose}>
+                        Close
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+        </>
+    );
+};
 
 export default ThumbnailWithZoom;

@@ -123,18 +123,19 @@ const Home = () => {
             <section className="my-5 text-center">
                 <h2>Explore how our platform works</h2>
                 <Row className="justify-content-center d-flex">
-                    {schemas.map(({title, description, src}) => (
-                        <Col key={title} md={4} sm={6} xs={12} className="mb-4 d-flex">
+                    {schemas.map(({title, description, src}, ind) => (
+                        <Col key={title} md={4} xs={12} className="mb-4 d-flex">
                             <Card className="shadow-lg border-0 rounded-2 d-flex flex-column h-100">
                                 <Card.Body className="d-flex flex-column">
                                     <Card.Title className="fs-5">{title}</Card.Title>
-                                    <Card.Text className="text-muted small flex-grow-1 d-flex flex-column">
+                                    <Card.Text as="div" className="text-muted small flex-grow-1 d-flex flex-column">
                                         <p>{description}</p>
                                         <div className="m-auto">
                                             <ThumbnailWithZoom
                                                 src={src}
                                                 altText={title}
                                                 thumbnailWidthSize="250px"
+                                                uniqueId={`${ind}`}
                                             />
                                         </div>
                                     </Card.Text>
@@ -163,8 +164,8 @@ const Home = () => {
                 <h4>Create Your First Invoice in 3 Steps:</h4>
                 <ListGroup className="mx-auto my-3 d-flex text-start">
                     <div className="m-auto">
-                        {steps.map((text) => (
-                            <ListGroup.Item>{text}</ListGroup.Item>
+                        {steps.map((text, ind) => (
+                            <ListGroup.Item key={ind}>{text}</ListGroup.Item>
                         ))}
                     </div>
                 </ListGroup>
