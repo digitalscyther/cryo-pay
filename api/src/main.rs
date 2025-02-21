@@ -1,6 +1,5 @@
 use tracing::Level;
 
-mod monitor;
 mod utils;
 mod api;
 mod db;
@@ -9,6 +8,7 @@ mod network;
 mod telegram;
 mod mailer;
 mod payments;
+mod monitoring;
 
 #[tokio::main]
 async fn main() -> Result<(), String> {
@@ -26,7 +26,7 @@ async fn main() -> Result<(), String> {
     let monitor_networks = networks.clone();
     let (monitor_db, monitor_telegram_client) = (db.clone(), telegram_client.clone());
     let monitor_handle = tokio::spawn(async move {
-        monitor::run_monitor(test, monitor_networks, monitor_db, monitor_telegram_client).await
+        monitoring::daemon::process_networks(test, monitor_networks, &monitor_db, &monitor_telegram_client).await
     });
 
     let (api_db, api_telegram_client) = (db.clone(), telegram_client.clone());

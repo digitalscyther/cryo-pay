@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::api::state::DB;
 use crate::db::Invoice;
 use crate::events::notifications::Notifier;
-use crate::monitor::MonitorAppState;
+use crate::monitoring::app_state::MonitorAppState;
 use crate::utils;
 
 
@@ -32,7 +32,7 @@ pub struct PayInvoiceEvent {
     pub amount: U128,
 }
 
-pub async fn just_print_log(log: Log) -> Result<(), String> {
+pub async fn just_print_log(log: &Log) -> Result<(), String> {
     parse_event(log)
         .map(|event| info!("New transaction event: {:?}", event))
 }
@@ -55,13 +55,13 @@ pub async fn set_invoice_paid(postgres_db: &DB, event: PayInvoiceEvent) -> Resul
     ).await
 }
 
-pub fn parse_event(log: Log) -> Result<PayInvoiceEvent, String> {
-    let log: RawLog = log.into();
+pub fn parse_event(log: &Log) -> Result<PayInvoiceEvent, String> {
+    let log: RawLog = log.clone().into();
     <PayInvoiceEvent as EthEvent>::decode_log(&log)
         .map_err(|err| utils::make_err(Box::new(err), "decode log"))
 }
 
-pub async fn process_log(app_state: Arc<MonitorAppState>, log: Log) -> Result<(), String> {
+pub async fn process_log(app_state: &MonitorAppState, log: &Log) -> Result<(), String> {
     let event = parse_event(log)?;
     let invoice = set_invoice_paid(&app_state.db, event).await?;
 
@@ -70,7 +70,7 @@ pub async fn process_log(app_state: Arc<MonitorAppState>, log: Log) -> Result<()
             .await?
             .into_iter()
             .map(|n| {
-                let app_state = app_state.clone();
+                let app_state = Arc::new(app_state.clone());
                 let invoice = invoice.clone();
                 tokio::spawn(async move {
                     n.notify(app_state, invoice).await

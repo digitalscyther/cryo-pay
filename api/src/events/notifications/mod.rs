@@ -2,7 +2,7 @@ use std::sync::Arc;
 use uuid::Uuid;
 use crate::api::state::DB;
 use crate::db::Invoice;
-use crate::monitor::MonitorAppState;
+use crate::monitoring::app_state::MonitorAppState;
 
 #[derive(Debug)]
 pub enum Notifier {
