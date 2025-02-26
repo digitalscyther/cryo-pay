@@ -13,9 +13,11 @@ run frontend local
 REACT_APP_BASE_API_URL=http://127.0.0.1:3001 REACT_APP_PROJECT_NAME=LOCALTest REACT_APP_CONTACTS={"email":"foo@bar.baz","telegram":"foo","linkedin":"foo"} npm start
 ```
 
-#### local
-
-##### front
+### Tips
+add migration
+```bash
+DATABASE_URL=postgres://cryo:example@localhost:6432/cryo sqlx migrate add -r <name>
+```
 
 
 ### api .env
@@ -129,6 +131,13 @@ INFURA_TOKEN=<infura_token>
         - [x] Buy subscriptions page
     - [x] Anonymus invoices
     - [x] Limits
+- [ ] Webhooks
+  - [ ] back-end
+    - [x] CRUD
+    - [ ] Sending success payments
+    - [ ] Accepting self invoices (subscriptions, donations)
+  - [x] front-end
+  - [ ] documentation
 - [ ] WaitList
   - [ ] Custom tokens \ blockchains
   - [ ] Advanced Sales Analytics
@@ -150,10 +159,3 @@ INFURA_TOKEN=<infura_token>
 - [ ] Implement export of reports (CSV, PDF) for sellers
 - [ ] Add the ability to customize notification frequency (e.g., immediately upon payment or once a day)
 - [ ] Include a privacy policy and terms of use
-
-
-### Tips
-add migration
-```bash
-DATABASE_URL=postgres://cryo:example@localhost:6432/cryo sqlx migrate add -r <name>
-```

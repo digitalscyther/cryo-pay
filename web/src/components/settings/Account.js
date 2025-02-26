@@ -4,6 +4,7 @@ import axios from 'axios';
 import ApiKeys from "./ApiKeys";
 import CallbackUrls from "./CallbackUrls";
 import Subscriptions from "./Subscriptions";
+import Webhooks from "./Webhooks";
 import { apiUrl } from '../../utils';
 
 function Account() {
@@ -101,6 +102,9 @@ function Account() {
             <hr/>
             {/* Callback Urls Section */}
             <CallbackUrls/>
+            <hr/>
+            {/* Webhook Urls Section */}
+            <Webhooks/>
             <hr/>
             {/* API Keys Section */}
             <ApiKeys/>

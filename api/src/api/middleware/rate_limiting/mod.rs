@@ -4,8 +4,6 @@ use chrono::Utc;
 use crate::api::middleware::auth::AppUser;
 use crate::api::state::Redis;
 
-const REDIS_TIMEOUT: u64 = 24 * 3600;
-
 pub enum Limit {
     Unlimited,
     Limited(u16),
@@ -26,7 +24,10 @@ impl RateLimit {
         match self.limit {
             Limit::Unlimited => Ok(true),
             Limit::Limited(times) => redis
-                .incr(&format!("{}:{}", app_user.redis_key(), self.suffix()), REDIS_TIMEOUT)
+                .incr(
+                    &format!("{}:{}", app_user.redis_key(), self.suffix()),
+                    self.period.in_seconds()
+                )
                 .await
                 .map(|done| times as u64 >= done)
         }
@@ -39,23 +40,41 @@ impl RateLimit {
             limit: Limit::Limited(10),
         }
     }
+
+    pub fn create_5_times_per_minute(target: Target) -> Self {
+        RateLimit {
+            target,
+            period: Period::Minute,
+            limit: Limit::Limited(5),
+        }
+    }
 }
 
 #[derive(Debug)]
 pub enum Target {
     ProductInvoice,
     UserInvoice,
-    Login
+    Login,
+    CreateUserWebhook
 }
 
 pub enum Period {
-    Day
+    Day,
+    Minute,
 }
 
 impl Period {
     fn suffix(&self) -> String {
         match self {
-            Period::Day => format!("{}", Utc::now().format("%Y-%m-%d"))
+            Period::Day => format!("{}", Utc::now().format("%Y-%m-%d")),
+            Period::Minute => format!("{}", Utc::now().format("%Y-%m-%dT%H:%M")),
+        }
+    }
+
+    fn in_seconds(&self) -> u64 {
+        match self {
+            Period::Day => 24 * 3600,
+            Period::Minute => 60
         }
     }
 }

@@ -1,5 +1,6 @@
 mod api_key;
 mod callback_url;
+mod webhook;
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -31,6 +32,7 @@ pub fn get_router(app_state: Arc<AppState>) -> Router {
         .route(ATTACH_TELEGRAM_PATH, get(attach_telegram))
         .nest("/api_key", api_key::get_router(app_state.clone()))
         .nest("/callback_url", callback_url::get_router(app_state.clone()))
+        .nest("/webhook", webhook::get_router(app_state.clone()))
         .layer(middleware::from_fn_with_state(app_state.clone(), only_web))
         .layer(middleware::from_fn_with_state(app_state.clone(), extract_user))
         .with_state(app_state)

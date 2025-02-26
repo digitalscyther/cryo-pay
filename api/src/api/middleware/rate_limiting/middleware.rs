@@ -15,6 +15,7 @@ pub enum RateLimitType {
     CreateProductInvoice,
     CreateUserInvoice,
     Login,
+    CreateUserWebhook
 }
 
 impl RateLimitType {
@@ -23,6 +24,7 @@ impl RateLimitType {
             RateLimitType::CreateProductInvoice => CreateProductInvoiceRateLimitGetter::get(app_user, db).await,
             RateLimitType::CreateUserInvoice => CreateUserInvoiceRateLimitGetter::get(app_user, db).await,
             RateLimitType::Login => LoginRateLimitGetter::get(app_user, db).await,
+            RateLimitType::CreateUserWebhook => CreateUserWebhookRateLimitGetter::get(app_user, db).await,
         }
     }
 
@@ -71,6 +73,15 @@ impl RateLimitType {
     ) -> Result<impl IntoResponse, ResponseError> {
         Self::Login.check(&state, &app_user, req, next).await
     }
+
+    pub async fn user_webhook(
+        State(state): State<Arc<AppState>>,
+        Extension(app_user): Extension<AppUser>,
+        req: Request,
+        next: Next,
+    ) -> Result<impl IntoResponse, ResponseError> {
+        Self::CreateUserWebhook.check(&state, &app_user, req, next).await
+    }
 }
 
 trait RateLimitGetter {
@@ -81,6 +92,7 @@ struct CreateProductInvoiceRateLimitGetter {}
 
 struct CreateUserInvoiceRateLimitGetter {}
 struct LoginRateLimitGetter {}
+struct CreateUserWebhookRateLimitGetter {}
 
 impl RateLimitGetter for CreateProductInvoiceRateLimitGetter {
     async fn get(app_user: &AppUser, db: &DB) -> Result<RateLimit, String> {
@@ -129,5 +141,11 @@ impl RateLimitGetter for CreateUserInvoiceRateLimitGetter {
 impl RateLimitGetter for LoginRateLimitGetter {
     async fn get(_: &AppUser, _: &DB) -> Result<RateLimit, String> {
         Ok(RateLimit::create_10_times_per_day(Target::Login))
+    }
+}
+
+impl RateLimitGetter for CreateUserWebhookRateLimitGetter {
+    async fn get(_: &AppUser, _: &DB) -> Result<RateLimit, String> {
+        Ok(RateLimit::create_5_times_per_minute(Target::CreateUserWebhook))
     }
 }

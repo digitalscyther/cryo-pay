@@ -8,7 +8,7 @@ use serde_json::Value;
 use sqlx::migrate::MigrateError;
 use sqlx::PgPool;
 use uuid::Uuid;
-use crate::db::{self, ApiKey, CallbackUrl, Invoice, User};
+use crate::db::{self, ApiKey, CallbackUrl, Invoice, User, Webhook};
 use crate::db::billing::{self, Payment, Subscription};
 use crate::network::Network;
 use crate::telegram::TelegramClient;
@@ -343,6 +343,33 @@ impl DB {
         billing::set_payment_paid(&self.pg_pool, id)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "set payment paid"))
+    }
+
+    pub async fn create_webhook(&self, url: &str, user_id: &Uuid) -> Result<Webhook, String> {
+        db::create_webhook(&self.pg_pool, url, user_id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "create webhook"))
+    }
+
+    pub async fn list_webhooks(&self, user_id: &Uuid) -> Result<Vec<Webhook>, String> {
+        db::list_webhooks_by_user_id(&self.pg_pool, user_id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "list webhooks"))
+    }
+
+    pub async fn delete_webhook(&self, webhook_id: &Uuid, user_id: &Uuid) -> Result<bool, String> {
+        db::delete_webhook_by_id_and_user_id(&self.pg_pool, webhook_id, user_id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "delete webhook"))
+    }
+
+    pub async fn count_webhooks(&self, user_id: &Uuid) -> Result<usize, String> {
+        match db::count_webhooks_by_user_id(&self.pg_pool, user_id)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "list webhooks"))? {
+            None => Err("count_webhooks didn't return value".to_string()),
+            Some(cnt) => Ok(cnt as usize)
+        }
     }
 }
 
