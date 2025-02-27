@@ -1,10 +1,12 @@
 use std::sync::Arc;
-use serde_json::json;
+use chrono::NaiveDateTime;
+use serde::{Deserialize, Serialize};
 use tracing::error;
 use uuid::Uuid;
 use crate::api::state::DB;
 use crate::db::Invoice;
 use crate::monitoring::app_state::MonitorAppState;
+use crate::utils;
 
 #[derive(Debug)]
 pub enum Notifier {
@@ -113,12 +115,27 @@ impl Notify for TelegramNotifier {
     }
 }
 
+#[derive(Deserialize, Serialize)]
+pub struct InvoicePaidNotification {
+    pub id: Uuid,
+    paid_at: NaiveDateTime,
+    pub status: String
+}
+
+impl InvoicePaidNotification {
+    fn new(id: Uuid, paid_at: NaiveDateTime, status: String) -> Self {
+        Self { id, paid_at, status }
+    }
+
+    fn from_invoice(invoice: &Invoice) -> Self {
+        Self::new(invoice.id, invoice.paid_at.unwrap_or_default(), "SUCCESS".to_string())
+    }
+}
+
 impl Notify for WebhooksNotifier {
     async fn notify(&self, app_state: Arc<MonitorAppState>, invoice: Invoice) -> Result<(), String> {
-        let payload = json!({
-            "invoice_id": invoice.id,
-            "paid_at": invoice.paid_at,
-        });
+        let payload = serde_json::to_value(InvoicePaidNotification::from_invoice(&invoice))
+            .map_err(|err| utils::make_err(Box::new(err), "notification into json"))?;
 
         for url in &self.urls {
             if let Err(err) = app_state.webhooker.send(url, &payload).await {

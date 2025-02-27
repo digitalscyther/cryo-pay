@@ -4,7 +4,7 @@ use reqwest::StatusCode;
 use serde_json::{json, Value};
 use tracing::error;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum ResponseError {
     Bad(String),
     InternalServerError(String),

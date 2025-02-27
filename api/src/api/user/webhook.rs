@@ -6,6 +6,7 @@ use axum::response::IntoResponse;
 use axum::routing::{delete, get, post};
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use url::Url;
 use uuid::Uuid;
 use crate::api::middleware::rate_limiting::middleware::RateLimitType;
@@ -68,7 +69,11 @@ impl CreateWebhookRequest {
         Url::parse(&self.url)
             .map_err(|_| "Invalid url")?;
 
-        match reqwest::Client::new().head(&self.url).send().await {
+        match reqwest::Client::new()
+            .post(&self.url)
+            .header("content-type", "application/json")
+            .json(&json!({}))
+            .send().await {
             Ok(response) if response.status().is_success() => Ok(()),
             Ok(response) => Err(format!("URL returned status: {}", response.status())),
             Err(e) => Err(format!("Failed to reach URL: {}", e)),

@@ -1,4 +1,4 @@
-mod notifications;
+pub mod notifications;
 
 use std::fmt::Debug;
 use std::sync::Arc;

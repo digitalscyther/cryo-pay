@@ -131,18 +131,18 @@ INFURA_TOKEN=<infura_token>
         - [x] Buy subscriptions page
     - [x] Anonymus invoices
     - [x] Limits
-- [ ] Webhooks
-  - [ ] back-end
+- [x] Webhooks
+  - [x] back-end
     - [x] CRUD
     - [x] Sending success payments
-    - [ ] Accepting self invoices (subscriptions, donations)
+    - [x] Accepting self invoices (subscriptions, donations)
   - [x] front-end
-  - [ ] documentation
 - [ ] WaitList
   - [ ] Custom tokens \ blockchains
   - [ ] Advanced Sales Analytics
   - [ ] White-label
 - [ ] Api Documentation (Rapid | OpenApi)
+- [ ] Webhooks documentation
 - [ ] Instant blockchain verification
   - [ ] Add high priority queue to check
 - [ ] Redirect on pay - if subscription - check blockchain instantly
