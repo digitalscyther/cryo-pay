@@ -134,7 +134,7 @@ INFURA_TOKEN=<infura_token>
 - [ ] Webhooks
   - [ ] back-end
     - [x] CRUD
-    - [ ] Sending success payments
+    - [x] Sending success payments
     - [ ] Accepting self invoices (subscriptions, donations)
   - [x] front-end
   - [ ] documentation
