@@ -38,10 +38,12 @@ CONTRACT_ABI_PATH=/opt/data/invoice_abi.json
 EVENT_SIGNATURE=PayInvoiceEvent(string,address,address,uint128,uint128)
 NETWORKS=[{"name":"optimism-sepolia","id":11155420,"link":"https://optimism-sepolia.infura.io/v3/foo","addresses":{"erc20":"0x9A211fD6C60BdC4Cc1dB22cBe2f882ae527B1D87","contract":"..."}},{"name":"optimism","id":10,"link":"https://optimism-mainnet.infura.io/v3/foo","addresses":{"erc20":"0x94b008aa00579c1307b0ef2c499ad98a8ce58e58","contract":"..."}},{"name":"arbitrum","id":42161,"link":"https://arbitrum-mainnet.infura.io/v3/foo","addresses":{"erc20":"0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9","contract":"..."}}]
 TGBOT_TOKEN=foobarbaz
-WEB_BASE_URL=https://example.com:3000
 BREVO_API_KEY=foobarbaz
 EMAIL_SENDER=noreply@example.com
 INFURA_TOKEN=<infura_token>
+WEB_BASE_URL=https://example.com:3000
+API_GLOBAL_URL=http://127.0.0.1/api
+CRYO_PAY_API_KEY=<self_api_key>
 ```
 
 ## TODO
