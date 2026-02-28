@@ -72,6 +72,7 @@ export const getAvailableNetworks = async () => {
 
 export const getBlockchainIconPath = (blockchain) => {
     const iconMap = {
+        'arbitrum': '/files/arbitrum-arb-logo.svg',
         'arbitrum-one': '/files/arbitrum-arb-logo.svg',
         'optimism': '/files/optimism-ethereum-op-logo.svg'
     };
