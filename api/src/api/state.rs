@@ -1,7 +1,7 @@
 use bigdecimal::BigDecimal;
 use chrono::NaiveDateTime;
 use jsonwebtoken::{Algorithm, decode, DecodingKey, encode, EncodingKey, Header, Validation};
-use redis::{aio::MultiplexedConnection, AsyncCommands, ConnectionLike, RedisResult};
+use redis::{aio::ConnectionManager, AsyncCommands, ConnectionLike, RedisResult};
 use rs_firebase_admin_sdk::{credentials_provider, App, GcpCredentials, auth::token::{error::TokenVerificationError, jwt::JWToken, TokenVerifier}};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -42,7 +42,7 @@ pub struct JWT {
 
 #[derive(Clone)]
 pub struct Redis {
-    connection: MultiplexedConnection,
+    connection: ConnectionManager,
 }
 
 #[derive(Clone)]
@@ -409,13 +409,10 @@ pub enum VerifyError {
 
 impl Redis {
     async fn new() -> Result<Self, String> {
-        let mut client = redis::Client::open(utils::get_env_var("REDIS_URL")?)
+        let client = redis::Client::open(utils::get_env_var("REDIS_URL")?)
             .map_err(|e| utils::make_err(Box::new(e), "get redis client"))?;
 
-        assert!(client.check_connection());
-
-        let connection = client
-            .get_multiplexed_async_connection()
+        let connection = ConnectionManager::new(client)
             .await
             .map_err(|e| utils::make_err(Box::new(e), "get redis connection"))?;
 
