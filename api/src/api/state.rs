@@ -1,7 +1,8 @@
+use std::sync::Arc;
 use bigdecimal::BigDecimal;
 use chrono::NaiveDateTime;
 use jsonwebtoken::{Algorithm, decode, DecodingKey, encode, EncodingKey, Header, Validation};
-use redis::{aio::ConnectionManager, AsyncCommands, ConnectionLike, RedisResult};
+use redis::{aio::ConnectionManager, AsyncCommands, RedisResult};
 use rs_firebase_admin_sdk::{credentials_provider, App, GcpCredentials, auth::token::{error::TokenVerificationError, jwt::JWToken, TokenVerifier}};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -10,19 +11,23 @@ use sqlx::PgPool;
 use uuid::Uuid;
 use crate::db::{self, ApiKey, CallbackUrl, Invoice, User, Webhook};
 use crate::db::billing::{self, Payment, Subscription};
+use crate::monitoring::health::DaemonHealth;
 use crate::network::Network;
 use crate::telegram::TelegramClient;
 use crate::utils;
 
 const SUGGESTED_GAS_FEE_TIMEOUT: u64 = 60 * 10;
 
-pub async fn setup_app_state(networks: Vec<Network>, db: DB, telegram_client: TelegramClient) -> Result<AppState, String> {
+pub async fn setup_app_state(
+    networks: Vec<Network>, db: DB, telegram_client: TelegramClient,
+    daemon_health: Arc<DaemonHealth>,
+) -> Result<AppState, String> {
     let gc = GC::new().await?;
     let jwt = JWT::new()?;
     let redis = Redis::new().await?;
     let infura_token = utils::get_env_var("INFURA_TOKEN")?;
 
-    Ok(AppState { db, telegram_client, networks, gc, jwt, redis, infura_token })
+    Ok(AppState { db, telegram_client, networks, gc, jwt, redis, infura_token, daemon_health })
 }
 
 #[derive(Clone)]
@@ -54,6 +59,7 @@ pub struct AppState {
     pub jwt: JWT,
     pub redis: Redis,
     pub infura_token: String,
+    pub daemon_health: Arc<DaemonHealth>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -112,6 +118,14 @@ impl DB {
         sqlx::migrate!("./migrations")
             .run(&self.pg_pool)
             .await
+    }
+
+    pub async fn health_check(&self) -> Result<(), String> {
+        sqlx::query("SELECT 1")
+            .fetch_one(&self.pg_pool)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "postgres health check"))?;
+        Ok(())
     }
 
     pub async fn list_invoices(&self, limit: i64, offset: i64, user_id: Option<Uuid>) -> Result<Vec<Invoice>, String> {
@@ -417,6 +431,14 @@ impl Redis {
             .map_err(|e| utils::make_err(Box::new(e), "get redis connection"))?;
 
         Ok(Self { connection })
+    }
+
+    pub async fn health_check(&self) -> Result<(), String> {
+        redis::cmd("PING")
+            .query_async::<String>(&mut self.connection.clone())
+            .await
+            .map_err(|e| utils::make_err(Box::new(e), "redis health check"))?;
+        Ok(())
     }
 
     async fn get(&self, key: &str) -> Result<Option<String>, String> {

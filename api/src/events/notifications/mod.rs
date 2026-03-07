@@ -118,17 +118,17 @@ impl Notify for TelegramNotifier {
 #[derive(Deserialize, Serialize)]
 pub struct InvoicePaidNotification {
     pub id: Uuid,
-    paid_at: NaiveDateTime,
+    paid_at: Option<NaiveDateTime>,
     pub status: String
 }
 
 impl InvoicePaidNotification {
-    fn new(id: Uuid, paid_at: NaiveDateTime, status: String) -> Self {
+    fn new(id: Uuid, paid_at: Option<NaiveDateTime>, status: String) -> Self {
         Self { id, paid_at, status }
     }
 
     fn from_invoice(invoice: &Invoice) -> Self {
-        Self::new(invoice.id, invoice.paid_at.unwrap_or_default(), "SUCCESS".to_string())
+        Self::new(invoice.id, invoice.paid_at, "SUCCESS".to_string())
     }
 }
 

@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use tracing::Level;
 
 mod utils;
@@ -22,16 +23,21 @@ async fn main() -> Result<(), String> {
     let networks = network::Network::default_vec()?;
     let db = api::state::DB::new().await?;
     let telegram_client = telegram::TelegramClient::new().await?;
+    let daemon_health = Arc::new(monitoring::health::DaemonHealth::new());
 
     let monitor_networks = networks.clone();
     let (monitor_db, monitor_telegram_client) = (db.clone(), telegram_client.clone());
+    let monitor_health = daemon_health.clone();
     let monitor_handle = tokio::spawn(async move {
-        monitoring::daemon::process_networks(test, monitor_networks, &monitor_db, &monitor_telegram_client).await
+        monitoring::daemon::process_networks(
+            test, monitor_networks, &monitor_db, &monitor_telegram_client, monitor_health,
+        ).await
     });
 
     let (api_db, api_telegram_client) = (db.clone(), telegram_client.clone());
+    let api_health = daemon_health.clone();
     let api_handle = tokio::spawn(async move {
-        api::run_api(networks, api_db, api_telegram_client).await
+        api::run_api(networks, api_db, api_telegram_client, api_health).await
     });
 
     let (bot_db, bot_telegram_client) = (db.clone(), telegram_client.clone());

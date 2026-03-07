@@ -16,12 +16,6 @@ use crate::utils;
 
 
 #[derive(Debug, Clone, EthEvent)]
-struct NewTransaction {
-    #[ethevent(indexed)]
-    block_timestamp: U256,
-}
-
-#[derive(Debug, Clone, EthEvent)]
 pub struct PayInvoiceEvent {
     pub invoice_id: String,
     #[ethevent(indexed)]

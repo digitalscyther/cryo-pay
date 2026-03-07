@@ -5,10 +5,11 @@ use async_rate_limit::sliding_window::SlidingWindowRateLimiter;
 use ethers::middleware::Middleware;
 use ethers::prelude::{Http, Provider, U64};
 use ethers::types::{Filter, Log};
-use tracing::{error, info};
+use tracing::{error, info, warn};
 use crate::{events, utils};
 use crate::api::state::DB;
 use crate::monitoring::app_state::MonitorAppState;
+use crate::monitoring::health::{DaemonHealth, UNHEALTHY_ERROR_THRESHOLD};
 use crate::network::Network;
 use crate::telegram::TelegramClient;
 
@@ -200,7 +201,8 @@ async fn get_network_logs(
 }
 
 pub async fn process_networks(
-    test: bool, networks: Vec<Network>, db: &DB, telegram_client: &TelegramClient
+    test: bool, networks: Vec<Network>, db: &DB, telegram_client: &TelegramClient,
+    daemon_health: Arc<DaemonHealth>,
 ) -> Result<(), String> {
     let app_state = Arc::new(MonitorAppState::new(db.clone(), telegram_client.clone())?);
 
@@ -212,16 +214,31 @@ pub async fn process_networks(
     let base_filter = utils::get_env_var("EVENT_SIGNATURE")
         .map(|event_signature| Filter::new().event(&event_signature))?;
 
+    let mut consecutive_errors: u32 = 0;
+
     loop {
         for network in &networks {
             info!("Will be monitored {}", network.name);
-            let logs = get_network_logs(&network, &app_state.db, &base_filter, &limiter)
-                .await
-                .unwrap_or_else(|err| {
-                    error!("Failed get_network_logs: {err}");
-                    vec![]
+            let logs = match get_network_logs(&network, &app_state.db, &base_filter, &limiter).await {
+                Ok(logs) => {
+                    consecutive_errors = 0;
+                    daemon_health.record_success();
+                    logs
                 }
-            );
+                Err(err) => {
+                    consecutive_errors = consecutive_errors.saturating_add(1);
+                    daemon_health.record_failure(consecutive_errors);
+                    error!("Failed get_network_logs for {}: {err} (consecutive errors: {consecutive_errors})", network.name);
+
+                    if consecutive_errors == UNHEALTHY_ERROR_THRESHOLD {
+                        warn!("Daemon marked unhealthy after {consecutive_errors} consecutive errors");
+                    }
+
+                    let backoff = std::cmp::min(5u64.saturating_mul(1 << consecutive_errors.min(4)), 60);
+                    tokio::time::sleep(Duration::from_secs(backoff)).await;
+                    continue;
+                }
+            };
             info!("Found {} logs in {}", logs.len(), network.name);
 
             for log in logs {
@@ -234,5 +251,7 @@ pub async fn process_networks(
                 });
             }
         }
+
+        tokio::time::sleep(Duration::from_secs(5)).await;
     }
 }

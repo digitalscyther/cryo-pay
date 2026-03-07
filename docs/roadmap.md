@@ -19,8 +19,8 @@ Must-fix before scaling. These are production blockers.
 
 ### Reliability
 - [x] **Database backup strategy** — added `prodrigestivill/postgres-backup-local:17-alpine` sidecar with daily schedule, 7d/4w/6m retention
-- [ ] **Blockchain daemon resilience** — `monitoring/daemon.rs:202-238` runs an infinite loop with no supervisor restart, no health signal to the main process, and silently swallows errors (line 220-224). If it stops, payments go undetected
-- [ ] **Add health checks** — no `/health` endpoint checking DB/Redis connectivity; no Docker healthcheck directives
+- [x] **Blockchain daemon resilience** — added `DaemonHealth` shared state (atomics) between daemon and API; consecutive error tracking with exponential backoff (5s–60s); daemon marked unhealthy after 10 consecutive failures; 5s sleep between polling cycles
+- [x] **Add health checks** — `/health` endpoint checks PostgreSQL (SELECT 1), Redis (PING), and daemon liveness (heartbeat + staleness); returns 200/503 with JSON status; `/ping` kept for simple liveness
 
 ---
 
@@ -35,8 +35,8 @@ The codebase has essentially zero test coverage for business logic.
 - [ ] **Add tests to CI** — `build.yml` currently only builds Docker images, no test step
 
 ### Error Handling
-- [ ] **Stop silencing errors in daemon** — `monitoring/daemon.rs:220` converts RPC errors to empty vec; should retry with backoff and alert on repeated failure
-- [ ] **Fix `unwrap_or_default()` on `paid_at`** — `events/notifications/mod.rs:131` sends epoch time (1970-01-01) instead of actual payment time when field is None
+- [x] **Stop silencing errors in daemon** — replaced silent `unwrap_or_else` with explicit error handling: logs error with network name and consecutive count, sleeps with exponential backoff, marks daemon unhealthy after threshold
+- [x] **Fix `unwrap_or_default()` on `paid_at`** — changed `InvoicePaidNotification.paid_at` to `Option<NaiveDateTime>`; no more fake epoch timestamp in webhook payloads
 - [ ] **Add retry logic** for external API calls — Infura RPC, Brevo email, Telegram, webhook delivery. Currently all fire-and-forget
 - [ ] **Input validation** — no checks for negative amounts (`api/buy/donation.rs:36`), invalid network IDs (`api/payments/mod.rs:119`), or negative subscription days
 

@@ -19,8 +19,9 @@ use tower_http::trace::TraceLayer;
 use tracing::info;
 use uuid::Uuid;
 
-use ping_pong::ping_pong;
+use ping_pong::{ping_pong, health_check};
 use crate::api::state::DB;
+use crate::monitoring::health::DaemonHealth;
 use crate::network::Network;
 use crate::telegram::TelegramClient;
 use crate::utils as base_utils;
@@ -45,15 +46,23 @@ pub fn get_cryo_pay_callback_full_path() -> String {
 }
 
 
-pub async fn run_api(networks: Vec<Network>, db: DB, telegram_client: TelegramClient) -> Result<(), String> {
-    let app_state = state::setup_app_state(networks, db, telegram_client).await?;
+pub async fn run_api(
+    networks: Vec<Network>, db: DB, telegram_client: TelegramClient,
+    daemon_health: Arc<DaemonHealth>,
+) -> Result<(), String> {
+    let app_state = state::setup_app_state(networks, db, telegram_client, daemon_health).await?;
     app_state.db.run_migrations()
         .await
         .map_err(|err| base_utils::make_err(Box::new(err), "run migrations"))?;
     let app_state = Arc::new(app_state);
 
+    let health_router = Router::new()
+        .route("/health", get(health_check))
+        .with_state(app_state.clone());
+
     let mut router = Router::new()
         .route("/ping", get(ping_pong))
+        .merge(health_router)
         .nest("/auth", auth::get_router(app_state.clone()))
         .nest(USER_BASE_PATH, user::get_router(app_state.clone()))
         .nest(PAYMENT_BASE_PATH, payments::get_router(app_state.clone()))
