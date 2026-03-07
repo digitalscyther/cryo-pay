@@ -44,6 +44,8 @@ INFURA_TOKEN=<infura_token>
 WEB_BASE_URL=https://example.com:3000
 API_GLOBAL_URL=http://127.0.0.1/api
 CRYO_PAY_API_KEY=<self_api_key>
+CRYO_PAY_SELF_ADDRESS=<wallet_address>
+CRYO_PAY_RECIEVE_FROM_NETWORKS=["optimism-sepolia","optimism","arbitrum"]
 ```
 
 ## TODO
