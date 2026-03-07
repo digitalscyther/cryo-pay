@@ -34,6 +34,15 @@ struct FirebaseTokenRequest {
     token: String,
 }
 
+fn build_jwt_cookie(value: String) -> Cookie<'static> {
+    let mut cookie = Cookie::new("jwt", value);
+    cookie.set_path("/");
+    cookie.set_same_site(SameSite::Lax);
+    cookie.set_http_only(true);
+    cookie.set_secure(true);
+    cookie
+}
+
 async fn login(
     State(state): State<Arc<AppState>>,
     jar: CookieJar,
@@ -58,10 +67,8 @@ async fn login(
     let jwt = state.jwt.generate(user_id, email)
         .map_err(|err| ResponseError::from_error(format!("{err:?}")))?;
 
-    let mut cookie = Cookie::new("jwt", jwt);
+    let mut cookie = build_jwt_cookie(jwt);
     cookie.set_expires(OffsetDateTime::now_utc() + Duration::days(JWT_EXPIRE_DAYS));
-    cookie.set_path("/");
-    cookie.set_same_site(SameSite::None);   // TODO check is it good for prod
 
     Ok((StatusCode::OK, jar.add(cookie)))
 }
@@ -69,10 +76,8 @@ async fn login(
 async fn logout(
     jar: CookieJar,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let mut cookie = Cookie::new("jwt", "");
+    let mut cookie = build_jwt_cookie("".to_owned());
     cookie.set_max_age(Duration::seconds(0));
-    cookie.set_path("/");
-    cookie.set_same_site(SameSite::None);
 
     Ok((StatusCode::OK, jar.remove(cookie)))
 }

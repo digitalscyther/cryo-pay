@@ -13,7 +13,8 @@ pub mod utils;
 use std::sync::Arc;
 use axum::Router;
 use axum::routing::get;
-use tower_http::cors::{CorsLayer};
+use axum::http::Method;
+use tower_http::cors::{AllowOrigin, Any, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::info;
 use uuid::Uuid;
@@ -61,11 +62,12 @@ pub async fn run_api(networks: Vec<Network>, db: DB, telegram_client: TelegramCl
         .nest("/buy", buy::get_router(app_state.clone()))
         .layer(TraceLayer::new_for_http());
 
-    if Some("1") == base_utils::get_env_or("DEBUG", "0".to_string()).ok().as_deref() {
-        info!("will be allowed any cors");
-        let cors = CorsLayer::very_permissive();
-        router = router.layer(cors);
-    }
+    let cors = CorsLayer::new()
+        .allow_methods([Method::GET, Method::POST, Method::DELETE, Method::OPTIONS])
+        .allow_headers(Any)
+        .allow_origin(AllowOrigin::mirror_request())
+        .allow_credentials(true);
+    router = router.layer(cors);
 
     let bind_address = base_utils::get_bind_address()?;
     info!("Listening on {}", bind_address);

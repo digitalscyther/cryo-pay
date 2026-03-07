@@ -34,12 +34,18 @@ services:
     restart: always
     volumes:
       - ./files/nginx/conf.d:/etc/nginx/conf.d
-    ports:
-      - "8080:80"
     depends_on:
       - web
     networks:
       - nginx_network
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cryo-pay.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.cryo-pay.entrypoints=websecure"
+      - "traefik.http.routers.cryo-pay.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.cryo-pay.middlewares=security-headers@file"
+      - "traefik.http.services.cryo-pay.loadbalancer.server.port=80"
 
   postgres:
     image: postgres:17.0
@@ -71,6 +77,8 @@ networks:
     driver: bridge
   redis_network:
     driver: bridge
+  proxy:
+    external: true
 
 volumes:
     postgres_data:

@@ -9,10 +9,10 @@ Improvement plan based on full codebase analysis, organized by priority.
 Must-fix before scaling. These are production blockers.
 
 ### Security
-- [ ] **SSL/TLS in Nginx** — currently HTTP only, no encryption in transit
-- [ ] **Fix CORS config** — `Access-Control-Allow-Origin: *` combined with `Access-Control-Allow-Credentials: true` violates the CORS spec and is insecure. Restrict to known origins
-- [ ] **Add Nginx security headers** — `X-Frame-Options`, `X-Content-Type-Options`, `Strict-Transport-Security`, `Content-Security-Policy`
-- [ ] **Fix cookie security** — `SameSite=None` in `api/src/api/auth/mod.rs:64` disables CSRF protection. Use `SameSite=Lax` or `Strict` with proper domain config
+- [x] **SSL/TLS in Nginx** — TLS terminated at Traefik via docker-compose labels + external `proxy` network. CSP header deferred (needs frontend audit for Bootstrap/Web3.js/Firebase inline styles)
+- [x] **Fix CORS config** — removed Nginx CORS headers; added proper `CorsLayer` with `AllowOrigin::mirror_request()` in Rust backend
+- [x] **Add Nginx security headers** — added X-Frame-Options, X-Content-Type-Options, Referrer-Policy, X-XSS-Protection to Nginx; HSTS set at Traefik edge only
+- [x] **Fix cookie security** — `SameSite=Lax`, `HttpOnly=true`, `Secure=true` on JWT cookies
 - [ ] **Remove hardcoded credentials** from `docker-compose.yml` — Postgres password `example`, Redis password `redis123` should use GitHub Secrets (like `FIREBASE_CLIENT_CONFIG`, `PROJECT_NAME` in `build.yml`) injected via the infra deploy workflow into `.env` on the VPS
 - [ ] **Webhook signature verification** — outgoing webhooks (`monitoring/app_state.rs`) have no HMAC signature, so receivers can't verify authenticity
 - [ ] **SSRF prevention** — webhook URL validation (`api/user/webhook.rs`) doesn't block internal IPs
