@@ -56,3 +56,23 @@ DATABASE_URL=postgres://cryo:example@localhost:6432/cryo sqlx migrate add -r <na
 - Smart contract ABIs: `api/data/invoice_abi.json`, `api/data/erc20_abi.json`
 - SQLx offline mode (`SQLX_OFFLINE=true`) is used in Docker builds; regenerate `.sqlx/` cache with `cargo sqlx prepare` when queries change
 - Rust version: 1.92+ (set in `api/Dockerfile`)
+
+## Deployment
+
+### Pipeline
+- **Build** (`cryo-pay/.github/workflows/build.yml`): push to master → GitHub Actions builds API + Web Docker images → pushes to `ghcr.io/digitalscyther/cryo-pay-{api,web}:latest`
+- **Deploy** (`infra/.github/workflows/deploy-cryo-pay.yml`): triggers on compose file changes in infra repo → rsyncs compose files → writes `.env` from `CRYO_PAY_ENV` GitHub Secret → restarts services
+- **Watchtower** on VPS auto-pulls new images from GHCR
+
+### Fast local deploy (skip Actions for API)
+Build and push the Rust API image locally to avoid slow CI builds:
+```bash
+docker build -t ghcr.io/digitalscyther/cryo-pay-api:latest --target final api/
+docker push ghcr.io/digitalscyther/cryo-pay-api:latest
+ssh root@<VPS> "cd /opt/services/cryo-pay && docker compose pull api && docker compose up -d --force-recreate api"
+```
+Requires GHCR login: `echo "<PAT>" | docker login ghcr.io -u digitalscyther --password-stdin`
+
+### Credentials
+- Production `.env` is managed via `CRYO_PAY_ENV` GitHub Secret in the infra repo
+- To rotate credentials: update the GitHub Secret, then redeploy (or SSH in and update `.env` directly)

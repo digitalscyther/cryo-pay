@@ -13,8 +13,8 @@ pub mod utils;
 use std::sync::Arc;
 use axum::Router;
 use axum::routing::get;
-use axum::http::Method;
-use tower_http::cors::{AllowOrigin, Any, CorsLayer};
+use axum::http::{header, Method};
+use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::info;
 use uuid::Uuid;
@@ -64,7 +64,7 @@ pub async fn run_api(networks: Vec<Network>, db: DB, telegram_client: TelegramCl
 
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST, Method::DELETE, Method::OPTIONS])
-        .allow_headers(Any)
+        .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION, header::COOKIE])
         .allow_origin(AllowOrigin::mirror_request())
         .allow_credentials(true);
     router = router.layer(cors);
