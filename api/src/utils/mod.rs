@@ -86,6 +86,10 @@ pub fn new_api_key(user_id: Uuid) -> ApiKey {
     ApiKey::new(user_id)
 }
 
+pub fn generate_webhook_secret() -> String {
+    encode(thread_rng().gen::<[u8; 32]>())
+}
+
 pub fn get_bind_address() -> Result<String, String> {
     let host = get_env_var("HOST")?;
     let port = get_env_var("PORT")?;

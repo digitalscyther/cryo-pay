@@ -570,18 +570,20 @@ pub struct Webhook {
     pub id: Uuid,
     pub user_id: Uuid,
     pub url: String,
+    pub secret: String,
     pub created_at: NaiveDateTime,
 }
 
-pub async fn create_webhook(pg_pool: &PgPool, url: &str, user_id: &Uuid) -> Result<Webhook, sqlx::Error> {
+pub async fn create_webhook(pg_pool: &PgPool, url: &str, secret: &str, user_id: &Uuid) -> Result<Webhook, sqlx::Error> {
     sqlx::query_as!(
         Webhook,
         r#"
-        INSERT INTO webhook (url, user_id)
-        VALUES ($1, $2)
+        INSERT INTO webhook (url, secret, user_id)
+        VALUES ($1, $2, $3)
         RETURNING *
         "#,
         url,
+        secret,
         user_id
     )
     .fetch_one(pg_pool)

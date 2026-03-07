@@ -13,12 +13,12 @@ Must-fix before scaling. These are production blockers.
 - [x] **Fix CORS config** — removed Nginx CORS headers; added proper `CorsLayer` with `AllowOrigin::mirror_request()` in Rust backend
 - [x] **Add Nginx security headers** — added X-Frame-Options, X-Content-Type-Options, Referrer-Policy, X-XSS-Protection to Nginx; HSTS set at Traefik edge only
 - [x] **Fix cookie security** — `SameSite=Lax`, `HttpOnly=true`, `Secure=true` on JWT cookies
-- [ ] **Remove hardcoded credentials** from `docker-compose.yml` — Postgres password `example`, Redis password `redis123` should use GitHub Secrets (like `FIREBASE_CLIENT_CONFIG`, `PROJECT_NAME` in `build.yml`) injected via the infra deploy workflow into `.env` on the VPS
-- [ ] **Webhook signature verification** — outgoing webhooks (`monitoring/app_state.rs`) have no HMAC signature, so receivers can't verify authenticity
-- [ ] **SSRF prevention** — webhook URL validation (`api/user/webhook.rs`) doesn't block internal IPs
+- [x] **Remove hardcoded credentials** — replaced with `${VAR}` substitution in docker-compose.yml; dev defaults in docker-compose.dev.yml; added `.env.example`
+- [x] **Webhook signature verification** — HMAC-SHA256 signing with per-webhook secret, `X-Signature-256` + `X-Webhook-Timestamp` headers; backwards compatible (empty secret = no signature)
+- [x] **SSRF prevention** — blocks private IPs, loopback, link-local, Docker-internal hostnames before making HTTP requests; DNS rebinding not covered (requires custom resolver)
 
 ### Reliability
-- [ ] **Database backup strategy** — no backup mechanism exists for the `postgres_data` Docker volume
+- [x] **Database backup strategy** — added `prodrigestivill/postgres-backup-local:17-alpine` sidecar with daily schedule, 7d/4w/6m retention
 - [ ] **Blockchain daemon resilience** — `monitoring/daemon.rs:202-238` runs an infinite loop with no supervisor restart, no health signal to the main process, and silently swallows errors (line 220-224). If it stops, payments go undetected
 - [ ] **Add health checks** — no `/health` endpoint checking DB/Redis connectivity; no Docker healthcheck directives
 

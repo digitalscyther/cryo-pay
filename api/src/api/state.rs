@@ -345,8 +345,8 @@ impl DB {
             .map_err(|err| utils::make_err(Box::new(err), "set payment paid"))
     }
 
-    pub async fn create_webhook(&self, url: &str, user_id: &Uuid) -> Result<Webhook, String> {
-        db::create_webhook(&self.pg_pool, url, user_id)
+    pub async fn create_webhook(&self, url: &str, secret: &str, user_id: &Uuid) -> Result<Webhook, String> {
+        db::create_webhook(&self.pg_pool, url, secret, user_id)
             .await
             .map_err(|err| utils::make_err(Box::new(err), "create webhook"))
     }

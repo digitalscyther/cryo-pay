@@ -27,7 +27,7 @@ pub struct TelegramNotifier {
 
 #[derive(Debug)]
 pub struct WebhooksNotifier {
-    urls: Vec<String>,
+    endpoints: Vec<(String, String)>,  // (url, secret)
 }
 
 impl Notifier {
@@ -39,8 +39,8 @@ impl Notifier {
         Self::Telegram(TelegramNotifier::new(chat_id))
     }
 
-    pub fn from_webhooks_urls(urls: Vec<String>) -> Self {
-        Self::Webhooks(WebhooksNotifier::new(urls))
+    pub fn from_webhook_endpoints(endpoints: Vec<(String, String)>) -> Self {
+        Self::Webhooks(WebhooksNotifier::new(endpoints))
     }
 
     pub async fn notify(&self, app_state: Arc<MonitorAppState>, invoice: Invoice) -> Result<(), String> {
@@ -71,8 +71,8 @@ impl Notifier {
         let webhooks = db.list_webhooks(user_id).await?;
         if !webhooks.is_empty() {
             notifiers.push(
-                Notifier::from_webhooks_urls(
-                    webhooks.into_iter().map(|wh| wh.url).collect()
+                Notifier::from_webhook_endpoints(
+                    webhooks.into_iter().map(|wh| (wh.url, wh.secret)).collect()
                 )
             )
         }
@@ -98,8 +98,8 @@ impl TelegramNotifier {
 }
 
 impl WebhooksNotifier {
-    fn new(urls: Vec<String>) -> Self {
-        Self { urls }
+    fn new(endpoints: Vec<(String, String)>) -> Self {
+        Self { endpoints }
     }
 }
 
@@ -137,8 +137,8 @@ impl Notify for WebhooksNotifier {
         let payload = serde_json::to_value(InvoicePaidNotification::from_invoice(&invoice))
             .map_err(|err| utils::make_err(Box::new(err), "notification into json"))?;
 
-        for url in &self.urls {
-            if let Err(err) = app_state.webhooker.send(url, &payload).await {
+        for (url, secret) in &self.endpoints {
+            if let Err(err) = app_state.webhooker.send(url, secret, &payload).await {
                 error!(err)
             }
         }

@@ -72,6 +72,7 @@ dependencies = [
  "ethers",
  "futures",
  "hex",
+ "hmac",
  "jsonwebtoken 9.3.1",
  "rand 0.8.5",
  "redis",
