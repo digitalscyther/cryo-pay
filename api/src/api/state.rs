@@ -385,6 +385,77 @@ impl DB {
             Some(cnt) => Ok(cnt as usize)
         }
     }
+
+    #[cfg(test)]
+    pub fn from_pool(pool: PgPool) -> Self {
+        Self { pg_pool: pool }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bigdecimal::BigDecimal;
+
+    async fn setup_test_db() -> DB {
+        let url = std::env::var("DATABASE_URL")
+            .expect("DATABASE_URL must be set for integration tests");
+        let pool = PgPool::connect(&url).await
+            .expect("Failed to connect to test database");
+        let db = DB::from_pool(pool);
+        db.run_migrations().await
+            .expect("Failed to run migrations");
+        db
+    }
+
+    #[ignore]
+    #[tokio::test]
+    async fn test_invoice_lifecycle() {
+        let db = setup_test_db().await;
+
+        let invoice = db.create_invoice(
+            BigDecimal::from(10), "0xseller", &vec![10], None, None, false,
+        ).await.unwrap();
+
+        let fetched = db.get_invoice(&invoice.id).await.unwrap().unwrap();
+        assert_eq!(fetched.id, invoice.id);
+        assert!(fetched.paid_at.is_none());
+
+        let paid = db.set_invoice_paid(
+            invoice.id, "0xseller", BigDecimal::from(10), "0xbuyer",
+            chrono::Utc::now().naive_utc(),
+        ).await.unwrap();
+        assert!(paid.paid_at.is_some());
+    }
+
+    #[ignore]
+    #[tokio::test]
+    async fn test_user_get_or_create_idempotent() {
+        let db = setup_test_db().await;
+        let uid = format!("test-{}", Uuid::new_v4());
+        let u1 = db.get_or_create_user(&uid, None).await.unwrap();
+        let u2 = db.get_or_create_user(&uid, None).await.unwrap();
+        assert_eq!(u1.id, u2.id);
+    }
+
+    #[ignore]
+    #[tokio::test]
+    async fn test_api_key_crud() {
+        let db = setup_test_db().await;
+        let uid = format!("test-{}", Uuid::new_v4());
+        let user = db.get_or_create_user(&uid, None).await.unwrap();
+
+        db.create_api_key(&user.id, "test_hashed_key_for_integration_test").await.unwrap();
+
+        let keys = db.list_api_key(&user.id).await.unwrap();
+        assert_eq!(keys.len(), 1);
+
+        let deleted = db.delete_api_key(&keys[0].id, &user.id).await.unwrap();
+        assert!(deleted);
+
+        let keys_after = db.list_api_key(&user.id).await.unwrap();
+        assert_eq!(keys_after.len(), 0);
+    }
 }
 
 impl GC {

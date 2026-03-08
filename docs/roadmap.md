@@ -29,9 +29,9 @@ Must-fix before scaling. These are production blockers.
 The codebase has essentially zero test coverage for business logic.
 
 ### Testing
-- [ ] **Backend integration tests** — payment flow (create invoice → on-chain event → mark paid → notify), auth flow, API key auth. Deferred: requires Docker test infrastructure (PostgreSQL + Redis)
+- [x] **Backend integration tests** — invoice lifecycle (create → get → mark paid), user idempotency, API key CRUD; `#[ignore]` tests in `state.rs`; CI runs via `test-integration` job with postgres:17-alpine service
 - [x] **Backend unit tests** — added `#[cfg(test)]` modules with `rstest` across 6 files: payable pricing, subscription validation, network JSON parsing, rate limiting, utils, daemon health. 41 tests total
-- [ ] **Frontend component tests** — invoice creation, payment flow, settings CRUD. Deferred: needs axios/Firebase mocking infrastructure
+- [x] **Frontend component tests** — `ApiKeys.test.js` and `Webhooks.test.js`: loading/success/error states using `jest.mock('axios')` + React Testing Library
 - [x] **Frontend utility tests** — `utils.test.js` (13 tests) and `firebase.test.js` (8 tests); fixed `sortNetworkItems` bug (returned function instead of comparison)
 - [x] **Add tests to CI** — added `test-api` and `test-web` jobs to `build.yml`; Docker builds gated on test success via `needs:`
 

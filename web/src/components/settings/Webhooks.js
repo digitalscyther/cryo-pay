@@ -4,7 +4,7 @@ import axios from 'axios';
 import { apiUrl } from '../../utils';
 
 function Webhooks() {
-    const [webhooks, setWebhooks] = useState();
+    const [webhooks, setWebhooks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [creating, setCreating] = useState(false);

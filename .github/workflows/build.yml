@@ -32,8 +32,35 @@ jobs:
       - name: Run tests
         run: cd web && npm ci && CI=true npm test -- --watchAll=false
 
+  test-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cryo_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: api
+      - name: Run integration tests
+        run: cd api && cargo test -- --include-ignored
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/cryo_test
+
   build-api:
-    needs: [test-api]
+    needs: [test-api, test-integration]
     runs-on: ubuntu-latest
     permissions:
       contents: read
