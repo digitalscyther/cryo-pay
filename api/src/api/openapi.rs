@@ -1,7 +1,26 @@
 use utoipa::OpenApi;
+use utoipa::Modify;
+use utoipa::openapi::security::{ApiKey, ApiKeyValue, SecurityScheme};
+
+struct SecurityAddon;
+
+impl Modify for SecurityAddon {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        if let Some(components) = openapi.components.as_mut() {
+            components.add_security_scheme(
+                "jwt_cookie",
+                SecurityScheme::ApiKey(ApiKey::Cookie(ApiKeyValue::new("jwt"))),
+            );
+        }
+    }
+}
 
 #[derive(OpenApi)]
 #[openapi(
+    modifiers(&SecurityAddon),
+    servers(
+        (url = "/api", description = "API server")
+    ),
     paths(
         crate::api::ping_pong::ping_pong,
         crate::api::ping_pong::health_check,
