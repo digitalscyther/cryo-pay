@@ -1,6 +1,6 @@
 import React, {useEffect} from "react";
 import {Row, Col} from "react-bootstrap";
-import ApiEndpoints from "./ApiEndpoints";
+import {apiUrl, NETWORKS} from "../../utils";
 import Section from "./Section";
 import Sidebar from "./Sidebar";
 
@@ -231,6 +231,44 @@ const FaqContent = () => (
     </>
 )
 
+const ApiReferenceContent = () => (
+    <>
+        <p>Browse and try every endpoint interactively:</p>
+        <p>
+            <a
+                href={apiUrl('/swagger-ui/')}
+                target="_blank"
+                rel="noreferrer"
+                className="btn btn-primary"
+            >
+                Open Swagger UI ↗
+            </a>
+        </p>
+        <hr />
+        <h5>Authentication</h5>
+        <p>
+            <strong>API key</strong> (Bearer token) — works for <code>/payment/*</code> and{' '}
+            <code>/blockchain/*</code> routes. Obtain from Settings → API Keys.
+        </p>
+        <p>
+            <strong>Session cookie</strong> — required for all <code>/user/*</code> routes.
+            Log in via the web UI; the cookie is set automatically.
+        </p>
+        <hr />
+        <h5>Supported Networks</h5>
+        <table className="table table-bordered table-sm">
+            <thead>
+                <tr><th>Chain ID</th><th>Network</th></tr>
+            </thead>
+            <tbody>
+                {Object.values(NETWORKS).sort((a, b) => a.order - b.order).map(n => (
+                    <tr key={n.id}><td>{n.id}</td><td>{n.name}</td></tr>
+                ))}
+            </tbody>
+        </table>
+    </>
+);
+
 const Documentation = () => {
     useEffect(() => {
         const hash = window.location.hash;
@@ -250,11 +288,7 @@ const Documentation = () => {
         {id: "notifications", title: "Notifications", content: (<NotificationsContent/>)},
         {id: "webhooks", title: "Webhooks", content: (<WebhooksContent/>)},
         {id: "faq", title: "FAQ", content: (<FaqContent/>)},
-        {
-            id: "api-endpoints",
-            title: "API Endpoints",
-            content: (<ApiEndpoints/>),
-        }
+        {id: "api-reference", title: "API Reference", content: (<ApiReferenceContent/>)},
     ];
 
     return (<>
