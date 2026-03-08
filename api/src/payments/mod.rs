@@ -1,4 +1,6 @@
 use bigdecimal::BigDecimal;
+use sha2::{Sha256, Digest};
+use url::Url;
 use uuid::Uuid;
 use crate::api::get_cryo_pay_callback_full_path;
 use crate::network::Network;
@@ -45,10 +47,16 @@ impl ToPay {
     pub fn payment_url(&self) -> Result<String, String> {
         let global_api_url = utils::ApiGlobalUrl::get()?.url()?;
         let callback_path = get_cryo_pay_callback_full_path();
-        let callback_url = utils::combine_paths(&[&global_api_url, &callback_path]);
+
+        let secret = utils::get_env_var("APP_SECRET")?;
+        let token = hex::encode(Sha256::digest(format!("internal:{}", secret)));
+
+        let mut callback_url = Url::parse(&utils::combine_paths(&[&global_api_url, &callback_path]))
+            .map_err(|err| utils::make_err(Box::new(err), "parse callback url"))?;
+        callback_url.query_pairs_mut().append_pair("token", &token);
 
         let payment_path = match self.id {
-            ToPayId::CryoPay(id) => get_payment_path(&id, Some(callback_url))?
+            ToPayId::CryoPay(id) => get_payment_path(&id, Some(callback_url.to_string()))?
         };
 
         Ok(utils::combine_paths(&[&utils::web_base_url()?, &payment_path]))

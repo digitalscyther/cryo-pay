@@ -14,7 +14,7 @@ use std::sync::Arc;
 use axum::Router;
 use axum::routing::get;
 use axum::http::{header, Method};
-use tower_http::cors::{AllowOrigin, CorsLayer};
+use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing::info;
 use uuid::Uuid;
@@ -71,10 +71,14 @@ pub async fn run_api(
         .nest("/buy", buy::get_router(app_state.clone()))
         .layer(TraceLayer::new_for_http());
 
+    let web_origin = base_utils::web_base_url()
+        .and_then(|url| url.parse::<header::HeaderValue>()
+            .map_err(|e| format!("Invalid WEB_BASE_URL for CORS: {e}")))?;
+
     let cors = CorsLayer::new()
         .allow_methods([Method::GET, Method::POST, Method::DELETE, Method::OPTIONS])
         .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION, header::COOKIE])
-        .allow_origin(AllowOrigin::mirror_request())
+        .allow_origin(web_origin)
         .allow_credentials(true);
     router = router.layer(cors);
 

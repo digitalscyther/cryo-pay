@@ -36,6 +36,19 @@ pub async fn set_invoice_paid(postgres_db: &DB, event: PayInvoiceEvent) -> Resul
     let invoice_id = Uuid::parse_str(&event.invoice_id)
         .map_err(|err| utils::make_err(Box::new(err), "parse invoice_id"))?;
 
+    let paid_amount = BigDecimal::from(event.amount.as_u128()) / BigDecimal::from(1_000_000u128);
+
+    let stored = postgres_db.get_invoice(&invoice_id)
+        .await?
+        .ok_or_else(|| format!("Invoice {} not found", invoice_id))?;
+
+    if paid_amount < stored.amount {
+        return Err(format!(
+            "Underpayment on invoice {}: required {}, got {}",
+            invoice_id, stored.amount, paid_amount
+        ));
+    }
+
     let paid_at = DateTime::<Utc>::from_timestamp(event.paid_at.as_u64() as i64, 0)
         .map(|dt| dt.naive_utc())
         .ok_or_else(|| "Invalid timestamp".to_string())?;
@@ -43,7 +56,7 @@ pub async fn set_invoice_paid(postgres_db: &DB, event: PayInvoiceEvent) -> Resul
     postgres_db.set_invoice_paid(
         invoice_id,
         &format!("{:#020x}", event.seller),
-        BigDecimal::from(event.amount.as_u128()) / BigDecimal::from(1_000_000),
+        paid_amount,
         &format!("{:#020x}", event.payer),
         paid_at,
     ).await

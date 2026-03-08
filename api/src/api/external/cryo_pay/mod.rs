@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use axum::extract::{Query, State};
+use axum::http::HeaderMap;
 use axum::response::{IntoResponse, Redirect};
 use axum::{Json, Router};
 use axum::routing::{get, post};
@@ -30,12 +31,18 @@ pub fn get_router(app_state: Arc<AppState>) -> Router {
 struct PaymentQuery {
     invoice_id: Uuid,
     status: String,
+    token: Option<String>,
 }
 
 async fn callback(
     Query(payment_query): Query<PaymentQuery>,
     State(state): State<Arc<AppState>>,
 ) -> Result<impl IntoResponse, ResponseError> {
+    let token = payment_query.token.as_deref().unwrap_or("");
+    if token != state.jwt.internal_token() {
+        return Err(ResponseError::Unauthorized);
+    }
+
     if payment_query.status != "SUCCESS" {
         return Err(ResponseError::Bad("wrong status".to_string()));
     }
@@ -70,8 +77,18 @@ pub async fn apply_paid_by_id(state: &Arc<AppState>, id: &Uuid) -> Result<Paymen
 
 async fn webhook(
     State(state): State<Arc<AppState>>,
+    headers: HeaderMap,
     Json(payload): Json<Value>,
 ) -> Result<impl IntoResponse, ResponseError> {
+    let token = headers
+        .get("authorization")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.strip_prefix("Bearer "))
+        .unwrap_or("");
+    if token != state.jwt.internal_token() {
+        return Err(ResponseError::Unauthorized);
+    }
+
     match serde_json::from_value::<InvoicePaidNotification>(payload) {
         Err(err) => warn!("Failed parse InvoicePaidNotification: {:?}", err),
         Ok(payload) => match payload.status == "SUCCESS" {

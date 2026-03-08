@@ -1,5 +1,7 @@
 use std::sync::Arc;
 use bigdecimal::BigDecimal;
+use hex;
+use sha2;
 use chrono::NaiveDateTime;
 use jsonwebtoken::{Algorithm, decode, DecodingKey, encode, EncodingKey, Header, Validation};
 use redis::{aio::ConnectionManager, AsyncCommands, RedisResult};
@@ -102,6 +104,11 @@ impl JWT {
 
     pub fn claims_from_jwt(&self, jwt: &str) -> Result<Claims, String> {
         Claims::from_jwt(jwt, &self.secret)
+    }
+
+    pub fn internal_token(&self) -> String {
+        use sha2::{Sha256, Digest};
+        hex::encode(Sha256::digest(format!("internal:{}", self.secret)))
     }
 }
 

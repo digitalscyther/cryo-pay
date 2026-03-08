@@ -22,9 +22,9 @@ use crate::db::User;
 pub fn get_router(app_state: Arc<AppState>) -> Router {
     Router::new()
         .route("/payment", get(list_payment))
+        .route("/payment/:payment_id/recheck", post(recheck))
         .layer(middleware::from_fn_with_state(app_state.clone(), only_auth))
         .layer(middleware::from_fn_with_state(app_state.clone(), extract_user))
-        .route("/payment/:payment_id/recheck", post(recheck))
         .route("/payment/:payment_id", get(get_payment))
         .with_state(app_state.clone())
         .route("/ping", get(ping_pong))
@@ -54,8 +54,18 @@ impl From<Payment> for PaymentResponse {
 
 async fn recheck(
     State(state): State<Arc<AppState>>,
+    Extension(user): Extension<User>,
     Path(payment_id): Path<Uuid>,
 ) -> Result<Json<PaymentResponse>, ResponseError> {
+    let payment = state.db.get_payment(&payment_id)
+        .await
+        .map_err(ResponseError::from_error)?
+        .ok_or(ResponseError::NotFound)?;
+
+    if payment.user_id != Some(user.id) {
+        return Err(ResponseError::Unauthorized);
+    }
+
     apply_paid_by_id(&state, &payment_id)
         .await
         .map(|p| Json(p.into()))
