@@ -1,6 +1,6 @@
 # Roadmap
 
-Future work, organized by priority. See [Project Status](roadmap-synthesized.md) for what is already implemented.
+Future work, organized by priority. See [CHANGELOG](../CHANGELOG.md) for what is already implemented.
 
 ---
 
@@ -67,7 +67,11 @@ Future work, organized by priority. See [Project Status](roadmap-synthesized.md)
 | Item | Reason |
 |------|--------|
 | WalletConnect / wagmi+viem | 20+ hours; QR fallback covers non-MetaMask users |
+| Enable smart contract commission | Owner is the only user; charging yourself has no benefit |
 | i18n (react-i18next) | Zero users outside owner |
 | Off-site backup sync | Local-only backups sufficient for personal use |
 | White-label solution | No external users |
-| CSP headers | Requires frontend audit (Firebase + Bootstrap + Web3.js) |
+| CSP headers | Requires frontend audit (Firebase + Bootstrap + Web3.js inline styles) |
+| Bulk invoice / CSV export / widget | No users at that volume |
+| Subscription `until` at payment time bug | Real bug, zero practical impact at zero users |
+| CRA → Vite migration | CRA is deprecated but functional; pure churn |

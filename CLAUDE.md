@@ -7,8 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Cryo Pay is a crypto payment gateway for USDT (ERC-20) invoices on EVM chains (Optimism, Arbitrum). Rust backend + React frontend, deployed via Docker Compose with Nginx, PostgreSQL, and Redis.
 
 See [docs/architecture.md](docs/architecture.md) for detailed architecture, module map, database schema, and auth/payment flows.
-See [docs/roadmap.md](docs/roadmap.md) for feature backlog and known gaps.
-See [docs/roadmap-synthesized.md](docs/roadmap-synthesized.md) for completed work summary and skip list.
+See [docs/roadmap.md](docs/roadmap.md) for feature backlog, known gaps, and skip list.
 
 ### Quick orientation
 - **`api/`** — Rust (Axum) backend. Single binary runs 3 concurrent tasks: HTTP API, blockchain monitor daemon, Telegram bot

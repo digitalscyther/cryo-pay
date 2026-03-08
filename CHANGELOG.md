@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - OpenAPI spec (utoipa) with Swagger UI at `/swagger-ui/` and JSON at `/api-docs/openapi.json`
+- "API Docs" navbar link and interactive API Reference section in `/docs` linking to Swagger UI
 - Seller analytics endpoint `GET /user/analytics?days=30` — daily breakdown + summary; React dashboard component
 - Docker healthchecks on all 6 services with `condition: service_healthy` dependency ordering; `wget` added to API image
 - `AppError` enum (thiserror) — all DB/Redis wrappers migrated; `From<AppError> for ResponseError`
@@ -21,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Firebase JWK cached behind `RwLock`; refreshed on error instead of fetching on every login
 - PostgreSQL `max_connections` lowered from 2000 to 50 (sqlx pool default is 10)
 - Nginx: added `limit_req_zone`, `client_max_body_size 64k`, `proxy_read_timeout 30s`
+- Static `ApiEndpoints` component replaced by Swagger UI link (auth scope note + networks table retained)
+
+### Fixed
+- Docker build: added `curl` to builder image so `utoipa-swagger-ui` can download Swagger UI assets at compile time
 
 ### Docs
 - Roadmap cleaned up: completed items removed, future work kept; Project Status doc added

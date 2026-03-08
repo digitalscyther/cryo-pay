@@ -68,7 +68,7 @@ sequenceDiagram
 
 - [Architecture](docs/architecture.md) — module map, DB schema, auth/payment flows
 - [Roadmap](docs/roadmap.md) — feature backlog and known gaps
-- [Project Status](docs/roadmap-synthesized.md) — what has been implemented
+- [Changelog](CHANGELOG.md) — what has been implemented
 
 ## Development
 
