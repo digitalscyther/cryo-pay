@@ -172,7 +172,7 @@ async fn get_logs_result(
     }
 
     InfuraRequest::Logs(
-        LogsRange::new(last_block_number, new_block_number), base_filter.clone(),
+        LogsRange::new(last_block_number + 1u64, new_block_number), base_filter.clone(),
     )
         .into_response(provider, limiter)
         .await?

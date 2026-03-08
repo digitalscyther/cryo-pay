@@ -122,30 +122,30 @@ Portfolio and documentation. What a developer evaluating the GitHub repo will lo
 
 ### GitHub / OSS
 
-- [ ] **Create GitHub Release v1.0.0**
+- [x] **Create GitHub Release v1.0.0**
   No releases or tags = project looks permanently unfinished.
   `git tag v1.0.0 && git push origin v1.0.0`, create release with brief changelog. *(Open Source Maintainer)*
 
-- [ ] **Add GitHub repository topics**
+- [x] **Add GitHub repository topics**
   Settings → Topics: `rust`, `blockchain`, `payment-gateway`, `ethereum`, `solidity`,
   `react`, `axum`, `self-hosted`, `usdt`, `optimism`, `arbitrum`, `web3`.
   Indexed by GitHub search, costs 5 minutes. *(Open Source Maintainer)*
 
 ### Backend / Infrastructure
 
-- [ ] **Fix Nginx: add rate limiting, body size limit, timeouts**
+- [x] **Fix Nginx: add rate limiting, body size limit, timeouts**
   `files/nginx/conf.d/local.conf` — no `limit_req`, no `client_max_body_size`, no `proxy_read_timeout`.
   Add: `limit_req_zone`, `client_max_body_size 64k`, `proxy_read_timeout 30s`. *(Security, DevOps)*
 
-- [ ] **Cache Firebase token verifier**
+- [x] **Cache Firebase token verifier**
   `api/src/api/state.rs:468-486` — `App::live()` fetches Google JWK on every login request.
   Cache the verifier behind a `tokio::sync::RwLock`, refresh on error. *(Security, Backend, DevOps)*
 
-- [ ] **Fix off-by-one in daemon block range**
+- [x] **Fix off-by-one in daemon block range**
   `api/src/monitoring/daemon.rs` — `from_block(last_block_number)` re-scans last block every cycle.
   Change to `from_block(last_block_number + 1)`. *(Web3, Backend)*
 
-- [ ] **Lower `max_connections` in Postgres**
+- [x] **Lower `max_connections` in Postgres**
   `docker-compose.yml` — `max_connections=2000` wastes ~160MB shared memory.
   sqlx default pool is 10 connections. Set to 50. *(DevOps)*
 

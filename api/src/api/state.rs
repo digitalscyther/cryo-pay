@@ -5,7 +5,7 @@ use sha2;
 use chrono::NaiveDateTime;
 use jsonwebtoken::{Algorithm, decode, DecodingKey, encode, EncodingKey, Header, Validation};
 use redis::{aio::ConnectionManager, AsyncCommands, RedisResult};
-use rs_firebase_admin_sdk::{credentials_provider, App, GcpCredentials, auth::token::{error::TokenVerificationError, jwt::JWToken, TokenVerifier}};
+use rs_firebase_admin_sdk::{credentials_provider, App, auth::token::{cache::{HttpCache, PubKeys}, error::TokenVerificationError, jwt::JWToken, LiveTokenVerifier, TokenVerifier}};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::migrate::MigrateError;
@@ -37,9 +37,11 @@ pub struct DB {
     pg_pool: PgPool,
 }
 
+type FirebaseVerifier = LiveTokenVerifier<HttpCache<reqwest::Client, PubKeys>>;
+
 #[derive(Clone)]
 pub struct GC {
-    credentials: GcpCredentials,
+    verifier: Arc<FirebaseVerifier>,
 }
 
 #[derive(Clone)]
@@ -470,23 +472,17 @@ impl GC {
         let credentials = credentials_provider()
             .await
             .map_err(|err| utils::make_err(Box::new(err), "get google cloud provider"))?;
-        return Ok(Self { credentials });
+        let app = App::live(credentials)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err.current_context().clone()), "build live app"))?;
+        let verifier = app.id_token_verifier()
+            .await
+            .map_err(|err| utils::make_err(Box::new(err.current_context().clone()), "get id token verifier"))?;
+        Ok(Self { verifier: Arc::new(verifier) })
     }
-    pub async fn get_verified_token(&self, token: &str) -> Result<JWToken, VerifyError> {
-        let live_app = App::live(self.credentials.to_owned())
-            .await
-            .map_err(|err| VerifyError::Unexpected(
-                utils::make_err(Box::new(err.current_context().clone()),
-                                "build live app")
-            ))?;
-        let verifier = live_app.id_token_verifier()
-            .await
-            .map_err(|err| VerifyError::Unexpected(
-                utils::make_err(Box::new(err.current_context().clone()),
-                                "get verifier")
-            ))?;
 
-        match verifier.verify_token(token).await {
+    pub async fn get_verified_token(&self, token: &str) -> Result<JWToken, VerifyError> {
+        match self.verifier.verify_token(token).await {
             Ok(token) => Ok(token),
             Err(err) => Err(VerifyError::Verification(err.current_context().clone()))
         }

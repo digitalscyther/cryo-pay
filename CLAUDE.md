@@ -73,6 +73,14 @@ ssh root@<VPS> "cd /opt/services/cryo-pay && docker compose pull api && docker c
 ```
 Requires GHCR login: `echo "<PAT>" | docker login ghcr.io -u digitalscyther --password-stdin`
 
+### Releases
+- `CHANGELOG.md` at repo root follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format — update it before tagging
+- To publish a release:
+  ```bash
+  git tag vX.Y.Z && git push origin vX.Y.Z
+  gh release create vX.Y.Z --title "vX.Y.Z — <title>" --notes-file CHANGELOG.md
+  ```
+
 ### Credentials
 - Production `.env` is managed via `CRYO_PAY_ENV` GitHub Secret in the infra repo
 - To rotate credentials: update the GitHub Secret, then redeploy (or SSH in and update `.env` directly)
