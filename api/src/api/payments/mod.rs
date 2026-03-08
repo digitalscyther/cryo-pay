@@ -24,6 +24,7 @@ use crate::payments::subscription::SubscriptionTarget;
 pub(crate) struct InvoiceResponse {
     pub id: Uuid,
     pub created_at: NaiveDateTime,
+    #[schema(value_type = String, example = "10.00")]
     pub amount: BigDecimal,
     pub seller: String,
     pub paid_at: Option<NaiveDateTime>,
@@ -128,6 +129,7 @@ pub(crate) async fn get_invoices_handler(
 
 #[derive(Deserialize, utoipa::ToSchema)]
 pub(crate) struct CreateInvoiceRequest {
+    #[schema(value_type = String, example = "10.00")]
     pub amount: BigDecimal,
     pub seller: String,
     pub networks: Vec<i32>,

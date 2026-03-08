@@ -36,6 +36,7 @@ pub struct User {
 pub struct Invoice {
     pub id: Uuid,
     pub created_at: NaiveDateTime,
+    #[schema(value_type = String, example = "10.00")]
     pub amount: BigDecimal,
     pub seller: String,
     pub buyer: Option<String>,
