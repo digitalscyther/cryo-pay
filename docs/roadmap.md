@@ -29,16 +29,17 @@ Must-fix before scaling. These are production blockers.
 The codebase has essentially zero test coverage for business logic.
 
 ### Testing
-- [ ] **Backend integration tests** — payment flow (create invoice → on-chain event → mark paid → notify), auth flow, API key auth
-- [ ] **Backend unit tests** — subscription pricing (`payments/payable.rs`), rate limiting logic, JWT claims, network config parsing
-- [ ] **Frontend component tests** — invoice creation, payment flow, settings CRUD
-- [ ] **Add tests to CI** — `build.yml` currently only builds Docker images, no test step
+- [ ] **Backend integration tests** — payment flow (create invoice → on-chain event → mark paid → notify), auth flow, API key auth. Deferred: requires Docker test infrastructure (PostgreSQL + Redis)
+- [x] **Backend unit tests** — added `#[cfg(test)]` modules with `rstest` across 6 files: payable pricing, subscription validation, network JSON parsing, rate limiting, utils, daemon health. 41 tests total
+- [ ] **Frontend component tests** — invoice creation, payment flow, settings CRUD. Deferred: needs axios/Firebase mocking infrastructure
+- [x] **Frontend utility tests** — `utils.test.js` (13 tests) and `firebase.test.js` (8 tests); fixed `sortNetworkItems` bug (returned function instead of comparison)
+- [x] **Add tests to CI** — added `test-api` and `test-web` jobs to `build.yml`; Docker builds gated on test success via `needs:`
 
 ### Error Handling
 - [x] **Stop silencing errors in daemon** — replaced silent `unwrap_or_else` with explicit error handling: logs error with network name and consecutive count, sleeps with exponential backoff, marks daemon unhealthy after threshold
 - [x] **Fix `unwrap_or_default()` on `paid_at`** — changed `InvoicePaidNotification.paid_at` to `Option<NaiveDateTime>`; no more fake epoch timestamp in webhook payloads
-- [ ] **Add retry logic** for external API calls — Infura RPC, Brevo email, Telegram, webhook delivery. Currently all fire-and-forget
-- [ ] **Input validation** — no checks for negative amounts (`api/buy/donation.rs:36`), invalid network IDs (`api/payments/mod.rs:119`), or negative subscription days
+- [x] **Add retry logic** — generic `retry()` helper with exponential backoff (1s–8s) and `tracing::warn!` logging; applied to webhook delivery (3 attempts), Brevo email (3 attempts), Telegram notifications (2 attempts), and gas fee API (2 attempts). Infura RPC skipped (already has daemon-level backoff)
+- [x] **Input validation** — positive amount checks on invoice creation and donations; network ID validation against configured networks; non-empty networks list; zero-day subscription rejection
 
 ---
 

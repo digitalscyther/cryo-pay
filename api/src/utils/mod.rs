@@ -43,12 +43,15 @@ pub async fn get_suggested_gas_fees(infura_token: &str, network_id: i64) -> Resu
         infura_token, network_id
     );
 
-    Ok(
-        reqwest::get(api_url).await
-        .map_err(|err| make_err(Box::new(err), "make get reqwest for get_suggested_gas_fees"))?
-        .json().await
-        .map_err(|err| make_err(Box::new(err), "parse reqwest for get_suggested_gas_fees"))?
-    )
+    retry(1, || {
+        let url = api_url.clone();
+        async move {
+            reqwest::get(&url).await
+                .map_err(|err| make_err(Box::new(err), "make get reqwest for get_suggested_gas_fees"))?
+                .json().await
+                .map_err(|err| make_err(Box::new(err), "parse reqwest for get_suggested_gas_fees"))
+        }
+    }).await
 }
 
 pub struct ApiKey {
@@ -88,6 +91,28 @@ pub fn new_api_key(user_id: Uuid) -> ApiKey {
 
 pub fn generate_webhook_secret() -> String {
     encode(thread_rng().gen::<[u8; 32]>())
+}
+
+pub async fn retry<F, Fut, T>(max_retries: u32, operation: F) -> Result<T, String>
+where
+    F: Fn() -> Fut,
+    Fut: std::future::Future<Output = Result<T, String>>,
+{
+    let mut last_err = String::new();
+    for attempt in 0..=max_retries {
+        match operation().await {
+            Ok(val) => return Ok(val),
+            Err(err) => {
+                last_err = err;
+                if attempt < max_retries {
+                    tracing::warn!("Retry attempt {}/{}: {}", attempt + 1, max_retries + 1, last_err);
+                    let backoff = std::cmp::min(1u64 << attempt, 8);
+                    tokio::time::sleep(std::time::Duration::from_secs(backoff)).await;
+                }
+            }
+        }
+    }
+    Err(last_err)
 }
 
 pub fn get_bind_address() -> Result<String, String> {
@@ -163,5 +188,32 @@ mod tests {
                 assert_eq!(url.value, expected_value);
             }
         }
+    }
+
+    #[rstest]
+    #[case("", true)]
+    #[case("0", true)]
+    #[case("false", true)]
+    #[case("n", true)]
+    #[case("no", true)]
+    #[case("not", true)]
+    #[case("1", false)]
+    #[case("true", false)]
+    #[case("yes", false)]
+    #[case("TRUE", false)]
+    fn test_is_false(#[case] input: &str, #[case] expected: bool) {
+        assert_eq!(is_false(input), expected);
+    }
+
+    #[test]
+    fn test_combine_paths() {
+        assert_eq!(combine_paths(&["/a", "/b", "/c"]), "/a/b/c");
+        assert_eq!(combine_paths(&[]), "");
+    }
+
+    #[test]
+    fn test_generate_webhook_secret_length() {
+        let secret = generate_webhook_secret();
+        assert_eq!(secret.len(), 64); // 32 bytes = 64 hex chars
     }
 }

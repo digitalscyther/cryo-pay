@@ -42,3 +42,46 @@ impl DaemonHealth {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_new_starts_healthy() {
+        let health = DaemonHealth::new();
+        assert!(health.is_healthy());
+    }
+
+    #[test]
+    fn test_record_success_keeps_healthy() {
+        let health = DaemonHealth::new();
+        health.record_success();
+        assert!(health.is_healthy());
+    }
+
+    #[test]
+    fn test_failure_below_threshold_stays_healthy() {
+        let health = DaemonHealth::new();
+        health.record_success();
+        health.record_failure(UNHEALTHY_ERROR_THRESHOLD - 1);
+        assert!(health.is_healthy());
+    }
+
+    #[test]
+    fn test_failure_at_threshold_marks_unhealthy() {
+        let health = DaemonHealth::new();
+        health.record_success();
+        health.record_failure(UNHEALTHY_ERROR_THRESHOLD);
+        assert!(!health.is_healthy());
+    }
+
+    #[test]
+    fn test_success_after_failure_restores_healthy() {
+        let health = DaemonHealth::new();
+        health.record_success();
+        health.record_failure(UNHEALTHY_ERROR_THRESHOLD);
+        assert!(!health.is_healthy());
+        health.record_success();
+        assert!(health.is_healthy());
+    }
+}

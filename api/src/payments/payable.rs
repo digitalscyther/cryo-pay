@@ -115,3 +115,43 @@ pub async fn apply(state: &Arc<AppState>, payment: &Payment) -> Result<(), Strin
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::rstest;
+    use std::str::FromStr;
+
+    #[rstest]
+    #[case(SubscriptionTarget::HighPriorityBlockchainChecking, "1.00")]
+    #[case(SubscriptionTarget::PrivateInvoices, "0.16")]
+    #[case(SubscriptionTarget::UnlimitedInvoices, "0.01")]
+    fn test_price_per_day(#[case] target: SubscriptionTarget, #[case] expected: &str) {
+        let expected = BigDecimal::from_str(expected).unwrap();
+        assert_eq!(target.price_per_day(), expected);
+    }
+
+    #[test]
+    fn test_iterator_contains_expected_targets() {
+        let targets = SubscriptionTarget::iterator();
+        assert!(targets.contains(&SubscriptionTarget::UnlimitedInvoices));
+        assert!(targets.contains(&SubscriptionTarget::PrivateInvoices));
+    }
+
+    #[rstest]
+    #[case(SubscriptionTarget::PrivateInvoices, "private_invoices")]
+    #[case(SubscriptionTarget::UnlimitedInvoices, "unlimited_invoices")]
+    #[case(SubscriptionTarget::HighPriorityBlockchainChecking, "high_priority_blockchain_checking")]
+    fn test_subscription_target_string_roundtrip(#[case] target: SubscriptionTarget, #[case] expected_str: &str) {
+        let s: String = target.clone().into();
+        assert_eq!(s, expected_str);
+        let back: SubscriptionTarget = s.try_into().unwrap();
+        assert_eq!(back, target);
+    }
+
+    #[test]
+    fn test_invalid_target_string() {
+        let result: Result<SubscriptionTarget, ()> = "nonexistent".to_string().try_into();
+        assert!(result.is_err());
+    }
+}

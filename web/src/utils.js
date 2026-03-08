@@ -89,7 +89,7 @@ export const getSubscriptionInfo = (key) => {
 }
 
 export const sortNetworkItems = (a, b) => {
-    return (a, b) => a.name.localeCompare(b.name)
+    return a.name.localeCompare(b.name)
 }
 
 export const exampleEthereumAddressHere = "0xYourEthereumAddressHere";

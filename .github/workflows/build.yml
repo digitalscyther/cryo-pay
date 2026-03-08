@@ -9,7 +9,31 @@ env:
   IMAGE_PREFIX: ghcr.io/${{ github.repository }}
 
 jobs:
+  test-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: api
+      - name: Run tests
+        run: cd api && SQLX_OFFLINE=true cargo test
+
+  test-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Run tests
+        run: cd web && npm ci && CI=true npm test -- --watchAll=false
+
   build-api:
+    needs: [test-api]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -41,6 +65,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=api
 
   build-web:
+    needs: [test-web]
     runs-on: ubuntu-latest
     permissions:
       contents: read

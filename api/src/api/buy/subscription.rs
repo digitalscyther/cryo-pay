@@ -42,6 +42,10 @@ impl CreateSubscriptionRequest {
             return Err(invalid_target)
         }
 
+        if self.days == 0 {
+            return Err(ResponseError::Bad("Days must be at least 1".to_string()))
+        }
+
         if self.days > max_days {
             return Err(ResponseError::Bad(format!("Max days: {}", max_days)))
         };
@@ -100,4 +104,50 @@ async fn get_price(
     request_data.validate(70)?;
     let price = request_data.get_price()?;
     Ok(Json(json!({"price": price})).into_response())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::str::FromStr;
+
+    fn make_request(target: &str, days: u64) -> CreateSubscriptionRequest {
+        CreateSubscriptionRequest { target: target.to_string(), days }
+    }
+
+    #[test]
+    fn test_calculate_price() {
+        let price = calculate_price(&SubscriptionTarget::PrivateInvoices, 10);
+        assert_eq!(price, BigDecimal::from_str("1.60").unwrap());
+    }
+
+    #[test]
+    fn test_calculate_price_zero_days() {
+        let price = calculate_price(&SubscriptionTarget::UnlimitedInvoices, 0);
+        assert_eq!(price, BigDecimal::from(0));
+    }
+
+    #[test]
+    fn test_validate_valid_request() {
+        let req = make_request("private_invoices", 30);
+        assert!(req.validate(70).is_ok());
+    }
+
+    #[test]
+    fn test_validate_zero_days() {
+        let req = make_request("private_invoices", 0);
+        assert!(req.validate(70).is_err());
+    }
+
+    #[test]
+    fn test_validate_over_max_days() {
+        let req = make_request("private_invoices", 71);
+        assert!(req.validate(70).is_err());
+    }
+
+    #[test]
+    fn test_validate_invalid_target() {
+        let req = make_request("nonexistent", 10);
+        assert!(req.validate(70).is_err());
+    }
 }

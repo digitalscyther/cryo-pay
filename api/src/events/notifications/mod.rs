@@ -105,13 +105,28 @@ impl WebhooksNotifier {
 
 impl Notify for EmailNotifier {
     async fn notify(&self, app_state: Arc<MonitorAppState>, invoice: Invoice) -> Result<(), String> {
-        app_state.mailer.send_invoice_paid(&self.email, &invoice.web_url()?).await
+        let email = self.email.clone();
+        let url = invoice.web_url()?;
+        let mailer = app_state.mailer.clone();
+        utils::retry(2, || {
+            let email = email.clone();
+            let url = url.clone();
+            let mailer = mailer.clone();
+            async move { mailer.send_invoice_paid(&email, &url).await }
+        }).await
     }
 }
 
 impl Notify for TelegramNotifier {
     async fn notify(&self, app_state: Arc<MonitorAppState>, invoice: Invoice) -> Result<(), String> {
-        app_state.telegram_client.send_invoice_paid(&self.chat_id, &invoice).await
+        let chat_id = self.chat_id.clone();
+        let client = app_state.telegram_client.clone();
+        utils::retry(1, || {
+            let chat_id = chat_id.clone();
+            let client = client.clone();
+            let invoice = invoice.clone();
+            async move { client.send_invoice_paid(&chat_id, &invoice).await }
+        }).await
     }
 }
 
@@ -138,7 +153,17 @@ impl Notify for WebhooksNotifier {
             .map_err(|err| utils::make_err(Box::new(err), "notification into json"))?;
 
         for (url, secret) in &self.endpoints {
-            if let Err(err) = app_state.webhooker.send(url, secret, &payload).await {
+            let webhooker = app_state.webhooker.clone();
+            let url = url.clone();
+            let secret = secret.clone();
+            let payload = payload.clone();
+            if let Err(err) = utils::retry(2, || {
+                let webhooker = webhooker.clone();
+                let url = url.clone();
+                let secret = secret.clone();
+                let payload = payload.clone();
+                async move { webhooker.send(&url, &secret, &payload).await }
+            }).await {
                 error!(err)
             }
         }

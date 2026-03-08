@@ -125,6 +125,17 @@ async fn create_invoice_handler(
     Extension(app_user): Extension<AppUser>,
     Json(payload): Json<CreateInvoiceRequest>,
 ) -> Result<Json<InvoiceResponse>, ResponseError> {
+    if payload.amount <= BigDecimal::from(0) {
+        return Err(ResponseError::Bad("Amount must be positive".to_string()));
+    }
+    if payload.networks.is_empty() {
+        return Err(ResponseError::Bad("At least one network required".to_string()));
+    }
+    let valid_ids: Vec<i32> = state.networks.iter().map(|n| n.id as i32).collect();
+    if let Some(invalid) = payload.networks.iter().find(|id| !valid_ids.contains(id)) {
+        return Err(ResponseError::Bad(format!("Invalid network ID: {}", invalid)));
+    }
+
     let is_private = match app_user.user_id() {
         None => false,
         Some(user_id) => {

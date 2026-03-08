@@ -78,3 +78,32 @@ impl Period {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_period_in_seconds_day() {
+        assert_eq!(Period::Day.in_seconds(), 86400);
+    }
+
+    #[test]
+    fn test_period_in_seconds_minute() {
+        assert_eq!(Period::Minute.in_seconds(), 60);
+    }
+
+    #[test]
+    fn test_create_10_times_per_day() {
+        let rl = RateLimit::create_10_times_per_day(Target::ProductInvoice);
+        assert!(matches!(rl.limit, Limit::Limited(10)));
+        assert!(matches!(rl.period, Period::Day));
+    }
+
+    #[test]
+    fn test_create_5_times_per_minute() {
+        let rl = RateLimit::create_5_times_per_minute(Target::Login);
+        assert!(matches!(rl.limit, Limit::Limited(5)));
+        assert!(matches!(rl.period, Period::Minute));
+    }
+}

@@ -85,6 +85,10 @@ async fn donate_create(
     Extension(app_user): Extension<AppUser>,
     Json(payload): Json<DonateRequest>,
 ) -> Result<impl IntoResponse, ResponseError> {
+    if payload.amount <= BigDecimal::from(0) {
+        return Err(ResponseError::Bad("Amount must be positive".to_string()));
+    }
+
     let to_pay = ToPay::create_donation(payload.amount)
         .await
         .map_err(ResponseError::from_error)?;
