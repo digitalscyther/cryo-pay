@@ -41,7 +41,7 @@ function DonationList() {
                             <tr key={donation.id}>
                                 <td>{index + 1}</td>
                                 <td>...{donation.id.slice(-5)}</td>
-                                <td>{donation.donor || "Anonymus"}</td>
+                                <td>{donation.donor || "Anonymous"}</td>
                                 <td>{donation.target || "For Any Purpose"}</td>
                                 <td className="fw-bold"><AmountDisplay amount={donation.amount} /></td>
                                 <td><LocalDate date={donation.paid_at}/></td>

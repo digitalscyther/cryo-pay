@@ -78,10 +78,10 @@ const About = () => {
                 <Col md={4}>
                     <Card className="shadow-sm">
                         <Card.Body>
-                            <Card.Title>Analytics and Reporting</Card.Title>
+                            <Card.Title>Webhook Notifications</Card.Title>
                             <Card.Text>
-                                Access detailed statistics, transaction history, and reporting tools to monitor your
-                                business performance and streamline operations.
+                                Receive signed HTTP callbacks (HMAC-SHA256) on your server the moment an invoice is
+                                paid. Integrate payment confirmation into any backend with a single endpoint.
                             </Card.Text>
                         </Card.Body>
                     </Card>

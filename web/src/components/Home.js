@@ -3,10 +3,11 @@ import {Container, Row, Col, Button, Card, ListGroup} from "react-bootstrap";
 import NetworkIcon from "./NetworkIcon";
 import ThumbnailWithZoom from "./ThumbnailWithZoom";
 import CreateInvoice from "./dashboard/CreateInvoice";
-import {getAvailableNetworks, getProjectName} from "../utils";
+import {getAvailableNetworks, getProjectGitHubUrl, getProjectName} from "../utils";
 import {Link} from "react-router-dom";
 
 const projectName = getProjectName();
+const projectGitHubUrl = getProjectGitHubUrl();
 
 const chooseReasons = [
     {
@@ -31,24 +32,6 @@ const chooseReasons = [
     }
 ];
 
-const reviews = [
-    {
-        text: `As a freelancer, ${projectName} has simplified my invoicing process. Fast and reliable!`,
-        author: "Alex R., Freelancer"
-    },
-    {
-        text: "Our business loves the multi-chain support and zero fees!",
-        author: "Jamie L., Business Owner"
-    },
-    {
-        text: "The real-time notifications and easy API integration are game-changers for our operations.",
-        author: "Taylor M., Tech Lead"
-    },
-    {
-        text: `No account needed, no hidden fees. ${projectName} is perfect for quick payments.`,
-        author: "Jordan S., Consultant"
-    }
-];
 
 const schemas = [
     {
@@ -188,30 +171,52 @@ const Home = () => {
                 </Row>
             </section>
 
-            {/* Reviews Section */}
+            {/* Built in the Open Section */}
             <section className="my-5 text-center">
-                <h2>What Our Users Say</h2>
+                <h2>Built in the Open</h2>
+                <p className="text-muted lead">
+                    {projectName} is a solo developer project — one person, open source, built for real use.
+                    No VC funding, no hidden fees, no black box. Read every line of code.
+                </p>
                 <Row className="justify-content-center">
-                    {reviews.map(({text, author}) => (
-                        <Col key={author} md={4} className="mb-3">
-                            <Card>
-                                <Card.Body>
-                                    <Card.Text>"{text}"</Card.Text>
-                                    <Card.Footer className="text-end">- {author}</Card.Footer>
-                                </Card.Body>
-                            </Card>
-                        </Col>
-                    ))}
+                    <Col md={3} className="mb-3">
+                        <Card>
+                            <Card.Body>
+                                <Card.Title>🦀 Rust Backend</Card.Title>
+                                <Card.Text>Axum + sqlx + tokio. Compile-time checked queries. Single binary.</Card.Text>
+                            </Card.Body>
+                        </Card>
+                    </Col>
+                    <Col md={3} className="mb-3">
+                        <Card>
+                            <Card.Body>
+                                <Card.Title>⛓️ On-Chain Verification</Card.Title>
+                                <Card.Text>Smart contracts on Optimism & Arbitrum. Payment confirmation via blockchain events.</Card.Text>
+                            </Card.Body>
+                        </Card>
+                    </Col>
+                    <Col md={3} className="mb-3">
+                        <Card>
+                            <Card.Body>
+                                <Card.Title>🔓 Open Source</Card.Title>
+                                <Card.Text>Full source on GitHub. Self-host it, fork it, read it. No surprises.</Card.Text>
+                            </Card.Body>
+                        </Card>
+                    </Col>
                 </Row>
+                <a href={projectGitHubUrl} target="_blank" rel="noopener noreferrer">
+                    <Button variant="dark" size="lg" className="mt-2">⭐ View on GitHub</Button>
+                </a>
             </section>
 
-            {/* Join Section - Enhanced */}
+            {/* CTA Section */}
             <section className="my-5 text-center bg-light p-4 rounded shadow">
-                <h2 className="fw-bold">🚀 Be Part of Something Big — Over 100 Invoices Created!</h2>
-                <p className="mt-2 fs-5 text-muted">Join a growing community simplifying payments and invoicing
-                    effortlessly.</p>
+                <h2 className="fw-bold">🚀 Try It — It's Free</h2>
+                <p className="mt-2 fs-5 text-muted">
+                    No account required. Create an invoice in 30 seconds and share the link.
+                </p>
                 <Button className="m-2" variant="dark" size="lg" href="/dashboard">
-                    Get Started for Free
+                    Create Your First Invoice
                 </Button>
             </section>
 
