@@ -55,7 +55,7 @@ jobs:
         with:
           workspaces: api
       - name: Run integration tests
-        run: cd api && cargo test -- --include-ignored
+        run: cd api && SQLX_OFFLINE=true cargo test -- --include-ignored
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/cryo_test
 
