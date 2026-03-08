@@ -132,6 +132,74 @@ const MakingPaymentsContent = () => (
     </>
 )
 
+const WebhooksContent = () => (
+    <>
+        <h5>Webhook Notifications</h5>
+        <p>
+            When an invoice is paid, Cryo Pay sends an HTTP <code>POST</code> to each
+            configured webhook URL. Webhooks are managed in the <em>Settings</em> section
+            (requires account login).
+        </p>
+
+        <h6>Payload</h6>
+        <pre>{`{
+  "id": "b92d6367-6bf1-49b8-8180-d7fb79d7c75b",
+  "paid_at": "2025-02-14T23:05:38",
+  "status": "SUCCESS"
+}`}</pre>
+        <p><code>paid_at</code> is an ISO 8601 datetime string (may be <code>null</code> in edge cases).</p>
+
+        <h6>Request Headers</h6>
+        <ul>
+            <li><code>Content-Type: application/json</code></li>
+            <li><code>X-Webhook-Timestamp: &lt;unix seconds&gt;</code> — always present</li>
+            <li><code>X-Signature-256: &lt;hex&gt;</code> — present when a secret is set</li>
+        </ul>
+
+        <h6>Signature Verification</h6>
+        <p>
+            The signature is <code>{"HMAC-SHA256(secret, \"{timestamp}.{raw_json_body}\")"}</code>.
+            The signed string is the timestamp, a literal dot, then the exact JSON body bytes.
+            Always use a constant-time comparison to prevent timing attacks.
+        </p>
+
+        <strong>Python</strong>
+        <pre>{`import hmac, hashlib
+
+def verify(secret: str, timestamp: str, body: bytes, signature: str) -> bool:
+    msg = f"{timestamp}.".encode() + body
+    expected = hmac.new(secret.encode(), msg, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, signature)
+
+# In your request handler:
+timestamp = request.headers["X-Webhook-Timestamp"]
+signature = request.headers["X-Signature-256"]
+verify(WEBHOOK_SECRET, timestamp, request.body, signature)`}</pre>
+
+        <strong>Node.js</strong>
+        <pre>{`const crypto = require('crypto');
+
+function verify(secret, timestamp, body, signature) {
+  const msg = \`\${timestamp}.\${body}\`;
+  const expected = crypto.createHmac('sha256', secret).update(msg).digest('hex');
+  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+}
+
+// body must be the raw request body string, not parsed JSON
+const timestamp = req.headers['x-webhook-timestamp'];
+const signature = req.headers['x-signature-256'];
+verify(WEBHOOK_SECRET, timestamp, rawBody, signature);`}</pre>
+
+        <p>
+            <strong>Notes:</strong>{" "}
+            Max 2 webhooks per account. The URL must be publicly reachable (localhost and private IPs are blocked)
+            and return 2xx on a test <code>POST</code> sent at creation time.
+            Delivery is retried up to 2 times on failure.
+            Webhooks created without a secret skip signature generation (legacy mode).
+        </p>
+    </>
+)
+
 const FaqContent = () => (
     <>
         <h5>Frequently Asked Questions</h5>
@@ -180,6 +248,7 @@ const Documentation = () => {
         {id: "creating-invoices", title: "Creating Invoices", content: (<CreateInvoiceContent/>)},
         {id: "payments", title: "Making Payments", content: (<MakingPaymentsContent/>)},
         {id: "notifications", title: "Notifications", content: (<NotificationsContent/>)},
+        {id: "webhooks", title: "Webhooks", content: (<WebhooksContent/>)},
         {id: "faq", title: "FAQ", content: (<FaqContent/>)},
         {
             id: "api-endpoints",

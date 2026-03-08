@@ -190,6 +190,207 @@ const ENDPOINTS = [
             }
         ],
     },
+    {
+        "path": "/health",
+        "methods": [
+            {
+                "info": {
+                    "name": "Health Check",
+                    "description": "Returns liveness and component health status. Returns 503 if any component is unhealthy.",
+                },
+                "request": {"method": "get"},
+                "responses": [
+                    {
+                        "status": 200,
+                        "json": {"status": "ok", "postgres": true, "redis": true, "daemon": true}
+                    },
+                    {
+                        "status": 503,
+                        "json": {"status": "degraded", "postgres": true, "redis": false, "daemon": true}
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "path": "/user/api_key",
+        "methods": [
+            {
+                "info": {
+                    "name": "List API Keys",
+                    "description": "List all API keys for the authenticated user. Cookie auth only — API keys cannot access /user/* routes.",
+                },
+                "request": {"method": "get"},
+                "responses": [
+                    {
+                        "status": 200,
+                        "json": [
+                            {"id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "created": "2025-02-14T23:05:16.272317", "last_used": "2025-02-15T10:00:00"},
+                            {"id": "b2c3d4e5-f6a7-8901-bcde-f12345678901", "created": "2025-02-10T12:00:00.000000", "last_used": null}
+                        ]
+                    }
+                ]
+            },
+            {
+                "info": {
+                    "name": "Create API Key",
+                    "description": "Create a new API key (limit: 5 per user). The raw key value is only returned once at creation — store it securely. Cookie auth only.",
+                },
+                "request": {"method": "post"},
+                "responses": [
+                    {
+                        "status": 200,
+                        "json": {
+                            "key": "a1b2c3d4-e5f6-7890-abcd-ef1234567890.aBcDeFgHiJkLmNoPqRsTuVwXyZ123456",
+                            "instance": {"id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "created": "2025-02-14T23:05:16.272317", "last_used": null}
+                        }
+                    },
+                    {"status": 400, "json": {"error": "bad_request", "message": "too many api keys"}}
+                ]
+            }
+        ]
+    },
+    {
+        "path": "/user/api_key/:api_key_id",
+        "methods": [
+            {
+                "info": {
+                    "name": "Get API Key",
+                    "description": "Retrieve metadata for a specific API key by ID. Cookie auth only.",
+                },
+                "request": {"method": "get"},
+                "responses": [
+                    {
+                        "status": 200,
+                        "json": {"id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "created": "2025-02-14T23:05:16.272317", "last_used": null}
+                    },
+                    {"status": 404, "json": {"message": "not_found"}}
+                ]
+            },
+            {
+                "info": {
+                    "name": "Delete API Key",
+                    "description": "Delete an API key by ID. Cookie auth only.",
+                },
+                "request": {"method": "delete"},
+                "responses": [
+                    {"status": 204},
+                    {"status": 404, "json": {"message": "not_found"}}
+                ]
+            }
+        ]
+    },
+    {
+        "path": "/user/webhook",
+        "methods": [
+            {
+                "info": {
+                    "name": "List Webhooks",
+                    "description": "List all webhooks for the authenticated user. The HMAC secret is included in the response. Cookie auth only.",
+                },
+                "request": {"method": "get"},
+                "responses": [
+                    {
+                        "status": 200,
+                        "json": [
+                            {"id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "url": "https://example.com/webhook", "secret": "a3f1c2e4b5d6a7f8c9e0b1d2a3f4c5e6b7d8a9f0c1e2b3d4a5f6c7e8b9d0a1f2", "created_at": "2025-02-14T23:05:16.272317"}
+                        ]
+                    }
+                ]
+            },
+            {
+                "info": {
+                    "name": "Create Webhook",
+                    "description": "Register a new webhook URL (limit: 2 per user). The HMAC secret is auto-generated. URL must be publicly reachable (no localhost/private IPs) and return 2xx on a test POST at creation time. Cookie auth only.",
+                },
+                "request": {
+                    "method": "post",
+                    "json": [
+                        {"name": "url", "description": "The HTTPS endpoint to receive webhook events.", "value": "https://example.com/webhook"}
+                    ]
+                },
+                "responses": [
+                    {
+                        "status": 200,
+                        "json": {"id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "url": "https://example.com/webhook", "secret": "a3f1c2e4b5d6a7f8c9e0b1d2a3f4c5e6b7d8a9f0c1e2b3d4a5f6c7e8b9d0a1f2", "created_at": "2025-02-14T23:05:16.272317"}
+                    },
+                    {"status": 400, "json": {"error": "bad_request", "message": "too many webhooks"}},
+                    {"status": 400, "json": {"error": "bad_request", "message": "Failed to reach URL: connection refused"}}
+                ]
+            }
+        ]
+    },
+    {
+        "path": "/user/webhook/:webhook_id",
+        "methods": [
+            {
+                "info": {
+                    "name": "Delete Webhook",
+                    "description": "Delete a webhook by ID. Cookie auth only.",
+                },
+                "request": {"method": "delete"},
+                "responses": [
+                    {"status": 204},
+                    {"status": 404, "json": {"message": "not_found"}}
+                ]
+            }
+        ]
+    },
+    {
+        "path": "/user/callback_url",
+        "methods": [
+            {
+                "info": {
+                    "name": "List Callback URLs",
+                    "description": "List all saved post-payment redirect URLs (whitelist). Cookie auth only.",
+                },
+                "request": {"method": "get"},
+                "responses": [
+                    {
+                        "status": 200,
+                        "json": [
+                            {"id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "url": "https://example.com/paid", "created_at": "2025-02-14T23:05:16.272317"}
+                        ]
+                    }
+                ]
+            },
+            {
+                "info": {
+                    "name": "Create Callback URL",
+                    "description": "Add a URL to the post-payment redirect whitelist (limit: 5 per user). Cookie auth only.",
+                },
+                "request": {
+                    "method": "post",
+                    "json": [
+                        {"name": "url", "description": "The URL to redirect to after successful payment.", "value": "https://example.com/paid"}
+                    ]
+                },
+                "responses": [
+                    {
+                        "status": 200,
+                        "json": {"id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890", "url": "https://example.com/paid", "created_at": "2025-02-14T23:05:16.272317"}
+                    },
+                    {"status": 400, "json": {"error": "bad_request", "message": "too many callback urls"}}
+                ]
+            }
+        ]
+    },
+    {
+        "path": "/user/callback_url/:callback_url_id",
+        "methods": [
+            {
+                "info": {
+                    "name": "Delete Callback URL",
+                    "description": "Remove a callback URL from the whitelist. Cookie auth only.",
+                },
+                "request": {"method": "delete"},
+                "responses": [
+                    {"status": 204},
+                    {"status": 404, "json": {"message": "not_found"}}
+                ]
+            }
+        ]
+    },
 ];
 
 const Field = ({obj}) => {
@@ -205,7 +406,7 @@ const Field = ({obj}) => {
 const Endpoints = () => {
     return (
         <>
-            <h6>📜 Available Invoice Endpoints</h6>
+            <h6>📜 Available API Endpoints</h6>
             <Table bordered hover>
                 <thead>
                 <tr>
@@ -290,6 +491,13 @@ function ApiEndpoints() {
         <p>
             <strong>Note:</strong> API keys are available only to logged-in users.
         </p>
+
+        <Alert variant="warning">
+            <strong>Auth scope:</strong> API keys (<code>Authorization: Bearer YOUR_API_KEY</code>) only
+            work for <code>/payment/*</code> and <code>/blockchain/*</code> routes. All <code>/user/*</code> routes
+            require <strong>session (cookie) auth</strong> — log in via the web UI first.
+            This is the most common integration gotcha.
+        </Alert>
 
         <Endpoints/>
 

@@ -27,8 +27,8 @@ Rust (Axum) · React 18 · PostgreSQL · Redis · Nginx · Docker Compose · Sol
 
 3. **Configure the backend**
    ```bash
-   cp api/.env.example api/.env
-   # Set NETWORKS, INFURA_TOKEN, APP_SECRET, TGBOT_TOKEN, BREVO_API_KEY (see api/.env reference below)
+   # Create api/.env — see the api/.env reference section below
+   # Required: NETWORKS, INFURA_TOKEN, APP_SECRET, TGBOT_TOKEN, BREVO_API_KEY
    ```
 
 4. **Start the stack**

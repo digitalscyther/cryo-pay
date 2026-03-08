@@ -89,16 +89,18 @@ Portfolio and documentation. What a developer evaluating the GitHub repo will lo
   Rewrote with one-paragraph description, tech stack badges, 5-step quickstart, dev commands, link to architecture docs, env reference. Old TODO list removed (now in roadmap-synthesized.md).
   *(Flagged by: Open Source Maintainer, Growth, Technical Writer, Indie Hacker)*
 
-- [ ] **Document webhook payload and HMAC verification**
-  Webhook system (HMAC-SHA256, `X-Signature-256` + `X-Webhook-Timestamp`) completely undocumented.
-  Add: payload JSON schema, header format, verification code examples (Python + Node.js).
+- [x] **Document webhook payload and HMAC verification**
+  Added `WebhooksContent` section to `Documentation.js`: payload schema (`id`, `paid_at`, `status`),
+  headers (`X-Webhook-Timestamp`, `X-Signature-256`), signing formula, Python + Node.js verification
+  examples with constant-time comparison, and notes on limits/validation/retry.
   *(Technical Writer, Indie Hacker, Open Source Maintainer)*
 
-- [ ] **Document all missing API endpoints**
-  `ApiEndpoints.js` covers ~4 of 20 endpoints. Missing: `/user/api_key` CRUD,
-  `/user/webhook` CRUD, `/user/callback_url` CRUD, `GET /health`, filter params.
-  Critical note to add: **API keys cannot access `/user/*` routes** — only cookie auth can.
-  This is a major hidden gotcha for integrators. *(Technical Writer, Indie Hacker)*
+- [x] **Document all missing API endpoints**
+  Expanded `ApiEndpoints.js` with 7 new endpoint groups: `/health`, `/user/api_key` (list/create/get/delete),
+  `/user/webhook` (list/create/delete), `/user/callback_url` (list/create/delete).
+  Added warning Alert: API keys cannot access `/user/*` routes — cookie auth only.
+  Field names and error shapes verified against Rust source.
+  *(Technical Writer, Indie Hacker)*
 
 ### UX Polish
 
