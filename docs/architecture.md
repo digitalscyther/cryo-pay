@@ -17,6 +17,8 @@ The single binary (`main.rs`) spawns three concurrent tokio tasks:
    - `/blockchain` — gas fee suggestions
    - `/external` — third-party integrations (CryoPay self-callbacks)
    - `/buy` — donations, subscriptions, payment checkout
+   - `/health` — checks PostgreSQL, Redis, and daemon liveness; returns 200/503 with JSON status
+   - `/ping` — simple liveness probe
 
 2. **Blockchain monitor daemon** (`monitoring/daemon.rs`) — continuously polls EVM chains via Infura JSON-RPC for `PayInvoiceEvent` logs. Uses sliding window rate limiters to stay within Infura credit budgets (per-second and per-day). Tracks the last processed block per network in the database to handle restarts and missed blocks.
 
@@ -44,7 +46,8 @@ The single binary (`main.rs`) spawns three concurrent tokio tasks:
 | `api/middleware/auth.rs` | JWT + API key authentication extraction |
 | `api/middleware/rate_limiting/` | Redis-backed per-user rate limiting |
 | `monitoring/daemon.rs` | Blockchain event polling with Infura rate limit management |
-| `events/notifications/` | Email (Brevo API) and Telegram notification dispatch on payment events |
+| `monitoring/health.rs` | `DaemonHealth` shared state (atomic counters); marks daemon unhealthy after 10 consecutive failures; exponential backoff (5s–60s) |
+| `events/notifications/` | Email (Brevo API) and Telegram notification dispatch on payment events; retry logic with exponential backoff |
 | `payments/` | CryoPay self-payment handling (subscriptions, donations via own invoices) |
 | `db/` | sqlx query functions (compile-time checked via `.sqlx/` offline cache) |
 | `db/billing.rs` | Payments and subscriptions queries |
