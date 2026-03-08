@@ -28,8 +28,12 @@ function DonationPage() {
         <Container className="mt-5">
             <Row className="justify-content-center">
                 <Col md={8} className="text-center">
-                    <h2 className="fw-bold">Support Our Cause</h2>
-                    <p className="text-muted">Your donations help us continue our mission. Every contribution makes a difference.</p>
+                    <h2 className="fw-bold">Support Cryo Pay</h2>
+                    <p className="text-muted">
+                        Cryo Pay is a self-hosted, open-source payment gateway for accepting USDT on Optimism and Arbitrum —
+                        built and maintained by a solo developer. If it's useful to you, a small donation helps
+                        keep the project active and free for everyone.
+                    </p>
                     <Button variant="dark" onClick={() => setShowModal(true)} className="px-4 py-2">
                         Donate Now
                     </Button>

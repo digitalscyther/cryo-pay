@@ -105,19 +105,19 @@ Portfolio and documentation. What a developer evaluating the GitHub repo will lo
 
 ### UX Polish
 
-- [ ] **Add "Copy payment link" button after invoice creation**
+- [x] **Add "Copy payment link" button after invoice creation**
   `web/src/components/dashboard/CreateInvoice.js` — no way to copy the URL after creation.
   Add `navigator.clipboard.writeText(window.location.href)`. One button, zero deps. *(UX)*
 
-- [ ] **Replace `alert()` in `Controller.js` with inline feedback**
+- [x] **Replace `alert()` in `Controller.js` with inline feedback**
   `web/src/components/invoice/Controller.js:117` — `alert('Invoice deleted successfully.')`.
   Just remove the `alert()`; `navigate('/dashboard')` already follows it. *(UX)*
 
-- [ ] **Fix YouTube iframe responsive layout**
+- [x] **Fix YouTube iframe responsive layout**
   `web/src/components/Home.js:154-162` — `width="560" height="315"` breaks on mobile.
   Wrap in `<div className="ratio ratio-16x9">`, set `width="100%" height="100%"`. *(UX, Growth)*
 
-- [ ] **Rewrite DonationPage with personal copy**
+- [x] **Rewrite DonationPage with personal copy**
   `web/src/components/donate/DonationPage.js` — "Support Our Cause / Every contribution makes a difference" is charity template.
   Write 2–4 genuine sentences about who you are and what the project is. *(UX, Growth)*
 

@@ -133,15 +133,15 @@ const Home = () => {
             {/* How It Works Section */}
             <section id="how-it-works" className="my-5 text-center">
                 <h2>See How It Works (30 seconds)</h2>
-                <div className="d-flex justify-content-center my-4">
-                    <iframe
-                        width="560" height="315"
-                        src="https://www.youtube.com/embed/p4B5Nl3XI9s?si=CtP78WRA-v-9SjvI"
-                        title="Demo video"
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                    />
+                <div className="my-4 mx-auto" style={{maxWidth: 640}}>
+                    <div className="ratio ratio-16x9">
+                        <iframe
+                            src="https://www.youtube.com/embed/p4B5Nl3XI9s?si=CtP78WRA-v-9SjvI"
+                            title="Demo video"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                        />
+                    </div>
                 </div>
                 <p><i>Create and share your invoice in under 30 seconds — it's that easy!</i></p>
                 <h4>Create Your First Invoice in 3 Steps:</h4>
