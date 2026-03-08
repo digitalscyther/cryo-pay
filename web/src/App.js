@@ -2,8 +2,6 @@ import React, {useEffect, useState} from 'react';
 import {Route, Routes, useLocation, useNavigate, useSearchParams} from 'react-router-dom';
 import {Container, Navbar, Nav} from 'react-bootstrap';
 import axios from "axios";
-import {jwtDecode} from "jwt-decode";
-import Cookies from "js-cookie";
 import Home from './components/Home';
 import About from './components/About';
 import Contact from './components/Contact';
@@ -25,28 +23,10 @@ function App() {
     const noNavBar = searchParams.get("nnb") === "1";
 
     useEffect(() => {
-        const checkAuth = () => {
-            const token = Cookies.get("jwt");
-            if (token) {
-                try {
-                    const decoded = jwtDecode(token);
-                    const currentTime = Date.now() / 1000;
-                    if (decoded.exp > currentTime) {
-                        setIsLoggedIn(true);
-                    } else {
-                        setIsLoggedIn(false);
-                        Cookies.remove("jwt");
-                    }
-                } catch (error) {
-                    console.error("Invalid JWT token:", error);
-                    setIsLoggedIn(false);
-                }
-            } else {
-                setIsLoggedIn(false);
-            }
-        };
-
-        checkAuth();
+        axios
+            .get(apiUrl('/user'), {withCredentials: true})
+            .then(() => setIsLoggedIn(true))
+            .catch(() => setIsLoggedIn(false));
     }, []);
 
     const isActive = (path) => location.pathname === path;
