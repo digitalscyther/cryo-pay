@@ -5,6 +5,7 @@ use tracing::error;
 use uuid::Uuid;
 use crate::api::state::DB;
 use crate::db::Invoice;
+use crate::error::AppError;
 use crate::monitoring::app_state::MonitorAppState;
 use crate::utils;
 
@@ -51,7 +52,7 @@ impl Notifier {
         }
     }
 
-    pub async fn get_notifiers(db: &DB, user_id: &Uuid) -> Result<Vec<Notifier>, String> {
+    pub async fn get_notifiers(db: &DB, user_id: &Uuid) -> Result<Vec<Notifier>, AppError> {
         let mut notifiers = vec![];
 
         let user = db.get_user_by_id(user_id).await?;

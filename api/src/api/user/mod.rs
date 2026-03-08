@@ -1,6 +1,7 @@
-mod api_key;
-mod callback_url;
-mod webhook;
+pub(crate) mod analytics;
+pub(crate) mod api_key;
+pub(crate) mod callback_url;
+pub(crate) mod webhook;
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -8,6 +9,7 @@ use axum::extract::State;
 use axum::{Extension, Json, middleware, Router};
 use axum::response::{IntoResponse, Redirect};
 use axum::routing::{get, patch};
+use analytics::get_analytics;
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use crate::api::middleware::{extract_user, only_web};
@@ -30,6 +32,7 @@ pub fn get_router(app_state: Arc<AppState>) -> Router {
         .route("/", get(get_user))
         .route("/", patch(update_user))
         .route(ATTACH_TELEGRAM_PATH, get(attach_telegram))
+        .route("/analytics", get(get_analytics))
         .nest("/api_key", api_key::get_router(app_state.clone()))
         .nest("/callback_url", callback_url::get_router(app_state.clone()))
         .nest("/webhook", webhook::get_router(app_state.clone()))
@@ -38,13 +41,13 @@ pub fn get_router(app_state: Arc<AppState>) -> Router {
         .with_state(app_state)
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct UserRequest {
     pub email_notification: Option<bool>,
     pub telegram_notification: Option<bool>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, utoipa::ToSchema)]
 pub struct UserResponse {
     pub attach_telegram_path: Option<String>,
     pub email_notification: bool,
@@ -103,7 +106,17 @@ impl TryFrom<billing::Subscription> for Subscription {
     }
 }
 
-async fn get_user(
+#[utoipa::path(
+    get,
+    path = "/user",
+    responses(
+        (status = 200, description = "Current user info", body = UserResponse),
+        (status = 401, description = "Unauthorized"),
+    ),
+    tag = "user",
+    security(("jwt_cookie" = []))
+)]
+pub(crate) async fn get_user(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<User>,
 ) -> Result<impl IntoResponse, ResponseError> {
@@ -111,7 +124,7 @@ async fn get_user(
 
     let subscriptions: Result<Vec<_>, _> = state.db.list_user_subscriptions(&user.id)
         .await
-        .map_err(ResponseError::from_error)?
+        .map_err(ResponseError::from)?
         .into_iter()
         .map(|s| s.try_into().map_err(|_| "Failed to parse subscription"))
         .collect();
@@ -123,7 +136,18 @@ async fn get_user(
     Ok(Json(response))
 }
 
-async fn update_user(
+#[utoipa::path(
+    patch,
+    path = "/user",
+    request_body = UserRequest,
+    responses(
+        (status = 200, description = "Updated user info", body = UserResponse),
+        (status = 401, description = "Unauthorized"),
+    ),
+    tag = "user",
+    security(("jwt_cookie" = []))
+)]
+pub(crate) async fn update_user(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<User>,
     Json(payload): Json<UserRequest>,
@@ -132,7 +156,7 @@ async fn update_user(
         .update_user(&user.id, payload.email_notification, payload.telegram_notification)
         // .update_user(&user.id, None, payload.telegram_notification)     // TODO notification_turned_off
         .await
-        .map_err(ResponseError::from_error)?
+        .map_err(ResponseError::from)?
         .into();
 
     Ok(Json(response))

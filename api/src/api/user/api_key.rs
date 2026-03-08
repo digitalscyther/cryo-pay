@@ -26,8 +26,8 @@ pub fn get_router(app_state: Arc<AppState>) -> Router<Arc<AppState>> {
         .with_state(app_state)
 }
 
-#[derive(Serialize)]
-struct GetApiKeyResponse {
+#[derive(Serialize, utoipa::ToSchema)]
+pub(crate) struct GetApiKeyResponse {
     pub id: Uuid,
     pub created: NaiveDateTime,
     pub last_used: Option<NaiveDateTime>,
@@ -43,14 +43,24 @@ impl From<db::ApiKey> for GetApiKeyResponse {
     }
 }
 
-async fn list(
+#[utoipa::path(
+    get,
+    path = "/user/api_key",
+    responses(
+        (status = 200, description = "List of API keys", body = Vec<GetApiKeyResponse>),
+        (status = 401, description = "Unauthorized"),
+    ),
+    tag = "user",
+    security(("jwt_cookie" = []))
+)]
+pub(crate) async fn list(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<db::User>,
 ) -> Result<impl IntoResponse, ResponseError> {
     let api_keys = state.db
         .list_api_key(&user.id)
         .await
-        .map_err(ResponseError::from_error)?
+        .map_err(ResponseError::from)?
         .into_iter()
         .map(|i| i.into())
         .collect::<Vec<GetApiKeyResponse>>();
@@ -58,26 +68,37 @@ async fn list(
     Ok(Json(api_keys))
 }
 
-#[derive(Serialize)]
-struct CreateResponse {
+#[derive(Serialize, utoipa::ToSchema)]
+pub(crate) struct CreateApiKeyResponse {
     key: String,
     instance: GetApiKeyResponse,
 }
 
-impl CreateResponse {
+impl CreateApiKeyResponse {
     fn new(api_key: &str, instance: GetApiKeyResponse) -> Self {
         Self { key: api_key.to_string(), instance }
     }
 }
 
-async fn create(
+#[utoipa::path(
+    post,
+    path = "/user/api_key",
+    responses(
+        (status = 200, description = "Created API key (shown once)", body = CreateApiKeyResponse),
+        (status = 400, description = "Too many api keys"),
+        (status = 401, description = "Unauthorized"),
+    ),
+    tag = "user",
+    security(("jwt_cookie" = []))
+)]
+pub(crate) async fn create(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<db::User>,
 ) -> Result<impl IntoResponse, ResponseError> {
     let api_keys_number = state.db
         .count_api_keys_by_user_id(&user.id)
         .await
-        .map_err(ResponseError::from_error)?;
+        .map_err(ResponseError::from)?;
 
     if api_keys_number >= API_KEY_LIMIT {
         return Err(ResponseError::Bad("too many api keys".to_string()))
@@ -88,13 +109,25 @@ async fn create(
     let instance: GetApiKeyResponse = state.db
         .create_api_key(&user.id, &api_key.hashed_value())
         .await
-        .map_err(ResponseError::from_error)?
+        .map_err(ResponseError::from)?
         .into();
 
-    Ok(Json(CreateResponse::new(&api_key.value, instance)))
+    Ok(Json(CreateApiKeyResponse::new(&api_key.value, instance)))
 }
 
-async fn read(
+#[utoipa::path(
+    get,
+    path = "/user/api_key/{id}",
+    params(("id" = Uuid, Path, description = "API key ID")),
+    responses(
+        (status = 200, description = "API key info", body = GetApiKeyResponse),
+        (status = 404, description = "Not found"),
+        (status = 401, description = "Unauthorized"),
+    ),
+    tag = "user",
+    security(("jwt_cookie" = []))
+)]
+pub(crate) async fn read(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<db::User>,
     Path(api_key_id): Path<Uuid>,
@@ -102,7 +135,7 @@ async fn read(
     if let Some(api_key) = state.db
         .get_api_key(&api_key_id, &user.id)
         .await
-        .map_err(ResponseError::from_error)? {
+        .map_err(ResponseError::from)? {
         let resp: GetApiKeyResponse = api_key.into();
         return Ok(Json(resp));
     }
@@ -110,14 +143,26 @@ async fn read(
     Err(ResponseError::NotFound)
 }
 
-async fn destroy(
+#[utoipa::path(
+    delete,
+    path = "/user/api_key/{id}",
+    params(("id" = Uuid, Path, description = "API key ID")),
+    responses(
+        (status = 204, description = "Deleted"),
+        (status = 404, description = "Not found"),
+        (status = 401, description = "Unauthorized"),
+    ),
+    tag = "user",
+    security(("jwt_cookie" = []))
+)]
+pub(crate) async fn destroy(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<db::User>,
     Path(api_key_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, ResponseError> {
     Ok(match state.db.delete_api_key(&api_key_id, &user.id)
         .await
-        .map_err(ResponseError::from_error)? {
+        .map_err(ResponseError::from)? {
         true => StatusCode::NO_CONTENT,
         false => return Err(ResponseError::NotFound),
     })

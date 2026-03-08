@@ -184,7 +184,8 @@ async fn get_network_logs(
     network: &Network, db: &DB, base_filter: &Filter, limiter: &Limiter,
 ) -> Result<Vec<Log>, String> {
     let last_block_number = db.get_block_number(&network.name)
-        .await?
+        .await
+        .map_err(|e| e.to_string())?
         .map(|bn| U64::from(bn));
 
     let provider = Provider::<Http>::try_from(&network.link)
@@ -194,7 +195,8 @@ async fn get_network_logs(
         .await? {
         LogsResult::Skip => vec![],
         LogsResult::Result(logs, new_block_number) => {
-            db.set_block_number(&network.name, new_block_number.as_u64() as i64).await?;
+            db.set_block_number(&network.name, new_block_number.as_u64() as i64).await
+                .map_err(|e| e.to_string())?;
             logs
         }
     })

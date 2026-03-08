@@ -12,6 +12,17 @@ services:
       - nginx_network
       - postgres_network
       - redis_network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   web:
     build:
@@ -28,6 +39,12 @@ services:
       NODE_ENV: production
     networks:
       - nginx_network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000',r=>process.exit(r.statusCode<400?0:1)).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   nginx:
     image: nginx:1.27.2
@@ -35,7 +52,10 @@ services:
     volumes:
       - ./files/nginx/conf.d:/etc/nginx/conf.d
     depends_on:
-      - web
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
     networks:
       - nginx_network
       - proxy
@@ -46,6 +66,12 @@ services:
       - "traefik.http.routers.cryo-pay.tls.certresolver=letsencrypt"
       - "traefik.http.routers.cryo-pay.middlewares=security-headers@file"
       - "traefik.http.services.cryo-pay.loadbalancer.server.port=80"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   postgres:
     image: postgres:17.0
@@ -60,6 +86,12 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-cryo}
     networks:
       - postgres_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cryo} -d ${POSTGRES_DB:-cryo}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   redis:
     image: 'bitnami/redis:7.4.1'
@@ -70,6 +102,12 @@ services:
       - redis_data:/bitnami/redis/data
     networks:
       - redis_network
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $$REDIS_PASSWORD ping | grep -q PONG"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   # Mount pg_backups to host path or add S3 sync in infra for off-site storage
   pg-backup:
@@ -88,9 +126,16 @@ services:
     volumes:
       - pg_backups:/backups
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - postgres_network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080 || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
 networks:
   nginx_network:

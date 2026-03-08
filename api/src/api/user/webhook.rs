@@ -29,8 +29,8 @@ pub fn get_router(app_state: Arc<AppState>) -> Router<Arc<AppState>> {
         .route("/ping", get(ping_pong))
 }
 
-#[derive(Serialize)]
-struct GetWebhookResponse {
+#[derive(Serialize, utoipa::ToSchema)]
+pub(crate) struct GetWebhookResponse {
     pub id: Uuid,
     pub url: String,
     pub secret: String,
@@ -48,14 +48,24 @@ impl From<Webhook> for GetWebhookResponse {
     }
 }
 
-async fn list(
+#[utoipa::path(
+    get,
+    path = "/user/webhook",
+    responses(
+        (status = 200, description = "List of webhooks", body = Vec<GetWebhookResponse>),
+        (status = 401, description = "Unauthorized"),
+    ),
+    tag = "user",
+    security(("jwt_cookie" = []))
+)]
+pub(crate) async fn list(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<User>,
 ) -> Result<impl IntoResponse, ResponseError> {
     let webhooks = state.db
         .list_webhooks(&user.id)
         .await
-        .map_err(ResponseError::from_error)?
+        .map_err(ResponseError::from)?
         .into_iter()
         .map(|i| i.into())
         .collect::<Vec<GetWebhookResponse>>();
@@ -63,9 +73,9 @@ async fn list(
     Ok(Json(webhooks))
 }
 
-#[derive(Deserialize)]
-struct CreateWebhookRequest {
-    url: String,
+#[derive(Deserialize, utoipa::ToSchema)]
+pub(crate) struct CreateWebhookRequest {
+    pub url: String,
 }
 
 /// Block internal/private IPs and Docker-internal hostnames to prevent SSRF.
@@ -128,7 +138,19 @@ impl CreateWebhookRequest {
     }
 }
 
-async fn create(
+#[utoipa::path(
+    post,
+    path = "/user/webhook",
+    request_body = CreateWebhookRequest,
+    responses(
+        (status = 200, description = "Created webhook", body = GetWebhookResponse),
+        (status = 400, description = "Invalid URL or too many webhooks"),
+        (status = 401, description = "Unauthorized"),
+    ),
+    tag = "user",
+    security(("jwt_cookie" = []))
+)]
+pub(crate) async fn create(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<User>,
     Json(payload): Json<CreateWebhookRequest>,
@@ -141,7 +163,7 @@ async fn create(
     let webhooks_number = state.db
         .count_webhooks(&user.id)
         .await
-        .map_err(ResponseError::from_error)?;
+        .map_err(ResponseError::from)?;
 
     if webhooks_number >= WEBHOOKS_LIMIT {
         return Err(ResponseError::Bad("too many webhooks".to_string()));
@@ -152,20 +174,32 @@ async fn create(
     let instance: GetWebhookResponse = state.db
         .create_webhook(&payload.url, &secret, &user.id)
         .await
-        .map_err(ResponseError::from_error)?
+        .map_err(ResponseError::from)?
         .into();
 
     Ok(Json(instance))
 }
 
-async fn destroy(
+#[utoipa::path(
+    delete,
+    path = "/user/webhook/{id}",
+    params(("id" = Uuid, Path, description = "Webhook ID")),
+    responses(
+        (status = 204, description = "Deleted"),
+        (status = 404, description = "Not found"),
+        (status = 401, description = "Unauthorized"),
+    ),
+    tag = "user",
+    security(("jwt_cookie" = []))
+)]
+pub(crate) async fn destroy(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<User>,
     Path(webhook_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, ResponseError> {
     Ok(match state.db.delete_webhook(&webhook_id, &user.id)
         .await
-        .map_err(ResponseError::from_error)? {
+        .map_err(ResponseError::from)? {
         true => StatusCode::NO_CONTENT,
         false => return Err(ResponseError::NotFound),
     })

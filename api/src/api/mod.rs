@@ -1,14 +1,15 @@
-mod ping_pong;
+pub(crate) mod ping_pong;
 pub mod state;
-mod payments;
+pub(crate) mod payments;
 mod blockchain;
-mod auth;
+pub(crate) mod auth;
 mod middleware;
-mod user;
+pub(crate) mod user;
 mod external;
 mod buy;
 pub mod response_error;
 pub mod utils;
+mod openapi;
 
 use std::sync::Arc;
 use axum::Router;
@@ -18,8 +19,11 @@ use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing::info;
 use uuid::Uuid;
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 use ping_pong::{ping_pong, health_check};
+use crate::api::openapi::ApiDoc;
 use crate::api::state::DB;
 use crate::monitoring::health::DaemonHealth;
 use crate::network::Network;
@@ -69,6 +73,10 @@ pub async fn run_api(
         .nest("/blockchain", blockchain::get_router(app_state.clone()))
         .nest(EXTERNAL_BASE_PATH, external::get_router(app_state.clone()))
         .nest("/buy", buy::get_router(app_state.clone()))
+        .merge(
+            SwaggerUi::new("/swagger-ui")
+                .url("/api-docs/openapi.json", ApiDoc::openapi())
+        )
         .layer(TraceLayer::new_for_http());
 
     let web_origin = base_utils::web_base_url()

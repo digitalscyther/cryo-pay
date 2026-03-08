@@ -6,11 +6,19 @@ use axum::response::IntoResponse;
 use serde::Serialize;
 use crate::api::state::AppState;
 
-#[derive(Serialize)]
+#[derive(Serialize, utoipa::ToSchema)]
 pub struct PongResponse {
     message: String,
 }
 
+#[utoipa::path(
+    get,
+    path = "/ping",
+    responses(
+        (status = 200, description = "Pong", body = PongResponse),
+    ),
+    tag = "system"
+)]
 pub async fn ping_pong() -> Json<PongResponse> {
     let response = PongResponse {
         message: "pong".to_string(),
@@ -18,7 +26,7 @@ pub async fn ping_pong() -> Json<PongResponse> {
     Json(response)
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, utoipa::ToSchema)]
 struct HealthResponse {
     status: String,
     postgres: bool,
@@ -26,6 +34,15 @@ struct HealthResponse {
     daemon: bool,
 }
 
+#[utoipa::path(
+    get,
+    path = "/health",
+    responses(
+        (status = 200, description = "System healthy", body = HealthResponse),
+        (status = 503, description = "System degraded", body = HealthResponse),
+    ),
+    tag = "system"
+)]
 pub async fn health_check(State(state): State<Arc<AppState>>) -> impl IntoResponse {
     let (pg_result, redis_result) = tokio::join!(
         state.db.health_check(),

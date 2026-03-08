@@ -29,9 +29,9 @@ pub fn get_router(app_state: Arc<AppState>) -> Router {
         .with_state(app_state)
 }
 
-#[derive(Deserialize)]
-struct FirebaseTokenRequest {
-    token: String,
+#[derive(Deserialize, utoipa::ToSchema)]
+pub(crate) struct FirebaseTokenRequest {
+    pub token: String,
 }
 
 fn build_jwt_cookie(value: String) -> Cookie<'static> {
@@ -43,7 +43,17 @@ fn build_jwt_cookie(value: String) -> Cookie<'static> {
     cookie
 }
 
-async fn login(
+#[utoipa::path(
+    post,
+    path = "/auth/login",
+    request_body = FirebaseTokenRequest,
+    responses(
+        (status = 200, description = "Authenticated, JWT cookie set"),
+        (status = 400, description = "Invalid token"),
+    ),
+    tag = "auth"
+)]
+pub(crate) async fn login(
     State(state): State<Arc<AppState>>,
     jar: CookieJar,
     Json(payload): Json<FirebaseTokenRequest>,
@@ -73,7 +83,15 @@ async fn login(
     Ok((StatusCode::OK, jar.add(cookie)))
 }
 
-async fn logout(
+#[utoipa::path(
+    post,
+    path = "/auth/logout",
+    responses(
+        (status = 200, description = "Logged out, JWT cookie cleared"),
+    ),
+    tag = "auth"
+)]
+pub(crate) async fn logout(
     jar: CookieJar,
 ) -> Result<impl IntoResponse, StatusCode> {
     let mut cookie = build_jwt_cookie("".to_owned());

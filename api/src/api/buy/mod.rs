@@ -59,7 +59,7 @@ async fn recheck(
 ) -> Result<Json<PaymentResponse>, ResponseError> {
     let payment = state.db.get_payment(&payment_id)
         .await
-        .map_err(ResponseError::from_error)?
+        .map_err(ResponseError::from)?
         .ok_or(ResponseError::NotFound)?;
 
     if payment.user_id != Some(user.id) {
@@ -77,7 +77,7 @@ async fn get_payment(
 ) -> Result<Json<PaymentResponse>, ResponseError> {
     state.db.get_payment(&payment_id)
         .await
-        .map_err(ResponseError::from_error)?
+        .map_err(ResponseError::from)?
         .ok_or(ResponseError::NotFound)
         .map(|p| Json(p.into()))
 }
@@ -91,7 +91,7 @@ async fn list_payment(
 
     Ok(Json(state.db.user_list_payment(&user.id, limit, offset)
         .await
-        .map_err(ResponseError::from_error)?
+        .map_err(ResponseError::from)?
         .into_iter()
         .map(|p| p.into())
         .collect::<Vec<PaymentResponse>>()))

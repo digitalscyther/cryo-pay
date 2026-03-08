@@ -140,7 +140,7 @@ async fn get_suggested_gas_fees(
             .map_err(|err| ResponseError::from_error(format!("{err:?}")))?,
     ).
         await
-        .map_err(ResponseError::from_error)?;
+        .map_err(ResponseError::from)?;
 
     Ok(Json(json!({ "source": "api", "data": response })))
 }

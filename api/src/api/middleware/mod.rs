@@ -58,7 +58,7 @@ async fn get_web_user_from_headers(headers: &HeaderMap, state: Arc<AppState>) ->
         Some(claims) => match state.db.get_or_create_user(&claims.sub, claims.email).await {
             Ok(user) => Some(user),
             Err(err) => {
-                error!(err);
+                error!("{err}");
                 None
             }
         }
@@ -76,17 +76,17 @@ async fn get_api_user_from_headers(headers: &HeaderMap, state: Arc<AppState>) ->
             .get_api_key_by_api_key(&utils::ApiKey::hash_value(api_key))
             .await
             .map_err(|e| {
-                error!(e);
+                error!("{e}");
                 None::<User>
             }) {
             if let Err(e) = state.db.update_api_key_last_used(&api_key.id).await {
-                error!(e);
+                error!("{e}");
             };
             return state.db
                 .get_user_by_id(&api_key.user_id)
                 .await
                 .map_err(|e| {
-                    error!(e);
+                    error!("{e}");
                     None::<User>
                 })
                 .ok();

@@ -3,6 +3,7 @@ pub mod middleware;
 use chrono::Utc;
 use crate::api::middleware::auth::AppUser;
 use crate::api::state::Redis;
+use crate::error::AppError;
 
 pub enum Limit {
     Unlimited,
@@ -20,7 +21,7 @@ impl RateLimit {
         format!("rate-limit:{:?}:{}", self.target, self.period.suffix())
     }
 
-    pub async fn is_ok(&self, redis: &Redis, app_user: &AppUser) -> Result<bool, String> {
+    pub async fn is_ok(&self, redis: &Redis, app_user: &AppUser) -> Result<bool, AppError> {
         match self.limit {
             Limit::Unlimited => Ok(true),
             Limit::Limited(times) => redis

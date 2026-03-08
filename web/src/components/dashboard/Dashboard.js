@@ -2,6 +2,7 @@ import React from 'react';
 import {Container} from 'react-bootstrap';
 import InvoiceList from "./InvoiceList";
 import CreateInvoice from "./CreateInvoice";
+import Analytics from "./Analytics";
 
 function Dashboard({isLoggedIn}) {
     return (
@@ -10,6 +11,9 @@ function Dashboard({isLoggedIn}) {
 
             {/* Creating New Invoice */}
             <CreateInvoice />
+
+            {/* Seller Analytics */}
+            {isLoggedIn && <Analytics />}
 
             {/* Invoice Table */}
             <InvoiceList isLoggedIn={isLoggedIn}/>

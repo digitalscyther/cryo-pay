@@ -151,22 +151,20 @@ Portfolio and documentation. What a developer evaluating the GitHub repo will lo
 
 ---
 
-## Phase 3 — Eventually / Optional
+## Phase 3 — Eventually / Optional ✅ Done
 
-Do after Phase 0–2 is complete. None are urgent at zero users.
-
-| Item | What | Effort | Who flagged |
-|------|------|--------|-------------|
-| **`AppError` enum** | Replace `Result<T, String>` with typed error enum — highest-signal Rust quality improvement | 4–6 h | Backend |
-| **Docker healthchecks** | Add `healthcheck:` to docker-compose.yml for real container liveness | 30 min | DevOps |
-| **Off-site backup sync** | Add rclone/S3 sync to backup sidecar — current backups are local-only | 1–2 h | DevOps, Security |
-| **Basic seller analytics** | Invoice counts + totals by period. Data already in Postgres | 4–6 h | Business, Indie |
-| **OpenAPI spec (utoipa)** | Auto-generated, always-accurate API docs from Axum handlers | 6–8 h | 4 specialists |
-| **Redis INCR/EXPIRE atomicity** | `state.rs:532-545` — two commands, race condition. Use Lua script | 1 h | DevOps |
-| **UptimeRobot on `/health`** | Free tier, 5-min polling, email+Telegram alerts. `/health` already exists | 5 min | DevOps |
-| **Split `db/mod.rs`** | 641 lines → split by domain (invoices, users, api_keys…) | 2–3 h | Backend |
-| **Mermaid diagram in README** | GitHub renders Mermaid natively — payment flow sequence diagram | 1 h | Open Source |
-| **CONTRIBUTING.md** | OSS hygiene, signals the project is serious | 1 h | Open Source |
+| Item | What | Status |
+|------|------|--------|
+| **`AppError` enum** | `thiserror`-based enum; all `DB`/`Redis` wrappers in `state.rs` migrated; `From<AppError> for ResponseError` | ✅ Done |
+| **Docker healthchecks** | All 6 services + `condition: service_healthy` deps; `wget` added to API Dockerfile | ✅ Done |
+| **Off-site backup sync** | Add rclone/S3 sync to backup sidecar — current backups are local-only | ⏳ Skipped |
+| **Basic seller analytics** | `GET /user/analytics?days=30`; daily breakdown + summary; React dashboard component | ✅ Done |
+| **OpenAPI spec (utoipa)** | Swagger UI at `/swagger-ui/`; all handlers annotated; OpenAPI JSON at `/api-docs/openapi.json` | ✅ Done |
+| **Redis INCR/EXPIRE atomicity** | Lua script via `redis::Script`; also fixed TTL-reset bug (EXPIRE was unconditional) | ✅ Done |
+| **UptimeRobot on `/health`** | Operator action — configure free-tier monitor at uptimerobot.com | ⏳ Operator |
+| **Split `db/mod.rs`** | 643 lines → `invoice`, `blockchain`, `user`, `api_key`, `callback_url`, `webhook` sub-modules | ✅ Done |
+| **Mermaid diagram in README** | Payment flow sequence diagram added to `readme.md` | ✅ Done |
+| **CONTRIBUTING.md** | Dev setup, test commands, SQLx workflow, PR guide | ✅ Done |
 
 ---
 

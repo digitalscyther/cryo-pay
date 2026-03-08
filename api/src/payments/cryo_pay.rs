@@ -6,6 +6,7 @@ use uuid::Uuid;
 use crate::api::{get_invoice_full_path, get_target_invoice_path};
 use crate::api::state::DB;
 use crate::db::billing::Payment;
+use crate::error::AppError;
 use crate::network::Network;
 use crate::utils;
 
@@ -159,10 +160,11 @@ pub enum PaidPayableResult {
     Payment(Payment),
 }
 
-pub async fn get_paid_payable(db: &DB, invoice_id: &Uuid) -> Result<PaidPayableResult, String> {
+pub async fn get_paid_payable(db: &DB, invoice_id: &Uuid) -> Result<PaidPayableResult, AppError> {
     Ok(match db.get_payment(invoice_id).await? {
         None => PaidPayableResult::NotFound,
-        Some(payment) => match CryoPayApi::default().is_invoice_paid(invoice_id).await? {
+        Some(payment) => match CryoPayApi::default().is_invoice_paid(invoice_id).await
+            .map_err(AppError::Network)? {
             false => PaidPayableResult::NotPaid,
             true => PaidPayableResult::Payment(payment)
         }

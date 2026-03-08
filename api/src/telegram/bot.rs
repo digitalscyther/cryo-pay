@@ -103,7 +103,7 @@ impl UpdateHandler for Handler {
 
         match self.db.set_user_telegram_chat_id(&user_id, Some(chat_id.to_string())).await {
             Ok(_) => info!("Set telegram_chat_id for user_id={:?}", user_id),
-            Err(err) => error!(err),
+            Err(err) => error!("{err}"),
         };
 
         if let Err(err) = send_message(

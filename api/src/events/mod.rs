@@ -10,6 +10,7 @@ use tracing::{info, warn};
 use uuid::Uuid;
 use crate::api::state::DB;
 use crate::db::Invoice;
+use crate::error::AppError;
 use crate::events::notifications::Notifier;
 use crate::monitoring::app_state::MonitorAppState;
 use crate::utils;
@@ -32,26 +33,26 @@ pub async fn just_print_log(log: &Log) -> Result<(), String> {
 }
 
 
-pub async fn set_invoice_paid(postgres_db: &DB, event: PayInvoiceEvent) -> Result<Invoice, String> {
+pub async fn set_invoice_paid(postgres_db: &DB, event: PayInvoiceEvent) -> Result<Invoice, AppError> {
     let invoice_id = Uuid::parse_str(&event.invoice_id)
-        .map_err(|err| utils::make_err(Box::new(err), "parse invoice_id"))?;
+        .map_err(|err| AppError::Internal(utils::make_err(Box::new(err), "parse invoice_id")))?;
 
     let paid_amount = BigDecimal::from(event.amount.as_u128()) / BigDecimal::from(1_000_000u128);
 
     let stored = postgres_db.get_invoice(&invoice_id)
         .await?
-        .ok_or_else(|| format!("Invoice {} not found", invoice_id))?;
+        .ok_or_else(|| AppError::Internal(format!("Invoice {} not found", invoice_id)))?;
 
     if paid_amount < stored.amount {
-        return Err(format!(
+        return Err(AppError::Internal(format!(
             "Underpayment on invoice {}: required {}, got {}",
             invoice_id, stored.amount, paid_amount
-        ));
+        )));
     }
 
     let paid_at = DateTime::<Utc>::from_timestamp(event.paid_at.as_u64() as i64, 0)
         .map(|dt| dt.naive_utc())
-        .ok_or_else(|| "Invalid timestamp".to_string())?;
+        .ok_or_else(|| AppError::Internal("Invalid timestamp".to_string()))?;
 
     postgres_db.set_invoice_paid(
         invoice_id,
@@ -70,7 +71,8 @@ pub fn parse_event(log: &Log) -> Result<PayInvoiceEvent, String> {
 
 pub async fn process_log(app_state: &MonitorAppState, log: &Log) -> Result<(), String> {
     let event = parse_event(log)?;
-    let invoice = set_invoice_paid(&app_state.db, event).await?;
+    let invoice = set_invoice_paid(&app_state.db, event).await
+        .map_err(|e| e.to_string())?;
 
     // Sync payments.paid_at for self-issued invoices (donations/subscriptions).
     // Regular seller invoices have no matching payments row so this is a no-op for them.
@@ -81,7 +83,8 @@ pub async fn process_log(app_state: &MonitorAppState, log: &Log) -> Result<(), S
 
     if let Some(user_id) = invoice.user_id {
         let tasks = Notifier::get_notifiers(&app_state.db, &user_id)
-            .await?
+            .await
+            .map_err(|e| e.to_string())?
             .into_iter()
             .map(|n| {
                 let app_state = Arc::new(app_state.clone());

@@ -2,6 +2,7 @@ use std::sync::Arc;
 use tracing::Level;
 
 mod utils;
+pub mod error;
 mod api;
 mod db;
 mod events;

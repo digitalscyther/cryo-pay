@@ -3,6 +3,7 @@ use axum::response::{IntoResponse, Response};
 use reqwest::StatusCode;
 use serde_json::{json, Value};
 use tracing::error;
+use crate::error::AppError;
 
 #[derive(Debug, Clone)]
 pub enum ResponseError {
@@ -16,6 +17,16 @@ pub enum ResponseError {
 impl ResponseError {
     pub fn from_error(err: String) -> Self {
         Self::InternalServerError(err)
+    }
+}
+
+impl From<AppError> for ResponseError {
+    fn from(e: AppError) -> Self {
+        match e {
+            AppError::NotFound | AppError::Db(sqlx::Error::RowNotFound) => ResponseError::NotFound,
+            AppError::Auth => ResponseError::Unauthorized,
+            e => ResponseError::InternalServerError(e.to_string()),
+        }
     }
 }
 

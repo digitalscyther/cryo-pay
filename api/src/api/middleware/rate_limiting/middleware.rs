@@ -41,7 +41,7 @@ impl RateLimitType {
             .map_err(ResponseError::from_error)?
             .is_ok(&state.redis, app_user)
             .await
-            .map_err(ResponseError::from_error)? {
+            .map_err(ResponseError::from)? {
             true => Ok(next.run(req).await),
             false => Err(ResponseError::TooManyRequests),
         }

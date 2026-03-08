@@ -13,6 +13,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 use crate::db::{self, ApiKey, CallbackUrl, Invoice, User, Webhook};
 use crate::db::billing::{self, Payment, Subscription};
+use crate::error::AppError;
 use crate::monitoring::health::DaemonHealth;
 use crate::network::Network;
 use crate::telegram::TelegramClient;
@@ -129,24 +130,24 @@ impl DB {
             .await
     }
 
-    pub async fn health_check(&self) -> Result<(), String> {
+    pub async fn health_check(&self) -> Result<(), AppError> {
         sqlx::query("SELECT 1")
             .fetch_one(&self.pg_pool)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "postgres health check"))?;
+            .map_err(AppError::Db)?;
         Ok(())
     }
 
-    pub async fn list_invoices(&self, limit: i64, offset: i64, user_id: Option<Uuid>) -> Result<Vec<Invoice>, String> {
-        db::list_invoices(&self.pg_pool, limit, offset, user_id)
+    pub async fn list_invoices(&self, limit: i64, offset: i64, user_id: Option<Uuid>) -> Result<Vec<Invoice>, AppError> {
+        db::invoice::list_invoices(&self.pg_pool, limit, offset, user_id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "get invoices"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn user_own_invoices(&self, limit: i64, offset: i64, user_id: &Uuid) -> Result<Vec<Invoice>, String> {
-        db::user_own_invoices(&self.pg_pool, limit, offset, user_id)
+    pub async fn user_own_invoices(&self, limit: i64, offset: i64, user_id: &Uuid) -> Result<Vec<Invoice>, AppError> {
+        db::invoice::user_own_invoices(&self.pg_pool, limit, offset, user_id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "get invoices"))
+            .map_err(AppError::Db)
     }
 
     pub async fn create_invoice(
@@ -157,52 +158,52 @@ impl DB {
         user_id: Option<Uuid>,
         external_id: Option<String>,
         is_private: bool,
-    ) -> Result<Invoice, String> {
-        db::create_invoice(&self.pg_pool, amount, seller, networks, user_id, external_id, is_private)
+    ) -> Result<Invoice, AppError> {
+        db::invoice::create_invoice(&self.pg_pool, amount, seller, networks, user_id, external_id, is_private)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "create invoice"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn get_invoice(&self, id: &Uuid) -> Result<Option<Invoice>, String> {
-        db::get_invoice(&self.pg_pool, id)
+    pub async fn get_invoice(&self, id: &Uuid) -> Result<Option<Invoice>, AppError> {
+        db::invoice::get_invoice(&self.pg_pool, id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "get invoice"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn get_is_owner(&self, id: &Uuid, user_id: &Uuid) -> Result<bool, String> {
-        db::get_is_owner(&self.pg_pool, id, user_id)
+    pub async fn get_is_owner(&self, id: &Uuid, user_id: &Uuid) -> Result<bool, AppError> {
+        db::invoice::get_is_owner(&self.pg_pool, id, user_id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "get is owner"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn set_invoice_paid(&self, id: Uuid, seller: &str, amount: BigDecimal, buyer: &str, paid_at: NaiveDateTime) -> Result<Invoice, String> {
-        db::set_invoice_paid(&self.pg_pool, id, seller, amount, buyer, paid_at)
+    pub async fn set_invoice_paid(&self, id: Uuid, seller: &str, amount: BigDecimal, buyer: &str, paid_at: NaiveDateTime) -> Result<Invoice, AppError> {
+        db::invoice::set_invoice_paid(&self.pg_pool, id, seller, amount, buyer, paid_at)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "set invoice paid"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn get_block_number(&self, network: &str) -> Result<Option<i64>, String> {
-        db::get_block_number(&self.pg_pool, network)
+    pub async fn get_block_number(&self, network: &str) -> Result<Option<i64>, AppError> {
+        db::blockchain::get_block_number(&self.pg_pool, network)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "get block number"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn set_block_number(&self, network: &str, block_number: i64) -> Result<(), String> {
-        db::create_or_update_block_number(&self.pg_pool, network, block_number)
+    pub async fn set_block_number(&self, network: &str, block_number: i64) -> Result<(), AppError> {
+        db::blockchain::create_or_update_block_number(&self.pg_pool, network, block_number)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "set block number"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn get_user_by_id(&self, id: &Uuid) -> Result<User, String> {
-        db::get_user_by_id(&self.pg_pool, id)
+    pub async fn get_user_by_id(&self, id: &Uuid) -> Result<User, AppError> {
+        db::user::get_user_by_id(&self.pg_pool, id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "get user by id"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn get_or_create_user(&self, firebase_user_id: &str, email: Option<String>) -> Result<User, String> {
-        db::get_or_create_user(&self.pg_pool, firebase_user_id, email)
+    pub async fn get_or_create_user(&self, firebase_user_id: &str, email: Option<String>) -> Result<User, AppError> {
+        db::user::get_or_create_user(&self.pg_pool, firebase_user_id, email)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "get or create user"))
+            .map_err(AppError::Db)
     }
 
     pub async fn update_user(
@@ -210,195 +211,209 @@ impl DB {
         user_id: &Uuid,
         email_notification: Option<bool>,
         telegram_notification: Option<bool>,
-    ) -> Result<User, String> {
-        db::update_user(&self.pg_pool, user_id, email_notification, telegram_notification)
+    ) -> Result<User, AppError> {
+        db::user::update_user(&self.pg_pool, user_id, email_notification, telegram_notification)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "update user"))
+            .map_err(AppError::Db)
     }
 
     pub async fn set_user_telegram_chat_id(
         &self,
         user_id: &Uuid,
         telegram_chat_id: Option<String>,
-    ) -> Result<(), String> {
-        db::set_user_telegram_chat_id(&self.pg_pool, user_id, telegram_chat_id)
+    ) -> Result<(), AppError> {
+        db::user::set_user_telegram_chat_id(&self.pg_pool, user_id, telegram_chat_id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "set user telegram chat id"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn delete_own_invoice(&self, id: &Uuid, user_id: &Uuid) -> Result<bool, String> {
-        db::delete_own_invoice(&self.pg_pool, id, user_id)
+    pub async fn delete_own_invoice(&self, id: &Uuid, user_id: &Uuid) -> Result<bool, AppError> {
+        db::invoice::delete_own_invoice(&self.pg_pool, id, user_id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "delete own invoice"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn delete_api_key(&self, id: &Uuid, user_id: &Uuid) -> Result<bool, String> {
-        db::delete_api_key(&self.pg_pool, id, user_id)
+    pub async fn delete_api_key(&self, id: &Uuid, user_id: &Uuid) -> Result<bool, AppError> {
+        db::api_key::delete_api_key(&self.pg_pool, id, user_id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "soft delete API key"))
+            .map_err(AppError::Db)
     }
 
     pub async fn create_api_key(
         &self,
         user_id: &Uuid,
         hashed_api_key: &str,
-    ) -> Result<ApiKey, String> {
-        db::create_api_key(&self.pg_pool, user_id, hashed_api_key)
+    ) -> Result<ApiKey, AppError> {
+        db::api_key::create_api_key(&self.pg_pool, user_id, hashed_api_key)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "create API key"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn get_api_key(&self, id: &Uuid, user_id: &Uuid) -> Result<Option<ApiKey>, String> {
-        db::get_api_key(&self.pg_pool, id, user_id)
+    pub async fn get_api_key(&self, id: &Uuid, user_id: &Uuid) -> Result<Option<ApiKey>, AppError> {
+        db::api_key::get_api_key(&self.pg_pool, id, user_id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "get API key by ID"))
+            .map_err(AppError::Db)
     }
 
     pub async fn get_api_key_by_api_key(
         &self,
         hashed_api_key: &str,
-    ) -> Result<Option<ApiKey>, String> {
-        db::get_api_key_by_api_key(&self.pg_pool, hashed_api_key)
+    ) -> Result<Option<ApiKey>, AppError> {
+        db::api_key::get_api_key_by_api_key(&self.pg_pool, hashed_api_key)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "get API key by api_key"))
+            .map_err(AppError::Db)
     }
 
     pub async fn list_api_key(
         &self,
         user_id: &Uuid,
-    ) -> Result<Vec<ApiKey>, String> {
-        db::list_api_key(&self.pg_pool, user_id)
+    ) -> Result<Vec<ApiKey>, AppError> {
+        db::api_key::list_api_key(&self.pg_pool, user_id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "get active API keys by user ID"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn update_api_key_last_used(&self, id: &Uuid) -> Result<(), String> {
-        db::update_api_key_last_used(&self.pg_pool, id)
+    pub async fn update_api_key_last_used(&self, id: &Uuid) -> Result<(), AppError> {
+        db::api_key::update_api_key_last_used(&self.pg_pool, id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "update last used timestamp"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn count_api_keys_by_user_id(&self, user_id: &Uuid) -> Result<usize, String> {
-        match db::count_api_keys_by_user_id(&self.pg_pool, user_id)
+    pub async fn count_api_keys_by_user_id(&self, user_id: &Uuid) -> Result<usize, AppError> {
+        let count = db::api_key::count_api_keys_by_user_id(&self.pg_pool, user_id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "update last used timestamp"))? {
-            None => Err("count_api_keys_by_user_id didn't return value".to_string()),
-            Some(count) => Ok(count as usize)
-        }
+            .map_err(AppError::Db)?;
+        Ok(count.unwrap_or(0) as usize)
     }
 
-    pub async fn create_callback_url(&self, url: &str, user_id: &Uuid) -> Result<CallbackUrl, String> {
-        db::create_callback_url(&self.pg_pool, url, user_id)
+    pub async fn create_callback_url(&self, url: &str, user_id: &Uuid) -> Result<CallbackUrl, AppError> {
+        db::callback_url::create_callback_url(&self.pg_pool, url, user_id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "create callback url"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn list_callback_urls(&self, user_id: &Uuid) -> Result<Vec<CallbackUrl>, String> {
-        db::list_callback_urls_by_user_id(&self.pg_pool, user_id)
+    pub async fn list_callback_urls(&self, user_id: &Uuid) -> Result<Vec<CallbackUrl>, AppError> {
+        db::callback_url::list_callback_urls_by_user_id(&self.pg_pool, user_id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "list callback urls"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn delete_callback_url(&self, callback_url_id: &Uuid, user_id: &Uuid) -> Result<bool, String> {
-        db::delete_callback_url_by_id_and_user_id(&self.pg_pool, callback_url_id, user_id)
+    pub async fn delete_callback_url(&self, callback_url_id: &Uuid, user_id: &Uuid) -> Result<bool, AppError> {
+        db::callback_url::delete_callback_url_by_id_and_user_id(&self.pg_pool, callback_url_id, user_id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "delete callback url"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn count_callback_urls(&self, user_id: &Uuid) -> Result<usize, String> {
-        match db::count_callback_urls_by_user_id(&self.pg_pool, user_id)
+    pub async fn count_callback_urls(&self, user_id: &Uuid) -> Result<usize, AppError> {
+        let count = db::callback_url::count_callback_urls_by_user_id(&self.pg_pool, user_id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "list callback urls"))? {
-            None => Err("count_callback_urls didn't return value".to_string()),
-            Some(cnt) => Ok(cnt as usize)
-        }
+            .map_err(AppError::Db)?;
+        Ok(count.unwrap_or(0) as usize)
     }
 
-    pub async fn exists_callback_url(&self, url: &str, user_id: &Uuid) -> Result<bool, String> {
-        db::exists_callback_url(&self.pg_pool, url, user_id)
+    pub async fn exists_callback_url(&self, url: &str, user_id: &Uuid) -> Result<bool, AppError> {
+        db::callback_url::exists_callback_url(&self.pg_pool, url, user_id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "exists callback url"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn get_payment(&self, id: &Uuid) -> Result<Option<Payment>, String> {
+    pub async fn get_payment(&self, id: &Uuid) -> Result<Option<Payment>, AppError> {
         billing::get_payment(&self.pg_pool, id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "get payment"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn user_list_payment(&self, user_id: &Uuid, limit: i64, offset: i64) -> Result<Vec<Payment>, String> {
+    pub async fn user_list_payment(&self, user_id: &Uuid, limit: i64, offset: i64) -> Result<Vec<Payment>, AppError> {
         billing::user_list_payment(&self.pg_pool, user_id, limit, offset)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "user list payment"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn list_payment(&self, payment_type: &str, limit: i64, offset: i64) -> Result<Vec<Payment>, String> {
+    pub async fn list_payment(&self, payment_type: &str, limit: i64, offset: i64) -> Result<Vec<Payment>, AppError> {
         billing::list_payment(&self.pg_pool, payment_type, limit, offset)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "list payment"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn create_payment(&self, id: &Uuid, user_id: Option<Uuid>, data: &Value) -> Result<Payment, String> {
+    pub async fn create_payment(&self, id: &Uuid, user_id: Option<Uuid>, data: &Value) -> Result<Payment, AppError> {
         billing::create_payment(&self.pg_pool, id, user_id, data)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "create payment"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn list_user_subscriptions(&self, user_id: &Uuid) -> Result<Vec<Subscription>, String> {
+    pub async fn list_user_subscriptions(&self, user_id: &Uuid) -> Result<Vec<Subscription>, AppError> {
         billing::list_subscriptions(&self.pg_pool, user_id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "list user subscription"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn get_user_active_subscription(&self, user_id: &Uuid, target: &str) -> Result<Option<Subscription>, String> {
+    pub async fn get_user_active_subscription(&self, user_id: &Uuid, target: &str) -> Result<Option<Subscription>, AppError> {
         billing::get_active_subscription(&self.pg_pool, user_id, target)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "get user active subscription"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn create_or_update_subscription(&self, user_id: &Uuid, target: &str, data: Option<Value>, until: NaiveDateTime) -> Result<(), String> {
+    pub async fn create_or_update_subscription(&self, user_id: &Uuid, target: &str, data: Option<Value>, until: NaiveDateTime) -> Result<(), AppError> {
         billing::create_or_update_subscription(&self.pg_pool, user_id, target, data, until)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "create or update subscription"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn set_payment_paid(&self, id: &Uuid) -> Result<(), String> {
+    pub async fn set_payment_paid(&self, id: &Uuid) -> Result<(), AppError> {
         billing::set_payment_paid(&self.pg_pool, id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "set payment paid"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn sync_payment_paid_at(&self, id: &Uuid, paid_at: &chrono::NaiveDateTime) -> Result<(), String> {
+    pub async fn sync_payment_paid_at(&self, id: &Uuid, paid_at: &chrono::NaiveDateTime) -> Result<(), AppError> {
         billing::sync_payment_paid_at(&self.pg_pool, id, paid_at)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "sync payment paid_at"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn create_webhook(&self, url: &str, secret: &str, user_id: &Uuid) -> Result<Webhook, String> {
-        db::create_webhook(&self.pg_pool, url, secret, user_id)
+    pub async fn create_webhook(&self, url: &str, secret: &str, user_id: &Uuid) -> Result<Webhook, AppError> {
+        db::webhook::create_webhook(&self.pg_pool, url, secret, user_id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "create webhook"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn list_webhooks(&self, user_id: &Uuid) -> Result<Vec<Webhook>, String> {
-        db::list_webhooks_by_user_id(&self.pg_pool, user_id)
+    pub async fn list_webhooks(&self, user_id: &Uuid) -> Result<Vec<Webhook>, AppError> {
+        db::webhook::list_webhooks_by_user_id(&self.pg_pool, user_id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "list webhooks"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn delete_webhook(&self, webhook_id: &Uuid, user_id: &Uuid) -> Result<bool, String> {
-        db::delete_webhook_by_id_and_user_id(&self.pg_pool, webhook_id, user_id)
+    pub async fn delete_webhook(&self, webhook_id: &Uuid, user_id: &Uuid) -> Result<bool, AppError> {
+        db::webhook::delete_webhook_by_id_and_user_id(&self.pg_pool, webhook_id, user_id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "delete webhook"))
+            .map_err(AppError::Db)
     }
 
-    pub async fn count_webhooks(&self, user_id: &Uuid) -> Result<usize, String> {
-        match db::count_webhooks_by_user_id(&self.pg_pool, user_id)
+    pub async fn count_webhooks(&self, user_id: &Uuid) -> Result<usize, AppError> {
+        let count = db::webhook::count_webhooks_by_user_id(&self.pg_pool, user_id)
             .await
-            .map_err(|err| utils::make_err(Box::new(err), "list webhooks"))? {
-            None => Err("count_webhooks didn't return value".to_string()),
-            Some(cnt) => Ok(cnt as usize)
-        }
+            .map_err(AppError::Db)?;
+        Ok(count.unwrap_or(0) as usize)
+    }
+
+    pub async fn invoice_stats_by_day(
+        &self,
+        user_id: &Uuid,
+        since: NaiveDateTime,
+    ) -> Result<Vec<db::analytics::InvoicePeriodStats>, AppError> {
+        db::analytics::invoice_stats_by_day(&self.pg_pool, user_id, since)
+            .await
+            .map_err(AppError::Db)
+    }
+
+    pub async fn invoice_summary(
+        &self,
+        user_id: &Uuid,
+        since: NaiveDateTime,
+    ) -> Result<db::analytics::InvoiceSummary, AppError> {
+        db::analytics::invoice_summary(&self.pg_pool, user_id, since)
+            .await
+            .map_err(AppError::Db)
     }
 
     #[cfg(test)]
@@ -513,53 +528,53 @@ impl Redis {
         Ok(Self { connection })
     }
 
-    pub async fn health_check(&self) -> Result<(), String> {
+    pub async fn health_check(&self) -> Result<(), AppError> {
         redis::cmd("PING")
             .query_async::<String>(&mut self.connection.clone())
             .await
-            .map_err(|e| utils::make_err(Box::new(e), "redis health check"))?;
+            .map_err(AppError::Redis)?;
         Ok(())
     }
 
-    async fn get(&self, key: &str) -> Result<Option<String>, String> {
-        Ok(self.connection
+    async fn get(&self, key: &str) -> Result<Option<String>, AppError> {
+        self.connection
             .clone()
             .get(key)
             .await
-            .map_err(|e| utils::make_err(Box::new(e), "get redis value"))?)
+            .map_err(AppError::Redis)
     }
 
-    async fn set(&self, key: &str, value: String, timeout: u64) -> Result<(), String> {
+    async fn set(&self, key: &str, value: String, timeout: u64) -> Result<(), AppError> {
         let set_result: RedisResult<()> = self.connection
             .clone()
             .set_ex(key, value, timeout)
             .await;
 
-        set_result.map_err(|e| utils::make_err(Box::new(e), "get redis value"))
+        set_result.map_err(AppError::Redis)
     }
 
-    pub async fn incr(&self, key: &str, timeout: u64) -> Result<u64, String> {
-        let count: u64 = self.connection
-            .clone()
-            .incr(&key, 1)
+    pub async fn incr(&self, key: &str, timeout: u64) -> Result<u64, AppError> {
+        let script = redis::Script::new(r#"
+            local current = redis.call('INCR', KEYS[1])
+            if current == 1 then
+              redis.call('EXPIRE', KEYS[1], ARGV[1])
+            end
+            return current
+        "#);
+        script
+            .key(key)
+            .arg(timeout)
+            .invoke_async::<u64>(&mut self.connection.clone())
             .await
-            .map_err(|e| utils::make_err(Box::new(e), "increment redis value"))?;
-
-        let _: bool = self.connection
-            .clone()
-            .expire(&key, timeout as i64)
-            .await
-            .map_err(|e| utils::make_err(Box::new(e), "set redis key expiration"))?;
-
-        Ok(count)
+            .map_err(AppError::Redis)
     }
 
-    pub async fn get_suggested_gas_fees(&self, network: &i64) -> Result<Option<String>, String> {
+    pub async fn get_suggested_gas_fees(&self, network: &i64) -> Result<Option<String>, AppError> {
         let redis_key = get_suggested_gas_fees_key(network);
         self.get(&redis_key).await
     }
 
-    pub async fn set_suggested_gas_fees(&self, network: &i64, value: String) -> Result<(), String> {
+    pub async fn set_suggested_gas_fees(&self, network: &i64, value: String) -> Result<(), AppError> {
         let redis_key = get_suggested_gas_fees_key(network);
         self.set(&redis_key, value, SUGGESTED_GAS_FEE_TIMEOUT).await
     }

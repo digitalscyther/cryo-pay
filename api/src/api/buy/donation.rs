@@ -71,7 +71,7 @@ impl TryFrom<Payment> for DonateItemResponse {
 async fn donate_list(State(state): State<Arc<AppState>>) -> Result<Json<Vec<DonateItemResponse>>, ResponseError> {
     let values = state.db.list_payment("donation", 100, 0)
         .await
-        .map_err(ResponseError::from_error)?
+        .map_err(ResponseError::from)?
         .into_iter()
         .map(|p| p.try_into())
         .collect::<Result<Vec<DonateItemResponse>, _>>()
@@ -99,7 +99,7 @@ async fn donate_create(
 
     let payment_url = to_pay::create_payment_url(&to_pay, &state.db, app_user.user_id())
         .await
-        .map_err(ResponseError::from_error)?;
+        .map_err(ResponseError::from)?;
 
     Ok(Json(json!({"payment_url": payment_url})))
 }

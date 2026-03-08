@@ -20,8 +20,8 @@ use crate::api::state::AppState;
 use crate::api::utils::Pagination;
 use crate::payments::subscription::SubscriptionTarget;
 
-#[derive(Serialize)]
-struct InvoiceResponse {
+#[derive(Serialize, utoipa::ToSchema)]
+pub(crate) struct InvoiceResponse {
     pub id: Uuid,
     pub created_at: NaiveDateTime,
     pub amount: BigDecimal,
@@ -45,7 +45,7 @@ impl From<Invoice> for InvoiceResponse {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, utoipa::ToSchema)]
 struct OwnInvoiceResponse {
     own: bool,
     invoice: InvoiceResponse,
@@ -87,7 +87,21 @@ fn default_user_id() -> UserIdFilter {
     UserIdFilter::All
 }
 
-async fn get_invoices_handler(
+#[utoipa::path(
+    get,
+    path = "/payment/invoice",
+    params(
+        ("limit" = Option<i64>, Query, description = "Number of results to return"),
+        ("offset" = Option<i64>, Query, description = "Number of results to skip"),
+        ("user_id" = Option<String>, Query, description = "Filter: 'all' or 'my'"),
+    ),
+    responses(
+        (status = 200, description = "List of invoices", body = Vec<InvoiceResponse>),
+        (status = 400, description = "Bad request"),
+    ),
+    tag = "invoices"
+)]
+pub(crate) async fn get_invoices_handler(
     State(state): State<Arc<AppState>>,
     Extension(app_user): Extension<AppUser>,
     Query(pagination): Query<Pagination>,
@@ -104,7 +118,7 @@ async fn get_invoices_handler(
             Some(user_id) => state.db.user_own_invoices(limit, offset, &user_id).await
         }
     }
-        .map_err(ResponseError::from_error)?
+        .map_err(ResponseError::from)?
         .into_iter()
         .map(|i| i.into())
         .collect();
@@ -112,15 +126,25 @@ async fn get_invoices_handler(
     Ok(Json(invoices))
 }
 
-#[derive(Deserialize)]
-struct CreateInvoiceRequest {
-    amount: BigDecimal,
-    seller: String,
-    networks: Vec<i32>,
-    external_id: Option<String>,
+#[derive(Deserialize, utoipa::ToSchema)]
+pub(crate) struct CreateInvoiceRequest {
+    pub amount: BigDecimal,
+    pub seller: String,
+    pub networks: Vec<i32>,
+    pub external_id: Option<String>,
 }
 
-async fn create_invoice_handler(
+#[utoipa::path(
+    post,
+    path = "/payment/invoice",
+    request_body = CreateInvoiceRequest,
+    responses(
+        (status = 200, description = "Created invoice", body = InvoiceResponse),
+        (status = 400, description = "Bad request"),
+    ),
+    tag = "invoices"
+)]
+pub(crate) async fn create_invoice_handler(
     State(state): State<Arc<AppState>>,
     Extension(app_user): Extension<AppUser>,
     Json(payload): Json<CreateInvoiceRequest>,
@@ -145,7 +169,7 @@ async fn create_invoice_handler(
                 &target,
             )
                 .await
-                .map_err(ResponseError::from_error)?
+                .map_err(ResponseError::from)?
                 .is_some()
         },
     };
@@ -159,7 +183,7 @@ async fn create_invoice_handler(
         is_private,
     )
         .await
-        .map_err(ResponseError::from_error)?;
+        .map_err(ResponseError::from)?;
 
     Ok(Json(invoice.into()))
 }
@@ -169,7 +193,20 @@ struct GetInvoiceQueryParams {
     with_own: Option<bool>
 }
 
-async fn get_invoice_handler(
+#[utoipa::path(
+    get,
+    path = "/payment/invoice/{id}",
+    params(
+        ("id" = Uuid, Path, description = "Invoice ID"),
+        ("with_own" = Option<bool>, Query, description = "Include ownership info"),
+    ),
+    responses(
+        (status = 200, description = "Invoice", body = InvoiceResponse),
+        (status = 404, description = "Not found"),
+    ),
+    tag = "invoices"
+)]
+pub(crate) async fn get_invoice_handler(
     State(state): State<Arc<AppState>>,
     Path(invoice_id): Path<Uuid>,
     Query(query_params): Query<GetInvoiceQueryParams>,
@@ -177,7 +214,7 @@ async fn get_invoice_handler(
 ) -> Result<impl IntoResponse, ResponseError> {
     let invoice = state.db.get_invoice(&invoice_id)
         .await
-        .map_err(ResponseError::from_error)?
+        .map_err(ResponseError::from)?
         .ok_or_else(|| ResponseError::NotFound)?;
 
     let invoice: InvoiceResponse = invoice.into();
@@ -190,20 +227,33 @@ async fn get_invoice_handler(
                 None => false,
                 Some(user_id) => state.db.get_is_owner(&invoice_id, &user_id)
                     .await
-                    .map_err(ResponseError::from_error)?
+                    .map_err(ResponseError::from)?
             }
         } ).into_response()
     })
 }
 
-async fn delete_invoice_handler(
+#[utoipa::path(
+    delete,
+    path = "/payment/invoice/{id}",
+    params(
+        ("id" = Uuid, Path, description = "Invoice ID"),
+    ),
+    responses(
+        (status = 204, description = "Deleted"),
+        (status = 404, description = "Not found"),
+    ),
+    tag = "invoices",
+    security(("jwt_cookie" = []))
+)]
+pub(crate) async fn delete_invoice_handler(
     State(state): State<Arc<AppState>>,
     Path(invoice_id): Path<Uuid>,
     Extension(user): Extension<User>,
 ) -> Result<impl IntoResponse, ResponseError> {
     Ok(match state.db.delete_own_invoice(&invoice_id, &user.id)
         .await
-        .map_err(ResponseError::from_error)? {
+        .map_err(ResponseError::from)? {
         true => StatusCode::NO_CONTENT,
         false => return Err(ResponseError::NotFound),
     })
@@ -223,7 +273,7 @@ async fn redirect_invoice_handler(
         None => Err(ResponseError::Bad("`url` query_param required".to_string())),
         Some(url) => match state.db.get_invoice(&invoice_id)
             .await
-            .map_err(ResponseError::from_error)? {
+            .map_err(ResponseError::from)? {
             None => Err(ResponseError::NotFound),
             Some(invoice) => {
                 let was_paid = invoice.paid_at.is_some();
@@ -232,7 +282,7 @@ async fn redirect_invoice_handler(
                     None => get_success_response(),
                     Some(user_id) => match state.db.exists_callback_url(&url, &user_id)
                         .await
-                        .map_err(ResponseError::from_error)? {
+                        .map_err(ResponseError::from)? {
                         false => Err(ResponseError::Bad("`url` not found in callback_urls".to_string())),
                         true => get_success_response(),
                     }

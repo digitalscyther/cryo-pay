@@ -25,8 +25,8 @@ pub fn get_router(app_state: Arc<AppState>) -> Router<Arc<AppState>> {
         .with_state(app_state)
 }
 
-#[derive(Serialize)]
-struct GetCallbackUrlResponse {
+#[derive(Serialize, utoipa::ToSchema)]
+pub(crate) struct GetCallbackUrlResponse {
     pub id: Uuid,
     pub url: String,
     pub created_at: NaiveDateTime,
@@ -42,14 +42,24 @@ impl From<db::CallbackUrl> for GetCallbackUrlResponse {
     }
 }
 
-async fn list(
+#[utoipa::path(
+    get,
+    path = "/user/callback_url",
+    responses(
+        (status = 200, description = "List of callback URLs", body = Vec<GetCallbackUrlResponse>),
+        (status = 401, description = "Unauthorized"),
+    ),
+    tag = "user",
+    security(("jwt_cookie" = []))
+)]
+pub(crate) async fn list(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<db::User>,
 ) -> Result<impl IntoResponse, ResponseError> {
     let callback_urls = state.db
         .list_callback_urls(&user.id)
         .await
-        .map_err(ResponseError::from_error)?
+        .map_err(ResponseError::from)?
         .into_iter()
         .map(|i| i.into())
         .collect::<Vec<GetCallbackUrlResponse>>();
@@ -57,12 +67,24 @@ async fn list(
     Ok(Json(callback_urls))
 }
 
-#[derive(Deserialize)]
-struct CreateCallbackUrlRequest {
-    url: String,
+#[derive(Deserialize, utoipa::ToSchema)]
+pub(crate) struct CreateCallbackUrlRequest {
+    pub url: String,
 }
 
-async fn create(
+#[utoipa::path(
+    post,
+    path = "/user/callback_url",
+    request_body = CreateCallbackUrlRequest,
+    responses(
+        (status = 200, description = "Created callback URL", body = GetCallbackUrlResponse),
+        (status = 400, description = "Too many callback URLs"),
+        (status = 401, description = "Unauthorized"),
+    ),
+    tag = "user",
+    security(("jwt_cookie" = []))
+)]
+pub(crate) async fn create(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<db::User>,
     Json(payload): Json<CreateCallbackUrlRequest>
@@ -70,7 +92,7 @@ async fn create(
     let callback_urls_number = state.db
         .count_callback_urls(&user.id)
         .await
-        .map_err(ResponseError::from_error)?;
+        .map_err(ResponseError::from)?;
 
     if callback_urls_number >= CALLBACK_URLS_LIMIT {
         return Err(ResponseError::Bad("too many callback urls".to_string()))
@@ -79,20 +101,32 @@ async fn create(
     let instance: GetCallbackUrlResponse = state.db
         .create_callback_url(&payload.url, &user.id)
         .await
-        .map_err(ResponseError::from_error)?
+        .map_err(ResponseError::from)?
         .into();
 
     Ok(Json(instance))
 }
 
-async fn destroy(
+#[utoipa::path(
+    delete,
+    path = "/user/callback_url/{id}",
+    params(("id" = Uuid, Path, description = "Callback URL ID")),
+    responses(
+        (status = 204, description = "Deleted"),
+        (status = 404, description = "Not found"),
+        (status = 401, description = "Unauthorized"),
+    ),
+    tag = "user",
+    security(("jwt_cookie" = []))
+)]
+pub(crate) async fn destroy(
     State(state): State<Arc<AppState>>,
     Extension(user): Extension<db::User>,
     Path(callback_url_id): Path<Uuid>,
 ) -> Result<impl IntoResponse, ResponseError> {
     Ok(match state.db.delete_callback_url(&callback_url_id, &user.id)
         .await
-        .map_err(ResponseError::from_error)? {
+        .map_err(ResponseError::from)? {
         true => StatusCode::NO_CONTENT,
         false => return Err(ResponseError::NotFound),
     })

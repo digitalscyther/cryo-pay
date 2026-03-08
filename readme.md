@@ -14,6 +14,30 @@ email, and Telegram notifications automatically.
 
 Rust (Axum) · React 18 · PostgreSQL · Redis · Nginx · Docker Compose · Solidity (EVM)
 
+## Payment Flow
+
+```mermaid
+sequenceDiagram
+    participant Buyer
+    participant Frontend
+    participant API
+    participant Contract as Smart Contract (EVM)
+    participant Daemon
+
+    Buyer->>Frontend: Open invoice URL
+    Frontend->>API: GET /payment/invoice/:id
+    API-->>Frontend: Invoice (amount, networks, seller)
+    Frontend->>Buyer: Payment UI (MetaMask + QR)
+    Buyer->>Contract: Send USDT
+    Contract-->>Daemon: Emit Transfer event (on-chain)
+    loop Block scanning (per network)
+        Daemon->>Contract: eth_getLogs (seller filter)
+        Daemon->>API: Mark invoice paid (internal)
+        API->>API: Verify amount >= invoice.amount
+    end
+    API->>Buyer: Webhook notification → status Paid
+```
+
 ## Quickstart
 
 1. **Clone the repo**

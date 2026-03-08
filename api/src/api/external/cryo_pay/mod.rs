@@ -61,7 +61,7 @@ async fn callback(
 pub async fn apply_paid_by_id(state: &Arc<AppState>, id: &Uuid) -> Result<Payment, ResponseError> {
     match get_paid_payable(&state.db, id)
         .await
-        .map_err(ResponseError::from_error)?
+        .map_err(ResponseError::from)?
     {
         PaidPayableResult::NotPaid => Err(ResponseError::Bad("not paid".to_string())),
         PaidPayableResult::NotFound => Err(ResponseError::NotFound),
@@ -70,7 +70,7 @@ pub async fn apply_paid_by_id(state: &Arc<AppState>, id: &Uuid) -> Result<Paymen
             false => apply(&state, &payment)
                 .await
                 .map(|_| Ok(payment))
-                .map_err(ResponseError::from_error)?
+                .map_err(ResponseError::from)?
         }
     }
 }

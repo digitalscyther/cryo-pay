@@ -90,7 +90,7 @@ async fn create_subscription(
 
     let payment_url = create_payment_url(&to_pay, &state.db, Some(user.id))
         .await
-        .map_err(ResponseError::from_error)?;
+        .map_err(ResponseError::from)?;
 
     Ok(Json(json!({"payment_url": payment_url})))
 }

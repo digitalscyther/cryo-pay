@@ -3,6 +3,7 @@ use uuid::Uuid;
 use serde_json::Value;
 use crate::api::state::DB;
 use crate::db::billing::Payment;
+use crate::error::AppError;
 use crate::payments::payable::Payable;
 use crate::payments::{ToPay, ToPayId};
 
@@ -42,12 +43,13 @@ impl TryFrom<Payment> for ToPay {
     }
 }
 
-pub async fn create_payment_url(to_pay: &ToPay, db: &DB, user_id: Option<Uuid>) -> Result<String, String> {
-    let payment_url = to_pay.payment_url()?;
+pub async fn create_payment_url(to_pay: &ToPay, db: &DB, user_id: Option<Uuid>) -> Result<String, AppError> {
+    let payment_url = to_pay.payment_url()
+        .map_err(|e| AppError::Internal(e))?;
 
     let payment_adapter: ToPayAdapterPayment = to_pay
         .try_into()
-        .map_err(|_| "Failed to_pay to Adapter".to_string())?;
+        .map_err(|_| AppError::Internal("Failed to_pay to Adapter".to_string()))?;
 
     db.create_payment(&payment_adapter.invoice_id, user_id, &payment_adapter.data).await?;
 
