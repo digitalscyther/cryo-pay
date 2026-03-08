@@ -89,7 +89,7 @@ function App() {
                             <Nav className="d-flex w-100">
                                 <Nav.Link href="/dashboard" active={isActive("/dashboard")}>Dashboard</Nav.Link>
                                 <Nav.Link href="/docs" active={isActive("/docs")}>Documentation</Nav.Link>
-                                <Nav.Link href={apiUrl('/swagger-ui/')} target="_blank" rel="noreferrer">API Docs</Nav.Link>
+                                <Nav.Link href="/swagger-ui/" target="_blank" rel="noreferrer">API Docs</Nav.Link>
                                 <Nav.Link href="/about" active={isActive("/about")}>About</Nav.Link>
                                 <Nav.Link href="/donate" active={isActive("/donate")}>Donate</Nav.Link>
                                 <Nav.Link href="/contact" active={isActive("/contact")}>Contact</Nav.Link>

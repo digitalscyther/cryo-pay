@@ -236,7 +236,7 @@ const ApiReferenceContent = () => (
         <p>Browse and try every endpoint interactively:</p>
         <p>
             <a
-                href={apiUrl('/swagger-ui/')}
+                href="/swagger-ui/"
                 target="_blank"
                 rel="noreferrer"
                 className="btn btn-primary"
