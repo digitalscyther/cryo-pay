@@ -368,6 +368,12 @@ impl DB {
             .map_err(|err| utils::make_err(Box::new(err), "set payment paid"))
     }
 
+    pub async fn sync_payment_paid_at(&self, id: &Uuid, paid_at: &chrono::NaiveDateTime) -> Result<(), String> {
+        billing::sync_payment_paid_at(&self.pg_pool, id, paid_at)
+            .await
+            .map_err(|err| utils::make_err(Box::new(err), "sync payment paid_at"))
+    }
+
     pub async fn create_webhook(&self, url: &str, secret: &str, user_id: &Uuid) -> Result<Webhook, String> {
         db::create_webhook(&self.pg_pool, url, secret, user_id)
             .await

@@ -6,7 +6,7 @@ use bigdecimal::BigDecimal;
 use chrono::{DateTime, Utc};
 use ethers::{abi::RawLog, prelude::*};
 use futures::future::join_all;
-use tracing::info;
+use tracing::{info, warn};
 use uuid::Uuid;
 use crate::api::state::DB;
 use crate::db::Invoice;
@@ -71,6 +71,13 @@ pub fn parse_event(log: &Log) -> Result<PayInvoiceEvent, String> {
 pub async fn process_log(app_state: &MonitorAppState, log: &Log) -> Result<(), String> {
     let event = parse_event(log)?;
     let invoice = set_invoice_paid(&app_state.db, event).await?;
+
+    // Sync payments.paid_at for self-issued invoices (donations/subscriptions).
+    // Regular seller invoices have no matching payments row so this is a no-op for them.
+    let paid_at = invoice.paid_at.expect("paid_at always set after set_invoice_paid");
+    if let Err(err) = app_state.db.sync_payment_paid_at(&invoice.id, &paid_at).await {
+        warn!("Failed to sync payment paid_at for invoice {}: {err}", invoice.id);
+    }
 
     if let Some(user_id) = invoice.user_id {
         let tasks = Notifier::get_notifiers(&app_state.db, &user_id)

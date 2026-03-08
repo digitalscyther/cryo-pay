@@ -8,7 +8,7 @@ use crate::api::middleware::auth::{AppUser, AuthType};
 use crate::api::middleware::rate_limiting::{Limit, Period, RateLimit, Target};
 use crate::api::response_error::ResponseError;
 use crate::api::state::{AppState, DB};
-use crate::payments::payable::SubscriptionTarget;
+use crate::payments::subscription::SubscriptionTarget;
 
 
 pub enum RateLimitType {

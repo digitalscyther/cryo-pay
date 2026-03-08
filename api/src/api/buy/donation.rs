@@ -16,6 +16,7 @@ use crate::api::ping_pong::ping_pong;
 use crate::api::response_error::ResponseError;
 use crate::api::state::AppState;
 use crate::db::billing::Payment;
+use crate::payments::donation::Donation;
 use crate::payments::payable::Payable;
 use crate::payments::ToPay;
 
@@ -89,7 +90,10 @@ async fn donate_create(
         return Err(ResponseError::Bad("Amount must be positive".to_string()));
     }
 
-    let to_pay = ToPay::create_donation(payload.amount)
+    let amount = payload.amount;
+    let custom_id = Some(format!("Donation of {amount}"));
+    let payable = Payable::Donation(Donation::anonymous_no_target(amount.clone()));
+    let to_pay = ToPay::create(amount, custom_id, payable)
         .await
         .map_err(ResponseError::from_error)?;
 

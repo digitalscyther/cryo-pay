@@ -18,7 +18,7 @@ use crate::api::ping_pong::ping_pong;
 use crate::api::response_error::ResponseError;
 use crate::api::state::AppState;
 use crate::api::utils::Pagination;
-use crate::payments::payable::SubscriptionTarget;
+use crate::payments::subscription::SubscriptionTarget;
 
 #[derive(Serialize)]
 struct InvoiceResponse {

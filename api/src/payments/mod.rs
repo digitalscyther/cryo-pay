@@ -9,7 +9,9 @@ use crate::payments::payable::Payable;
 use crate::utils;
 
 pub mod cryo_pay;
+pub mod donation;
 pub mod payable;
+pub mod subscription;
 
 pub struct ToPay {
     pub id: ToPayId,
@@ -21,12 +23,6 @@ pub enum ToPayId {
 }
 
 impl ToPay {
-    pub async fn create_donation(amount: BigDecimal) -> Result<Self, String> {
-        let payable = Payable::create_anonymus_no_target_donation(&amount);
-
-        Self::create(amount.clone(), Some(format!("Donation of {amount}")), payable).await
-    }
-
     pub async fn create(amount: BigDecimal, custom_id: Option<String>, payable: Payable) -> Result<Self, String> {
         let cryo_pay_api = CryoPayApi::default();
         let cryo_pay_recipient = CryoPayRecipient::default(

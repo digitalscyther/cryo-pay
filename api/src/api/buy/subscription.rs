@@ -14,7 +14,8 @@ use crate::api::ping_pong::ping_pong;
 use crate::api::response_error::ResponseError;
 use crate::api::state::AppState;
 use crate::db::User;
-use crate::payments::payable::{Payable, Subscription, SubscriptionTarget};
+use crate::payments::payable::Payable;
+use crate::payments::subscription::{Subscription, SubscriptionTarget};
 use crate::payments::ToPay;
 
 pub fn get_router(app_state: Arc<AppState>) -> Router {
@@ -77,7 +78,7 @@ async fn create_subscription(
     let price = calculate_price(&target, request_data.days);
     let until = (Utc::now() + Duration::days(request_data.days as i64)).naive_utc();
     let subscription = Subscription::new(target.clone(), until);
-    let payable = Payable::create_subscription(subscription);
+    let payable = Payable::Subscription(subscription);
 
     let to_pay = ToPay::create(
         price,

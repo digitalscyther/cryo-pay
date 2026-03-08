@@ -16,7 +16,7 @@ use crate::api::response_error::ResponseError;
 use crate::api::state::AppState;
 use crate::api::USER_BASE_PATH;
 use crate::db::{billing, User};
-use crate::payments::payable::{Subscription, SubscriptionTarget};
+use crate::payments::subscription::{Subscription, SubscriptionTarget};
 
 const ATTACH_TELEGRAM_PATH: &str = "/attach_telegram";
 

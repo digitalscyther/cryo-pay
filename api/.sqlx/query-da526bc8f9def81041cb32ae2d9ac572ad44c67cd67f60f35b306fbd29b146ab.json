@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE payments\n        SET paid_at = NOW()\n        WHERE id = $1 AND paid_at IS NULL\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "da526bc8f9def81041cb32ae2d9ac572ad44c67cd67f60f35b306fbd29b146ab"
+}
