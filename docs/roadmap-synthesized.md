@@ -66,15 +66,14 @@ Live security holes + the single most critical UX gap for personal use.
 
 ### UX (Most important for personal use)
 
-- [ ] **Add manual payment fallback (wallet address + QR code) to invoice page**
-  `web/src/components/invoice/Controller.js` — when no MetaMask, shows disabled button with no alternative.
-  The invoice already has `invoice.seller`. Display it as copyable text + QR (`qrcode.react`).
-  Label: "No MetaMask? Pay by direct transfer."
+- [x] **Add manual payment fallback (QR code) to invoice page**
+  QR encodes the invoice URL (not the wallet address) — scanning opens the page on mobile for payment via MetaMask Mobile / any Web3 wallet. Direct wallet transfer would bypass the smart contract and never be detected.
+  Also added "Copy payment link" button to the invoice info panel (`Info.js`).
   *(Flagged by: Indie Hacker, UX Designer, Web3 Developer, Growth — unanimous)*
 
 ### Ops
 
-- [ ] **Fix log level from `ERROR` to `INFO`** — `api/src/main.rs:17`
+- [x] **Fix log level from `ERROR` to `INFO`** — `api/src/main.rs:17`
   All daemon `info!` logs are invisible in production. 2-line change.
   *(Backend, DevOps)*
 
@@ -86,10 +85,8 @@ Portfolio and documentation. What a developer evaluating the GitHub repo will lo
 
 ### Documentation
 
-- [ ] **Rewrite `readme.md` as a product pitch**
-  Current README: 4 bash commands + .env dump. No description, no screenshot.
-  Target: one-paragraph description, screenshot/GIF of invoice creation, tech stack badges,
-  5-step quickstart, link to architecture docs.
+- [x] **Rewrite `readme.md` as a product pitch**
+  Rewrote with one-paragraph description, tech stack badges, 5-step quickstart, dev commands, link to architecture docs, env reference. Old TODO list removed (now in roadmap-synthesized.md).
   *(Flagged by: Open Source Maintainer, Growth, Technical Writer, Indie Hacker)*
 
 - [ ] **Document webhook payload and HMAC verification**
