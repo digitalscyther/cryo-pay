@@ -1,5 +1,6 @@
 import {Alert, Button, Col, Row} from "react-bootstrap";
 import React, {useState} from "react";
+import { QRCodeSVG } from 'qrcode.react';
 import Web3 from "web3";
 import axios from "axios";
 import {apiUrl} from "../../utils";
@@ -114,7 +115,6 @@ function Controller({ invoice, own, erc20Abi, contractAbi, networks, waitPayment
                 apiUrl(`/payment/invoice/${invoice.id}`),
                 {withCredentials: true}
             );
-            alert('Invoice deleted successfully.');
             navigate('/dashboard');
         } catch (err) {
             setError('Failed to delete the invoice, please try again.');
@@ -158,6 +158,17 @@ function Controller({ invoice, own, erc20Abi, contractAbi, networks, waitPayment
                     </Col>
                 )}
             </Row>
+            {!isMetaMask && (
+                <Alert variant="info" className="mt-3 text-center">
+                    <div className="mb-2">
+                        <strong>No MetaMask?</strong> Scan to pay on mobile.
+                    </div>
+                    <div className="mb-3 text-muted small">
+                        Open this page on your phone and pay with MetaMask Mobile or any Web3 wallet.
+                    </div>
+                    <QRCodeSVG value={window.location.href} size={150} />
+                </Alert>
+            )}
         </>
     )
 }

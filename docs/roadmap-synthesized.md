@@ -40,27 +40,28 @@ Live security holes + the single most critical UX gap for personal use.
 
 ### Security (Critical — live in production)
 
-- [ ] **Authenticate `/external/cryo-pay/webhook` and `/external/cryo-pay/callback`**
+- [x] **Authenticate `/external/cryo-pay/webhook` and `/external/cryo-pay/callback`**
   `api/src/api/external/cryo_pay/mod.rs` — zero auth on both endpoints.
   Any internet user can POST `{"status":"SUCCESS","id":"<uuid>"}` and activate a subscription for free.
-  Fix: add a shared secret check or reuse the existing webhook HMAC infrastructure.
+  Fix: derived token `sha256("internal:"+APP_SECRET)` — Bearer header on webhook, `?token=` on callback.
+  Also fixed stale nginx config on VPS that had its own wildcard CORS overriding the app.
   *(Security: C1 — most dangerous code-level bug in the codebase)*
 
-- [ ] **Fix CORS: replace `AllowOrigin::mirror_request()` with explicit origin allowlist**
+- [x] **Fix CORS: replace `AllowOrigin::mirror_request()` with explicit origin allowlist**
   `api/src/api/mod.rs:74-79` — `mirror_request()` + `allow_credentials(true)` defeats CORS entirely.
   Any origin gets credentialed access. CSRF is trivially possible.
-  Fix: read production domain from `WEB_BASE_URL` env var, use `AllowOrigin::exact()`.
+  Fix: `WEB_BASE_URL` parsed as `HeaderValue`, used with `AllowOrigin::exact()`. Verified on prod.
   *(Security: C2)*
 
-- [ ] **Authenticate `/buy/payment/:id/recheck`**
+- [x] **Authenticate `/buy/payment/:id/recheck`**
   `api/src/api/buy/mod.rs:27, 55-62` — registered outside `only_auth` middleware.
   Anyone can POST to activate any payment by UUID.
-  Fix: move behind `only_auth` + `extract_user`. *(Security: C4)*
+  Fix: moved before middleware layers + added `user.id == payment.user_id` ownership check. *(Security: C4)*
 
-- [ ] **Validate paid amount before marking invoice as paid**
+- [x] **Validate paid amount before marking invoice as paid**
   Daemon does not verify `event.amount >= invoice.amount`.
   Someone can pay 0.000001 USDT and the invoice is marked paid.
-  Fix: add amount check in `events/mod.rs` before calling `set_invoice_paid`.
+  Fix: `set_invoice_paid` fetches stored invoice and rejects if `paid_amount < invoice.amount`.
   *(Web3 Developer, Backend)*
 
 ### UX (Most important for personal use)

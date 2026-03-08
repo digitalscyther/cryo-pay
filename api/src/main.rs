@@ -14,7 +14,7 @@ mod monitoring;
 #[tokio::main]
 async fn main() -> Result<(), String> {
     tracing_subscriber::fmt().json()
-        .with_max_level(Level::ERROR)
+        .with_max_level(Level::INFO)
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 

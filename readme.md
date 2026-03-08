@@ -1,26 +1,71 @@
-### run
+# Cryo Pay
 
-#### docker compose
-add config (with private key) to api/data/firebaseConfig.json
-add config to web/src/firebaseConfig.json
+[![Rust](https://img.shields.io/badge/Rust-1.92+-orange?logo=rust)](https://www.rust-lang.org/)
+[![React](https://img.shields.io/badge/React-18-blue?logo=react)](https://reactjs.org/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker)](https://docs.docker.com/compose/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-```text
-docker compose build && NGINX_PORT=80 POSTGRES_PORT=6432 REDIS_PORT=6381 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
-```
+Self-hosted crypto payment gateway for USDT (ERC-20) invoices on Optimism and Arbitrum.
+Sellers create invoices, share a payment link, and the payer completes the transaction via
+MetaMask. The blockchain daemon detects on-chain confirmation and fires webhooks,
+email, and Telegram notifications automatically.
 
-run frontend local
+## Tech Stack
+
+Rust (Axum) · React 18 · PostgreSQL · Redis · Nginx · Docker Compose · Solidity (EVM)
+
+## Quickstart
+
+1. **Clone the repo**
+   ```bash
+   git clone https://github.com/digitalscyther/cryo-pay && cd cryo-pay
+   ```
+
+2. **Add Firebase credentials**
+   - `api/data/firebaseConfig.json` — service account private key
+   - `web/src/firebaseConfig.json` — web app config
+
+3. **Configure the backend**
+   ```bash
+   cp api/.env.example api/.env
+   # Set NETWORKS, INFURA_TOKEN, APP_SECRET, TGBOT_TOKEN, BREVO_API_KEY (see api/.env reference below)
+   ```
+
+4. **Start the stack**
+   ```bash
+   docker compose build
+   NGINX_PORT=80 POSTGRES_PORT=6432 REDIS_PORT=6381 \
+     docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+   ```
+
+5. **Open the app** at `http://localhost`, sign in, and create your first invoice.
+
+## Documentation
+
+- [Architecture](docs/architecture.md) — module map, DB schema, auth/payment flows
+- [Roadmap](docs/roadmap.md) — planned features and known issues
+
+## Development
+
 ```bash
-REACT_APP_BASE_API_URL=http://127.0.0.1:3001 REACT_APP_PROJECT_NAME=LOCALTest REACT_APP_CONTACTS={"email":"foo@bar.baz","telegram":"foo","linkedin":"foo"} npm start
-```
+# Backend
+cd api && cargo build
+SQLX_OFFLINE=true cargo build   # without live DB
 
-### Tips
-add migration
-```bash
+# Frontend
+cd web && npm install && npm start
+
+# Add a DB migration
 DATABASE_URL=postgres://cryo:example@localhost:6432/cryo sqlx migrate add -r <name>
 ```
 
+Local frontend with custom API URL:
+```bash
+REACT_APP_BASE_API_URL=http://127.0.0.1:3001 REACT_APP_PROJECT_NAME=LOCALTest REACT_APP_CONTACTS='{"email":"foo@bar.baz","telegram":"foo","linkedin":"foo"}' npm start
+```
 
-### api .env
+## api/.env reference
+
 ```dotenv
 RUST_LOG=info,tower_http=trace
 
@@ -47,119 +92,3 @@ CRYO_PAY_API_KEY=<self_api_key>
 CRYO_PAY_SELF_ADDRESS=<wallet_address>
 CRYO_PAY_RECIEVE_FROM_NETWORKS=["optimism-sepolia","optimism","arbitrum"]
 ```
-
-## TODO
-
-### Must-Have
-- [x] Improve the smart contract to retain a commission of 0.3-1%, remaining on the contract
-- [x] Add logic to recheck missed blocks due to network failures
-- [x] Implement ~~OAuth2~~ authorization for sellers
-  - [x] Add Firebase
-  - [x] Add self JWT
-  - [x] Refactor
-  - [x] Integrate user_id for invoices
-  - [x] Logout
-- [x] Set up notifications about payment statuses for sellers via email and Telegram
-  - [x] Add email
-  - [x] Add telegram chat id
-  - [x] Add flags where to notify
-    - [x] DB
-    - [x] Endpoints to get and set account details
-    - [x] Frontend Account page
-  - [x] Add email sending
-    - [x] Read Brevo doc
-    - [x] Integrate Brevo
-  - [x] Add telegram message sending
-    - [x] Telegram bot
-      - [x] Webhook and LongPool
-      - [x] Save telegram_chat_id into user
-    - [x] User writing to bot
-      - [x] Backend endpoint
-        - [x] Endpoint
-        - [x] Get telegram chat name
-    - [x] Send notification by chat_id
-- [x] Add support for Arbitrum and Base networks
-  - [x] Arbitrum
-    - [x] Find network id
-    - [x] Find USDT ERC20 smart contract address
-    - [x] Add smartcontract
-      - [x] Deploy
-      - [x] Add into config
-  - [ ] ~~Base~~ (add when will be popular)
-- [x] Delete own invoice
-  - [x] Backend endpoint
-  - [x] Frontend button
-- [x] Set lower (Market) gas for transactions
-  - [x] Backend
-  - [x] Frontend
-- [x] Deploy
-  - [x] Check
-  - [x] Do
-
-### Nice-to-Have
-- [x] (Bug) Failed pay step with correct popup (now show false successful payment)
-- [x] Rate limit for create invoices
-- [x] API
-  - [x] backend
-    - [x] crud
-    - [x] auth
-      - [x] general
-      - [x] split web and api
-  - [x] frontend
-    - [x] settings c~~ru~~d
-    - [x] documentation
-    - [x] create invoice limit per day info 
-- [x] On success redirect to API client page
-  - [x] Backend
-    - [x] Main logic
-    - [x] If empty whitelist - allow any
-  - [x] Frontend
-    - [x] On paid - redirect
-    - [x] Documentation
-    - [x] Add some ~~loaders~~ modal or info that need stay on page (for payer)
-- [x] Add monetization
-  - [x] Notification
-    - [x] Beautify exists telegram messages
-  - [x] Subscriptions
-    - [x] Payment
-      - [x] Create
-      - [x] Checkout endpoint
-      - [x] Dummy Subscription
-      - [x] Frontend
-        - [x] Donation wall
-        - [x] Payment page
-          - [x] Donation
-          - [x] Subscription
-        - [x] Settings
-          - [x] Subscriptions
-        - [x] Buy subscriptions page
-    - [x] Anonymus invoices
-    - [x] Limits
-- [x] Webhooks
-  - [x] back-end
-    - [x] CRUD
-    - [x] Sending success payments
-    - [x] Accepting self invoices (subscriptions, donations)
-  - [x] front-end
-- [ ] WaitList
-  - [ ] Custom tokens \ blockchains
-  - [ ] Advanced Sales Analytics
-  - [ ] White-label
-- [ ] Api Documentation (Rapid | OpenApi)
-- [ ] Webhooks documentation
-- [ ] Instant blockchain verification
-  - [ ] Add high priority queue to check
-- [ ] Redirect on pay - if subscription - check blockchain instantly
-- [ ] Add basic statistics for sellers (number of transactions, total amounts for a period)
-- [ ] Automate QR code generation for invoices
-- [ ] Set up storage for sellers' contact information for sending notifications
-- [ ] Create a landing page with a service description and usage instructions
-- [ ] Reset Firebase first token after logout
-- [ ] Email notifications subscription
-
-### Optional
-- [ ] Add the ability to create invoices in bulk (e.g., for sellers with a large number of small orders)
-- [ ] Integrate a simple widget for embedding on sellers' websites (e.g., HTML code for a payment button)
-- [ ] Implement export of reports (CSV, PDF) for sellers
-- [ ] Add the ability to customize notification frequency (e.g., immediately upon payment or once a day)
-- [ ] Include a privacy policy and terms of use

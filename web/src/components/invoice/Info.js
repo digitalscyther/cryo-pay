@@ -1,11 +1,19 @@
-import {ListGroup} from "react-bootstrap";
+import {Button, ListGroup} from "react-bootstrap";
 import AmountDisplay from "../common/AmountDisplay";
 import {getNetwork} from "../../utils";
 import LocalDate from "../common/LocalDate";
-import React from "react";
+import React, {useState} from "react";
 import NetworkIcon from "../NetworkIcon";
 
 function Info({invoice}) {
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(window.location.href).catch(() => {});
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
     return (
         <ListGroup variant="flush" className="mb-4">
             <ListGroup.Item>
@@ -48,6 +56,11 @@ function Info({invoice}) {
                     <LocalDate date={invoice.paid_at}/>
                 </ListGroup.Item>
             )}
+            <ListGroup.Item>
+                <Button variant="outline-secondary" size="sm" onClick={handleCopy}>
+                    {copied ? 'Link copied!' : 'Copy payment link'}
+                </Button>
+            </ListGroup.Item>
         </ListGroup>
     )
 }
