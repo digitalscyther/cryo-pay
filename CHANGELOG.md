@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-03-09
+
+### Added
+- OpenAPI spec (utoipa) with Swagger UI at `/swagger-ui/` and JSON at `/api-docs/openapi.json`
+- Seller analytics endpoint `GET /user/analytics?days=30` — daily breakdown + summary; React dashboard component
+- Docker healthchecks on all 6 services with `condition: service_healthy` dependency ordering; `wget` added to API image
+- `AppError` enum (thiserror) — all DB/Redis wrappers migrated; `From<AppError> for ResponseError`
+- Redis rate limit atomicity via Lua script; fixed TTL-reset bug (EXPIRE was unconditional)
+
+### Changed
+- `db/mod.rs` (600+ lines) split into 6 domain sub-modules: invoice, blockchain, user, api_key, callback_url, webhook
+- `payments/` split into `donation` and `subscription` sub-modules; `payments.paid_at` sync fixed
+- Daemon block range corrected: `from_block(last_block_number + 1)` to avoid re-scanning last block
+- Firebase JWK cached behind `RwLock`; refreshed on error instead of fetching on every login
+- PostgreSQL `max_connections` lowered from 2000 to 50 (sqlx pool default is 10)
+- Nginx: added `limit_req_zone`, `client_max_body_size 64k`, `proxy_read_timeout 30s`
+
+### Docs
+- Roadmap cleaned up: completed items removed, future work kept; Project Status doc added
+- CONTRIBUTING.md, CLAUDE.md, and README links updated
+
 ## [1.0.0] - 2026-03-08
 
 ### Security
@@ -45,4 +66,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Mobile layout: YouTube embed now uses `ratio ratio-16x9` Bootstrap wrapper
 - MetaMask detection: shows QR code and helpful prompt when MetaMask is absent
 
+[1.1.0]: https://github.com/digitalscyther/cryo-pay/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/digitalscyther/cryo-pay/releases/tag/v1.0.0
