@@ -7,7 +7,7 @@ WORKDIR /app
 
 RUN apk update
 RUN apk upgrade
-RUN apk add --no-cache clang lld musl-dev git pkgconf openssl-dev
+RUN apk add --no-cache clang lld musl-dev git pkgconf openssl-dev curl
 ENV OPENSSL_DIR=/usr
 ENV SQLX_OFFLINE=true
 
