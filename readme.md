@@ -14,6 +14,18 @@ email, and Telegram notifications automatically.
 
 Rust (Axum) · React 18 · PostgreSQL · Redis · Nginx · Docker Compose · Solidity (EVM)
 
+## Architecture Highlights
+
+- Three concurrent Tokio tasks in one binary: REST API, blockchain monitor daemon, and Telegram bot — coordinated via shared state, no separate services to orchestrate.
+- On-chain event streaming: the daemon polls eth_getLogs per network, filters PayInvoiceEvent by seller, and reconciles confirmations against invoice state.
+- Infura-aware rate limiting: sliding-window limiter tuned to Infura's credit model, accounting for the differing credit cost of RPC methods to stay within free-tier limits.
+- Webhook delivery with retries: outbound notifications survive transient failures.
+- CI/CD: Docker images built via GitHub Actions, published to GHCR.
+
+## Known Limitations
+
+- Block reorganizations: the daemon marks an invoice paid on confirmation but does not yet handle chain reorgs that could revert a settled transaction. A confirmation-depth delay before finalizing is the planned fix.
+
 ## Payment Flow
 
 ```mermaid
